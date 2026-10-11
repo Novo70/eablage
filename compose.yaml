@@ -1,0 +1,68 @@
+services:
+  eablage-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${EABLAGE_WEB_PORT:-8082}:80"
+    volumes:
+      - ${EABLAGE_CONFIG_PATH}:/var/www/html/konfiguration.php:ro
+      - ${EABLAGE_DATA_PATH:?EABLAGE_DATA_PATH muss explizit gesetzt sein}:/data
+    environment:
+      TZ: Europe/Berlin
+      BACKEND_URL: ${EABLAGE_BACKEND_URL:-http://backend:8000}
+    networks:
+      - app
+      - database
+
+  eablage-backend:
+    user: "${EABLAGE_BACKEND_UID:-33}:${EABLAGE_BACKEND_GID:-33}"
+    volumes:
+      - ${EABLAGE_DATA_PATH:?EABLAGE_DATA_PATH muss explizit gesetzt sein}:/data:ro
+      - ${EABLAGE_META_PATH:?EABLAGE_META_PATH muss auf das Metadatenverzeichnis zeigen}:${EABLAGE_META_CONTAINER_PATH:-/data/meta}:rw
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+      EABLAGE_OCR_ENABLED: ${EABLAGE_OCR_ENABLED:-true}
+      EABLAGE_OCR_LANGUAGES: ${EABLAGE_OCR_LANGUAGES:-deu+eng}
+      DB_HOST: ${EABLAGE_DB_HOST}
+      DB_USER: ${EABLAGE_DB_USER}
+      DB_PASSWORD: ${EABLAGE_DB_PASSWORD}
+      DB_NAME: ${EABLAGE_DB_NAME}
+    networks:
+      app:
+        aliases:
+          - backend
+      database:
+
+  eablage-worker:
+    user: "${EABLAGE_BACKEND_UID:-33}:${EABLAGE_BACKEND_GID:-33}"
+    volumes:
+      - ${EABLAGE_DATA_PATH:?EABLAGE_DATA_PATH muss explizit gesetzt sein}:/data:ro
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["python", "worker.py"]
+    stop_grace_period: 110s
+    environment:
+      TZ: Europe/Berlin
+      EABLAGE_INBOX_ENABLED: ${EABLAGE_INBOX_ENABLED:-true}
+      EABLAGE_INBOX_INTERVAL: ${EABLAGE_INBOX_INTERVAL:-60}
+      EABLAGE_OCR_ENABLED: ${EABLAGE_OCR_ENABLED:-true}
+      EABLAGE_OCR_LANGUAGES: ${EABLAGE_OCR_LANGUAGES:-deu+eng}
+      DB_HOST: ${EABLAGE_DB_HOST}
+      DB_USER: ${EABLAGE_DB_USER}
+      DB_PASSWORD: ${EABLAGE_DB_PASSWORD}
+      DB_NAME: ${EABLAGE_DB_NAME}
+    networks:
+      - database
+
+networks:
+  app:
+  database:
+    external: true

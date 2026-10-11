@@ -1,0 +1,420 @@
+# Changelog – eablage-backend
+
+Ab eAblage 3.4.0 gilt die gemeinsame Version für Web und Backend; seit 4.2.0 gehört auch der Worker dazu.
+Die gemeinsamen Versionen ab 3.4.0 werden im [zentralen Changelog](../changelog.txt) dokumentiert.
+
+Diese Datei bewahrt die historische Änderungsdokumentation des separat
+versionierten Python-Backends bis 1.1.0.
+
+
+
+# Changelog – eablage-backend 1.1.0
+
+## Neue Funktionen
+
+### Dokumentexport
+
+* Neue Backend-Unterstützung für den Dokumentexport der Webanwendung.
+* Exportdateinamen werden zentral im Python-Backend anhand der konfigurierten Exportprofile erzeugt.
+* Unterstützung der vorhandenen Exportparameter für:
+
+  * DokID
+  * Datum
+  * Kategorie und Kategorie-ID
+  * Unterkategorie und Unterkategorie-ID
+  * Dokumenttyp und Dokumenttyp-ID
+  * Partner
+  * Betreff
+  * Nummer
+  * Tags
+* Berücksichtigung der konfigurierten maximalen Dateinamenlänge.
+* Bereinigung von Zeichen, die in Dateinamen nicht zulässig sind.
+* Automatischer Rückfall auf die DokID, wenn aus den konfigurierten Bestandteilen kein Dateiname erzeugt werden kann.
+
+### Einzelexport
+
+* Neuer API-Endpunkt `GET /export/document/{dok_id}`.
+* Ermittelt den Exportdateinamen eines einzelnen Dokuments anhand des Exportprofils „Einzelexport“.
+* Liefert DokID, Exportdateiname und verwendetes Exportprofil an die Webanwendung.
+* Nicht vorhandene Dokumente werden mit HTTP-Status 404 beantwortet.
+
+### Gesamtexport
+
+* Neuer API-Endpunkt `GET /export/plan`.
+* Erstellt einen vollständigen Exportplan für alle archivierten Dokumente.
+* Verwendung des Exportprofils „Gesamtexport“.
+* Unterstützung einer konfigurierbaren Verzeichnisstruktur mit bis zu vier Ebenen.
+* Verzeichnisebenen können unter anderem aus Kategorie, Unterkategorie, Dokumenttyp und Partner erzeugt werden.
+* Leere Verzeichnisebenen werden automatisch übersprungen.
+* Der Exportplan enthält für jedes Dokument:
+
+  * DokID
+  * Exportdateiname
+  * vorgesehene Verzeichnisstruktur
+* Der vollständige Exportplan wird in einem API-Aufruf bereitgestellt, sodass nicht für jedes Dokument ein separater Backend-Aufruf erforderlich ist.
+
+## Technische Änderungen
+
+### Neuer Export-Service
+
+* Neuer zentraler Service für die Exportlogik.
+* Laden und Auswerten der Exportparameter aus der Datenbank.
+* Gemeinsame Logik für Einzel- und Gesamtexport.
+* Datenbankabfrage der Dokumentmetadaten einschließlich Kategorie, Unterkategorie und Dokumenttyp.
+* Trennung zwischen fachlicher Exportlogik und tatsächlichem Dateisystemzugriff.
+
+### Architektur
+
+* Das Backend erzeugt ausschließlich Exportdateinamen und Exportpläne.
+* Das Python-Backend benötigt keinen direkten Zugriff auf das Archivverzeichnis des NAS.
+* Lesen und Kopieren der PDF-Dateien erfolgt weiterhin durch die PHP-Webanwendung auf dem Webserver/NAS.
+* Dadurch bleibt das Backend unabhängig vom konkreten Speicherort und Betriebssystem des Dokumentenarchivs.
+* Die Architektur erleichtert eine spätere Migration der Anwendung auf ein anderes NAS-System.
+
+## Kompatibilität
+
+* Die bestehenden Klassifizierungsfunktionen aus Version 1.0.0 bleiben unverändert verfügbar.
+* Die neuen Exportfunktionen ergänzen die vorhandene API ohne Änderung der bisherigen Klassifizierungs-Endpunkte.
+* Die vorhandenen Exportparameter der e_ablage-Datenbank werden weiterverwendet.
+* Die eigentliche Dokumentablage und die archivierten PDF-Dateien werden vom Backend nicht verändert.
+
+---------------------------------------------
+
+# Changelog – eablage-backend 1.0.0
+
+## Erste stabile Version
+
+Mit Version 1.0.0 erreicht das Python-/FastAPI-Backend von eAblage den ersten stabilen Stand für den produktiven Einsatz.
+
+Das Backend übernimmt wesentliche Funktionen der automatischen Dokumentenanalyse und -klassifizierung, die zuvor teilweise in der Access-Anwendung ausgeführt wurden.
+
+## AutoKat
+
+* Python-basierte Verarbeitung der AutoKat-Klassifizierungsregeln.
+* Unterstützung von Ergänzungsregeln (E) und Klassifikationsregeln (K).
+* Verarbeitung der Regeln nach ihrer Rangfolge.
+* Übernahme von Kategorie, Kategorie 2, Dokumententyp, Partner, Betreff, Dokumentnummer und Tags.
+* Extraktion regelabhängiger Werte aus dem Dokumenttext.
+* Unterstützung der regelbasierten Datumserkennung.
+* Rückgabe detaillierter Herkunftsinformationen für automatisch ermittelte Feldwerte.
+
+## Flexible Suchbegriffe
+
+* Neue regelbasierte Suche über das Feld `Suchbegriffe`.
+* Beliebig viele Suchbegriffe können durch Semikolon getrennt hinterlegt werden.
+* Leerzeichen um einzelne Suchbegriffe werden automatisch entfernt.
+* Leere Einträge werden ignoriert.
+* Alle hinterlegten positiven Suchbegriffe müssen im Dokument vorkommen.
+* Suche erfolgt weiterhin nach vollständigen Wörtern bzw. vollständigen Phrasen.
+* Groß-/Kleinschreibung wird bei der Suche ignoriert.
+
+## Ausschlussbegriffe
+
+* Neues Feld `Ausschlussbegriffe` unterstützt.
+* Beliebig viele Ausschlussbegriffe können durch Semikolon getrennt hinterlegt werden.
+* Sobald mindestens ein Ausschlussbegriff im Dokument vorkommt, wird die betreffende AutoKat-Regel verworfen.
+* Für Ausschlussbegriffe gelten dieselben Wort-/Phrasengrenzen wie für positive Suchbegriffe.
+
+## Mehrere Klassifikationsregeln
+
+* AutoKat beendet die Suche nicht mehr nach der ersten zutreffenden Klassifikationsregel.
+* Alle aktiven und zutreffenden K-Regeln werden ermittelt.
+* Die Klassifikationsregel mit dem niedrigsten Rang wird als primäre Regel verwendet.
+* Nur die primäre Klassifikationsregel belegt die entsprechenden Klassifizierungswerte.
+* Weitere K-Treffer überschreiben keine Werte.
+* Alle zutreffenden Klassifikationsregeln werden einschließlich ihrer Referenzinformationen an die Webanwendung zurückgegeben.
+* Neues Ergebnisfeld für die Liste aller zutreffenden Klassifikationsregeln.
+* Kennzeichnung von Mehrfachtreffern in der API-Antwort.
+* Bestehende Rückgabefelder für die primäre Klassifikationsregel bleiben zur Kompatibilität erhalten.
+
+## Access-Migration
+
+* Das bisherige Feld `sucheBeenden` hat für die Python-Klassifizierung keine Bedeutung mehr.
+* Die Unterscheidung zwischen Ergänzungs- und Klassifikationsregeln erfolgt ausschließlich über `Regeltyp` (`E` bzw. `K`).
+* Regeln ohne gültigen Regeltyp werden bei der AutoKat-Klassifizierung nicht berücksichtigt.
+* Die bisherigen Felder `Suchbegriff1` und `Suchbegriff2` werden für die neue Python-Klassifizierung nicht mehr benötigt.
+
+## Textvergleich
+
+* Python-basierter Vergleich des Dokumenttextes mit bereits archivierten Dokumenten.
+* Ermittlung eines geeigneten Vergleichsdokuments anhand der Textähnlichkeit.
+* Rückgabe der DokID des verwendeten Vergleichsdokuments.
+* Rückgabe der ermittelten Übereinstimmung und der gemeinsamen relevanten Wörter.
+* Übernahme vorhandener Klassifizierungsinformationen aus dem Vergleichsdokument als Fallback, wenn keine entsprechende AutoKat-Klassifizierung vorliegt.
+* Bereitstellung der Klassifizierungswerte für die Webanwendung zur gezielten Vorbelegung.
+
+## Dokumenttext und Analyse
+
+* Verarbeitung des von der Webanwendung extrahierten Dokumenttextes über FastAPI-Endpunkte.
+* Strukturierte JSON-Rückgabe der Analyseergebnisse.
+* Trennung der Analyse- und Klassifizierungslogik von der PHP-Webanwendung.
+* Datenbankzugriff auf die AutoKat-Regeln und die für den Textvergleich benötigten Archivdaten.
+
+## Architektur
+
+* Eigenständiges Python-/FastAPI-Backend für eAblage.
+* Separate Versionierung gegenüber der Webanwendung.
+* Version 1.0.0 bildet den ersten stabilen produktiven Stand des Backends.
+* Vorgesehene Kombination: **eAblage 3.2.0 + eablage-backend 1.0.0**.
+
+---------------------------------------------------------------
+
+## Version 0.2.0
+
+- Projekt von `eablage-analysis` in `eablage-backend` umbenannt.
+- Die neue Bezeichnung berücksichtigt die zukünftige Nutzung des Python-Dienstes über reine Analysefunktionen hinaus.
+
+### AutoKat-Regelmodell erweitert
+
+Die AutoKat-Verarbeitung wurde gegenüber Version 0.1.0 grundlegend
+überarbeitet und um ein zweistufiges Regelmodell erweitert.
+
+AutoKat unterscheidet jetzt zwischen:
+
+- Ergänzungsregeln (`E`)
+- Klassifikationsregeln (`K`)
+
+Ergänzungsregeln werden zuerst verarbeitet und können gemeinsam
+Metadaten eines Dokuments ergänzen.
+
+Anschließend werden Klassifikationsregeln entsprechend ihrer Rangfolge
+geprüft. Die erste passende Klassifikationsregel wird verwendet und
+beendet die weitere Suche nach Klassifikationsregeln.
+
+### Ergänzungsregeln
+
+- Mehrere passende Ergänzungsregeln können auf ein Dokument angewendet
+  werden.
+- Ergänzungsregeln setzen grundsätzlich nur noch nicht belegte Felder.
+- Leere Regelwerte verändern vorhandene Ergebnisse nicht.
+- Ergebnisse verschiedener Ergänzungsregeln können kombiniert werden.
+- Eine regelbasierte Datumserkennung kann ein zuvor durch die allgemeine
+  Datumserkennung ermitteltes Datum ersetzen.
+
+### Klassifikationsregeln
+
+- Klassifikationsregeln werden nach Rang verarbeitet.
+- Die erste passende Klassifikationsregel gewinnt.
+- Von der Klassifikationsregel definierte Werte können Ergebnisse aus
+  Ergänzungsregeln überschreiben.
+- Nicht von der Klassifikationsregel definierte Werte aus
+  Ergänzungsregeln bleiben erhalten.
+
+### Verbesserte Suchbegriffserkennung
+
+Die Prüfung der AutoKat-Suchbegriffe wurde überarbeitet.
+
+Suchbegriffe werden jetzt als vollständige Wörter bzw. Begriffe
+erkannt.
+
+Dadurch werden unbeabsichtigte Teiltreffer vermieden.
+
+Beispiel:
+
+    Suchbegriff: Rechnung
+
+trifft auf:
+
+    Rechnung vom 15.08.2026
+
+aber nicht mehr auf:
+
+    Verbrauchsabrechnung
+
+Die Erkennung:
+
+- arbeitet ohne Beachtung der Groß-/Kleinschreibung,
+- berücksichtigt Unicode-Zeichen,
+- unterstützt weiterhin mehrteilige Suchbegriffe,
+- akzeptiert Satzzeichen als Wortgrenzen.
+
+### Behandlung leerer Lookup-Werte
+
+Die Behandlung von Kategorie, zweiter Kategorie und Dokumenttyp wurde
+verbessert.
+
+Legacy-Werte wie:
+
+    0
+
+werden bei diesen Feldern jetzt als nicht gesetzter Wert behandelt.
+
+Dadurch wird verhindert, dass Regeln für nicht tatsächlich gesetzte
+Felder eine Herkunftsinformation erzeugen.
+
+### Stabile Regelidentifikation
+
+AutoKat unterstützt jetzt stabile fachliche Regelkennungen.
+
+Eine Regel kann über eine `RegelID` wie beispielsweise
+
+    R0042
+
+unabhängig von ihrer technischen Datenbank-ID und ihrem aktuellen Rang
+identifiziert werden.
+
+Zusätzlich wird die Versionsnummer der Regel berücksichtigt.
+
+Damit können Regelreferenzen beispielsweise dargestellt werden als:
+
+    R0042/v3@70
+
+mit:
+
+- `R0042` = stabile RegelID
+- `v3` = Regelversion
+- `70` = aktueller Rang
+
+### Herkunftsinformationen
+
+Die API liefert für automatisch ermittelte Metadaten jetzt
+feldbezogene Herkunftsinformationen zurück.
+
+Für jedes Ergebnisfeld kann nachvollzogen werden, ob der Wert stammt
+aus:
+
+- einer Ergänzungsregel,
+- einer Klassifikationsregel,
+- oder der allgemeinen Datumserkennung.
+
+Die Herkunftsinformation enthält – soweit verfügbar – unter anderem:
+
+- Regeltyp
+- RegelID
+- Version
+- Rang
+- technische Regel-ID
+- Regelbezeichnung
+- Art der Wertermittlung
+
+Auch dynamisch aus dem Dokumenttext extrahierte Werte werden der
+auslösenden AutoKat-Regel zugeordnet.
+
+### Rückgabe beteiligter Regeln
+
+Die AutoKat-API liefert zusätzlich Informationen über alle am Ergebnis
+beteiligten Regeln.
+
+Neu bzw. erweitert sind insbesondere:
+
+    matched_supplement_rule_refs
+    matched_classification_rule_ref
+
+Die Referenzen enthalten stabile RegelID, Version und Rang.
+
+Aus Kompatibilitätsgründen bleiben die bisherigen rangbasierten
+Informationen weiterhin verfügbar.
+
+### Gemischte Regelquellen
+
+Die API erkennt, wenn das endgültige Klassifikationsergebnis sowohl
+Werte aus Ergänzungsregeln als auch aus einer Klassifikationsregel
+enthält.
+
+Dies wird über:
+
+    mixed_rule_sources
+
+zurückgegeben.
+
+Das Web-Frontend kann damit darauf hinweisen, dass trotz erfolgreicher
+Klassifikation einzelne Metadaten weiterhin aus Ergänzungsregeln
+stammen.
+
+### Regelaktivierung
+
+AutoKat berücksichtigt den Aktivstatus der Regeln.
+
+Nur aktive Regeln werden für die Klassifikation geladen und
+ausgewertet.
+
+Die Reihenfolge erfolgt weiterhin nach:
+
+    Rang ASC, id ASC
+
+innerhalb der jeweiligen Regelverarbeitung.
+
+### Abwärtskompatibilität
+
+Für bestehende Regelbestände wurde eine Übergangskompatibilität
+vorgesehen.
+
+Ist der neue `Regeltyp` nicht verfügbar, kann die bisherige Eigenschaft
+`sucheBeenden` weiterhin zur Bestimmung des Regelverhaltens
+herangezogen werden.
+
+Damit bleibt die Verarbeitung während der Migration bestehender
+AutoKat-Regeln nachvollziehbar.
+
+### API-Kompatibilität
+
+Die bestehenden grundlegenden AutoKat-Ergebnisfelder bleiben erhalten.
+
+Die API wurde um zusätzliche Informationen erweitert, ohne die
+bestehende Nutzung der bisherigen Ergebnisfelder unnötig zu verändern.
+
+Dadurch konnte das Web-Frontend schrittweise auf die erweiterten
+Regelinformationen umgestellt werden.
+
+
+---------------------------------------------
+
+## Version 0.1.0
+
+**Stand: 28.08.2026**
+
+Erste stabile Version des Python-basierten Analysedienstes für e_ablage.
+
+### Architektur
+
+* Python-Analysedienst auf Basis von FastAPI eingerichtet.
+* Trennung der Dokumentenanalyse von der PHP-Webanwendung.
+* REST-Schnittstellen für die Kommunikation mit e_ablage:web bereitgestellt.
+* Datenbankzugriff auf die zentrale MariaDB eingerichtet.
+* Python-Abhängigkeiten in einer virtuellen Umgebung (`venv`) gekapselt.
+
+### AutoKat
+
+* Bestehende AutoKat-Logik aus der Access-Anwendung nach Python portiert.
+* AutoKat-Regeln werden aus der MariaDB geladen.
+* Verarbeitung mehrerer zutreffender Regeln unterstützt.
+* Priorisierung bzw. Rangfolge der AutoKat-Regeln berücksichtigt.
+* Funktion „Suchen beenden“ unterstützt.
+* Erkannte Regeln werden einschließlich ihrer Ränge an die Web-Anwendung zurückgegeben.
+* Ermittlung von Kategorie, Kategorie 2, Dokumenttyp, Partner, Betreff, Nummer und Tags unterstützt.
+* Suche nach `prDatum`, `prBetreff` und `prNum` auf eine gemeinsame exakte Begriff-/Phrasensuche umgestellt.
+* Suchbegriffe werden nicht innerhalb anderer Wörter gefunden.
+* Mehrteilige Suchbegriffe können über unterschiedliche Leerzeichen und Zeilenumbrüche hinweg erkannt werden.
+* Optionale Endmarkierungen `BetreffEnde` und `NumEnde` für die Extraktion von Betreff und Nummer unterstützt.
+* Bestehende Längenbegrenzungen bleiben als maximale Begrenzung und Fallback erhalten.
+
+### Datumserkennung
+
+* Allgemeine Erkennung von Dokumentdaten implementiert.
+* Gezielte Datumssuche anhand von AutoKat-Regeln unterstützt.
+* Verschiedene deutsche Datumsformate werden erkannt.
+* Zweistellige Jahreszahlen werden unterstützt.
+* Allgemein erkanntes Datum kann durch eine gezielte AutoKat-Datumserkennung überschrieben werden.
+
+### Textvergleich
+
+* Python-basierter Textvergleich zur Erkennung ähnlicher bereits archivierter Dokumente implementiert.
+* Bestehende Parameter `schwUebereinst`, `txtLaengeVergl` und `minLaengeVergl` berücksichtigt.
+* Textnormalisierung vor dem Vergleich.
+* Groß-/Kleinschreibung und Satzzeichen werden beim Vergleich entsprechend normalisiert.
+* Sehr kurze bzw. nicht relevante Wörter werden reduziert.
+* Ähnlichkeit wird anhand gemeinsamer relevanter Wörter bestimmt.
+* Bestes geeignetes Vergleichsdokument wird ermittelt.
+* Metadaten des erkannten Vergleichsdokuments können an die Web-Anwendung zurückgegeben werden.
+* Übereinstimmungsgrad und Anzahl gemeinsamer relevanter Wörter werden ausgegeben.
+
+### Integration
+
+* Schnittstelle für AutoKat-Analyse bereitgestellt.
+* Schnittstelle für Textvergleich bereitgestellt.
+* Strukturierte JSON-Rückgaben für die PHP-Webanwendung implementiert.
+* Fehlerbehandlung für die Kommunikation mit der Web-Anwendung verbessert.
+
+### Kompatibilität
+
+Diese Version bildet den ersten stabil definierten Stand des Analysedienstes und wird zusammen mit **e_ablage:web 3.0.6** eingesetzt.

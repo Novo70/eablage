@@ -1,0 +1,49 @@
+# ==========================================================
+# e_ablage - Dateien, die nicht mit Git verwaltet werden
+# ==========================================================
+
+# Lokale Konfiguration / Zugangsdaten
+konfiguration.php
+konfiguration_test.php
+konfiguration_prod.php
+konfiguration_diskstation.php
+konfiguration_ds.php
+konfiguration_ugreen.php
+
+# Dokumentenarchiv
+#/pdf/
+#*.pdf
+
+# Temporäre Dateien
+*.tmp
+*.temp
+*.log
+*.bak
+*.old
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Visual Studio Code - lokale Einstellungen
+.vscode/
+
+# Python (für spätere Erweiterungen)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Umgebungsvariablen
+.env
+.env.*
+!.env.example
+!.env.fresh.example
+
+# Lokale Datenbank-Dumps
+#*.sql
+#*.sql.gz
+
+# Synology / Dateisystem
+@eaDir/

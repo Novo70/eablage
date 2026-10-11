@@ -1,0 +1,5 @@
+# Runtime only; rebuild requirements.txt with uv pip compile --python-version 3.11 --generate-hashes.
+fastapi==0.141.1
+uvicorn==0.52.4
+mysql-connector-python==26.7.0
+python-dotenv==1.2.3

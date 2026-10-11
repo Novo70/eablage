@@ -1,0 +1,107 @@
+# Isolierte Neuinstallation. Bestehende compose.yaml und .env bleiben unberührt.
+# Aufruf mit --env-file .env.fresh -p eablage-fresh (siehe docs/INSTALL_FRESH.md).
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Root-Passwort fehlt}
+      MARIADB_DATABASE: eablage
+      MARIADB_USER: eablage
+      MARIADB_PASSWORD: ${EABLAGE_DB_PASSWORD:?Anwendungspasswort fehlt}
+      TZ: Europe/Berlin
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./sql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./sql/init_docker_paths.sql:/docker-entrypoint-initdb.d/03-paths.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - database
+
+  eablage-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "${EABLAGE_WEB_PORT:?Web-Port fehlt}:80"
+    volumes:
+      - ./web/konfiguration_docker.php:/var/www/html/konfiguration.php:ro
+      - ${EABLAGE_DATA_PATH:?Datenpfad fehlt}:/data
+    environment:
+      TZ: Europe/Berlin
+      DB_HOST: mariadb
+      DB_NAME: eablage
+      DB_USER: eablage
+      DB_PASSWORD: ${EABLAGE_DB_PASSWORD:?Anwendungspasswort fehlt}
+      BACKEND_URL: http://backend:8000
+    networks:
+      - app
+      - database
+
+  eablage-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    user: "33:33"
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - ${EABLAGE_DATA_PATH:?Datenpfad fehlt}:/data:ro
+      - ${EABLAGE_DATA_PATH:?Datenpfad fehlt}/meta:/data/meta:rw
+    environment:
+      TZ: Europe/Berlin
+      EABLAGE_OCR_ENABLED: ${EABLAGE_OCR_ENABLED:-true}
+      EABLAGE_OCR_LANGUAGES: ${EABLAGE_OCR_LANGUAGES:-deu+eng}
+      DB_HOST: mariadb
+      DB_NAME: eablage
+      DB_USER: eablage
+      DB_PASSWORD: ${EABLAGE_DB_PASSWORD:?Anwendungspasswort fehlt}
+    networks:
+      app:
+        aliases:
+          - backend
+      database:
+
+  eablage-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    user: "33:33"
+    restart: unless-stopped
+    command: ["python", "worker.py"]
+    stop_grace_period: 110s
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - ${EABLAGE_DATA_PATH:?Datenpfad fehlt}:/data:ro
+    environment:
+      TZ: Europe/Berlin
+      EABLAGE_INBOX_ENABLED: ${EABLAGE_INBOX_ENABLED:-true}
+      EABLAGE_INBOX_INTERVAL: ${EABLAGE_INBOX_INTERVAL:-60}
+      EABLAGE_OCR_ENABLED: ${EABLAGE_OCR_ENABLED:-true}
+      EABLAGE_OCR_LANGUAGES: ${EABLAGE_OCR_LANGUAGES:-deu+eng}
+      DB_HOST: mariadb
+      DB_NAME: eablage
+      DB_USER: eablage
+      DB_PASSWORD: ${EABLAGE_DB_PASSWORD:?Anwendungspasswort fehlt}
+    networks:
+      - database
+
+volumes:
+  mariadb_data:
+
+networks:
+  app:
+  database:

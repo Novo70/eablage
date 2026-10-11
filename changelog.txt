@@ -1,0 +1,56 @@
+# Changelog
+
+## 4.3.0 – Erste öffentliche Version
+
+eAblage ist eine lokal betriebene Webanwendung zur regelbasierten
+Klassifizierung, Archivierung und Recherche von PDF-Dokumenten.
+Die Anwendung besteht aus einer PHP-Weboberfläche, einem
+Python/FastAPI-Backend, einem Hintergrunddienst und MariaDB.
+
+### Funktionen
+
+- PDF-Eingang mit Upload und Drag & Drop.
+- Lokale OCR-Texterkennung mit Poppler und Tesseract.
+- Automatische Vorbereitung der Dokumenterkennung im Hintergrund;
+  Prüfung und Archivierung erfolgen manuell.
+- Klassifizierung durch AutoKat-Regeln, Datumserkennung und
+  Textvergleich mit bereits archivierten Dokumenten.
+- Ergänzungsregeln werden vom Allgemeinen zum Speziellen verarbeitet:
+  Spätere passende Regeln ersetzen zuvor gesetzte Werte mit ihren
+  befüllten Vorgaben; leere Vorgaben erhalten vorhandene Werte.
+- Vollständige OCR-Neuerkennung auch bei vorhandener fehlerhafter
+  Textschicht, direkt aus Klassifizierung oder Dokumentbearbeitung.
+  Die Original-PDF bleibt unverändert.
+- Suche über Metadaten und Dokumenttext sowie virtuelle Ordneransicht
+  im Ablage-Explorer.
+- Bearbeitung von Metadaten mit Schutz vor dem Überschreiben
+  zwischenzeitlicher Änderungen.
+- Ereignisprotokoll für Archivierung, Bearbeitung, Papierkorb,
+  Wiederherstellung und endgültige Löschung.
+- Einstellbare Aufbewahrung von Protokolldetails: Bei endgültiger
+  Löschung können auch die Details früherer Ereignisse des Dokuments
+  entfernt werden. Die Ereignisse mit DokID, Zeitpunkt, Typ und Quelle
+  bleiben erhalten.
+- Verwaltung von Kategorien, Dokumententypen und Klassifizierungsregeln.
+- Einzel- und Gesamtexport mit konfigurierbaren Dateinamen und
+  Verzeichnisstrukturen.
+- SQL-Datenbanksicherung und Rücksicherung in eine Installation mit
+  leerem Dokumentbestand.
+- Archivprüfung und Reparatur beziehungsweise Erstellung von
+  JSON-Metadateien.
+
+### Daten und Betrieb
+
+- Archivierte PDFs erhalten einen aus der DokID gebildeten Dateinamen.
+  Originaldateiname und SHA-256-Prüfsumme werden separat gespeichert.
+- JSON-Metadateien verwenden Schema 3. Ältere Schemata 1 und 2 bleiben
+  lesbar; Ereignisprotokolle sind Bestandteil der Datenbanksicherung.
+- Docker-Compose-Konfigurationen und Markdown-Dokumentation für
+  Installation, Aktualisierung, Bedienung und Sicherung sind enthalten.
+- Die Anwendung ist für lokalen Einbenutzerbetrieb ausgelegt und
+  besitzt keine eigene Benutzeranmeldung.
+
+### Lizenz
+
+Der eigene eAblage-Quellcode steht unter AGPL-3.0-only.
+Externe Komponenten behalten ihre jeweiligen Lizenzen.
