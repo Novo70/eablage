@@ -47,3 +47,6 @@ venv/
 
 # Synology / Dateisystem
 @eaDir/
+
+# Private Dateien
+changelog_bis v4.3.0.txt

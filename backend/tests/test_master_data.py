@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from app.services.master_data import MasterDataError, check_usage, validate_name, definition, mutate
+from app.services.master_data import MasterDataError, check_usage, validate_name, definition, mutate, validate_explanation, list_entries
 
 
 class MasterDataTests(unittest.TestCase):
@@ -28,6 +28,35 @@ class MasterDataTests(unittest.TestCase):
         for value in (" ", "a" * 256, "Name\nZeile"):
             with self.assertRaises(MasterDataError):
                 validate_name(value)
+
+    def test_optional_multiline_explanation_validation(self):
+        self.assertEqual(validate_explanation("  Haus\nGebäudeversicherung  "), "Haus\nGebäudeversicherung")
+        self.assertEqual(validate_explanation("  "), "")
+        self.assertEqual(validate_explanation("x"*1000), "x"*1000)
+        for value in ("x"*1001, "x\x00", "x\x7f", None):
+            with self.assertRaises(MasterDataError):
+                validate_explanation(value)
+
+    def test_edit_explanation_is_bound_and_can_be_cleared(self):
+        for kind, table, label in [('categories', 'kategorie', 'katBez'), ('document_types', 'doktyp', 'doktypBez')]:
+            for explanation in ["O'Brien\nHaus und Garten", ""]:
+                connection, cursor = self.fake_connection(2)
+                cursor.fetchone.side_effect = [{"name": "test"}, {"acquired": 1}, {"id": "10"}, {"n": 2}, None, None]
+                with patch("app.services.master_data.get_connection", return_value=connection):
+                    mutate(kind, "test", "rename", "10", "Bezeichnung", explanation)
+                cursor.execute.assert_any_call(f"UPDATE {table} SET {label} = %s, Erlaeuterung = %s WHERE id = %s", ("Bezeichnung", explanation, "10"))
+                connection.commit.assert_called_once()
+
+    def test_list_returns_explanations_and_usage(self):
+        connection = MagicMock()
+        cursor = connection.cursor.return_value
+        cursor.fetchone.side_effect = [{"name": "test"}, {"n": 3}]
+        cursor.fetchall.side_effect = [[{"id": "10", "name": "Haus", "active": 1, "explanation": "Gebäudeversicherung"}], []]
+        with patch("app.services.master_data.get_connection", return_value=connection):
+            result = list_entries("categories", "test")
+        self.assertEqual(result['items'][0]['explanation'], 'Gebäudeversicherung')
+        self.assertEqual(result['items'][0]['documents'], 3)
+        cursor.execute.assert_any_call("SELECT id, katBez AS name, Aktiv AS active, COALESCE(Erlaeuterung, '') AS explanation FROM kategorie ORDER BY katBez, id")
 
     def test_only_fixed_table_names_accepted(self):
         self.assertEqual(definition("categories")[0], "kategorie")
@@ -88,8 +117,8 @@ class MasterDataTests(unittest.TestCase):
             result = mutate("categories", "test", "create", name="Neue Kategorie")
         self.assertEqual(result["id"], "100")
         cursor.execute.assert_any_call(
-            "INSERT INTO kategorie (id, katBez, Aktiv) VALUES (%s, %s, 1)",
-            ("100", "Neue Kategorie"))
+            "INSERT INTO kategorie (id, katBez, Aktiv, Erlaeuterung) VALUES (%s, %s, 1, %s)",
+            ("100", "Neue Kategorie", ""))
         connection.commit.assert_called_once()
 
     def test_rename_keeps_id_and_uses_bound_value(self):

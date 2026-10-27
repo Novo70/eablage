@@ -1,5 +1,5 @@
-# Isolierte Neuinstallation. Bestehende compose.yaml und .env bleiben unberührt.
-# Aufruf mit --env-file .env.fresh -p eablage-fresh (siehe docs/INSTALL_FRESH.md).
+# Installation mit integrierter MariaDB; für Produktiv- und Testbetrieb geeignet.
+# Aufruf mit --env-file .env.fresh -p eablage (siehe docs/INSTALL_FRESH.md).
 services:
   mariadb:
     image: mariadb:11.4
@@ -105,3 +105,4 @@ volumes:
 networks:
   app:
   database:
+

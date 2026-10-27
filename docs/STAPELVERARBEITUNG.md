@@ -45,7 +45,7 @@ sudo docker compose ps
 sudo docker compose logs eablage-worker --tail 100
 ```
 
-Enthält die eingesetzte Compose-Datei noch keinen Dienst `eablage-worker`, vor dem Dateiaustausch nur `eablage-web` und `eablage-backend` stoppen. Vollständige Befehle einschließlich `--env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh` für die isolierte Installation stehen unter [Aktualisierung und Deployment](UPDATE.md).
+Enthält die eingesetzte Compose-Datei noch keinen Dienst `eablage-worker`, vor dem Dateiaustausch nur `eablage-web` und `eablage-backend` stoppen. Vollständige Befehle einschließlich `--env-file .env.fresh -f compose.fresh.yaml -p eablage` für die Installation mit integrierter Datenbank stehen unter [Aktualisierung und Deployment](UPDATE.md).
 
 Optionale Einstellungen in der Instanz-`.env`:
 
@@ -76,3 +76,4 @@ Die integrierte Archiv-Datensicherung lässt die reproduzierbare Auftragstabelle
 6. Worker stoppen: manuelle Klassifizierung bleibt möglich.
 
 OCR-Grenzen und gemischte PDFs: [OCR](OCR.md). Technische Zuständigkeiten: [Technik](TECHNIK.md).
+

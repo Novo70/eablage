@@ -15,6 +15,10 @@ ENV TZ=Europe/Berlin
 
 RUN a2enmod rewrite
 
+# The bounded two-attempt Ollama request can take longer than Apache's default.
+RUN echo 'Timeout 340' > /etc/apache2/conf-available/eablage-timeouts.conf \
+    && a2enconf eablage-timeouts
+
 COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 COPY . /var/www/html/

@@ -1,6 +1,7 @@
 <?php
 
 require_once 'konfiguration.php';
+require_once 'nummern_funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
 require_once 'stammdaten_funktionen.php';
@@ -122,6 +123,8 @@ try {
         throw new RuntimeException('Die Eingangsdatei wurde seit der Erkennung geändert. Bitte erneut klassifizieren.');
     }
     $db->beginTransaction();
+    $numbers = eablage_nummern_pruefen($db, $_POST['numbers_json'] ?? '[]');
+    $nummer = ($numbers[0]['value'] ?? '');
     $inboxJobId = (int)($_POST['inbox_job_id'] ?? 0);
     if ($inboxJobId > 0) {
         $jobStmt = $db->prepare('SELECT * FROM verarbeitungsauftraege WHERE id=? FOR UPDATE');
@@ -157,7 +160,7 @@ try {
         'Originaldateiname'=>$originalFile, 'DateiSHA256'=>$dateiSHA256, 'Aenderungsdatum'=>null,
         'kategorie_id'=>$kategorieId, 'kategorie2_id'=>$kategorie2Id, 'doktyp_id'=>$doktypId,
         'Partner'=>$partner, 'Betreff'=>$betreff, 'Nummer'=>$nummer, 'Tags'=>$tags,
-        'Doktext'=>$dokText,
+        'Doktext'=>$dokText, 'numbers'=>$numbers,
     ]));
     $zielPfadMeta = $pfadMeta . $metadata['filename'];
     $metaInhalt = $metadata['content'];
@@ -186,6 +189,7 @@ try {
     $stmt->bindValue(':originaldateiname', $originalFile);
     $stmt->bindValue(':dateisha256', $dateiSHA256);
     $stmt->execute();
+    eablage_nummern_speichern($db,(int)$neueDokID,$numbers);
 
     // Exclusive creation prevents overwriting orphaned/existing archive files.
     // Keep the inbox PDF intact until the database transaction has committed.
@@ -297,3 +301,4 @@ try {
         ($e instanceof RuntimeException && !($e instanceof PDOException)) ? $e->getMessage() : 'Das Dokument konnte nicht archiviert werden. Details wurden im PHP-Fehlerprotokoll gespeichert.'
     );
 }
+

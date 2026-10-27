@@ -114,9 +114,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'upload' && $_SERVER['REQUEST_
 }
 
 $inboxJobs = [];
+$kiWorker = [];
 $jobsResponse = eablage_analysis_post('/inbox/jobs', ['database'=>MYSQL_DATENBANK], 3);
+if ($jobsResponse['ok']) $kiWorker = $jobsResponse['data']['ki_worker'] ?? [];
 if ($jobsResponse['ok']) foreach ($jobsResponse['data']['jobs'] as $item) $inboxJobs[$item['dateiname']] = $item;
 $jobLabels = ['wartend'=>'Wartet auf Erkennung', 'verarbeitung'=>'In Verarbeitung', 'bereit'=>'Zur Prüfung bereit', 'fehler'=>'Erkennung fehlgeschlagen', 'archiviert'=>'Bereits archiviert', 'verworfen'=>'Wartet auf Erkennung'];
+$kiStatusLabels = ['wartend'=>'KI wartet.', 'verarbeitung'=>'KI läuft.', 'bereit'=>'KI-Vorschlag verfügbar.', 'fehler'=>'KI fehlgeschlagen.', 'pausiert'=>'KI-Verarbeitung pausiert.'];
 $gefundeneDateien = [];
 
 if (is_dir($scanOrdner)) {
@@ -159,6 +162,8 @@ if (is_dir($scanOrdner)) {
             <div class="panel panel-primary">
                 <div class="panel-heading">📂 Eingang (<?=count($gefundeneDateien)?> neue Dokumente)</div>
                 <div class="panel-body">
+                    <?php $kiWorkerNotice = !empty($kiWorker['enabled']) && (empty($kiWorker['fresh']) || in_array($kiWorker['state'] ?? '', ['pausiert','deaktiviert'], true)); ?>
+                    <p id="ki-worker-status" class="text-muted" role="status" <?=!$kiWorkerNotice ? 'hidden' : ''?>><?=h($kiWorkerNotice ? ($kiWorker['message'] ?? '') : '')?></p>
                     <?php if (empty($gefundeneDateien)): ?>
                         <div class="search-summary">✨ Es liegen aktuell keine neuen Dokumente im Scan-Ordner.</div>
                     <?php else: ?>
@@ -167,7 +172,12 @@ if (is_dir($scanOrdner)) {
                                 <li class="ea-inbox-entry">
                                     <div class="ea-inbox-file">
                                         <span class="ea-pdf-icon" aria-hidden="true">📄</span>
-                                        <span class="ea-inbox-filename"><?=h($datei)?><br><small class="text-muted" data-inbox-status="<?=h($datei)?>"><?=h($jobLabels[$inboxJobs[$datei]['status'] ?? 'wartend'] ?? 'Wartet auf Erkennung')?></small></span>
+                                        <div class="ea-inbox-filename"><?=h($datei)?><br><small class="text-muted" data-inbox-status="<?=h($datei)?>"><?=h($jobLabels[$inboxJobs[$datei]['status'] ?? 'wartend'] ?? 'Wartet auf Erkennung')?></small>
+                                            <?php $ki = $inboxJobs[$datei]['ki'] ?? null; ?>
+                                            <div data-inbox-ai-block <?=!$ki ? 'hidden' : ''?>>
+                                                <small class="text-muted" data-inbox-ai-status><?=h($kiStatusLabels[$ki['state'] ?? ''] ?? '')?></small>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="ea-inbox-actions">
                                         <?php $inboxPath = $scanOrdner . $datei; if (is_file($inboxPath) && !is_link($inboxPath)): ?>
@@ -216,7 +226,7 @@ if (is_dir($scanOrdner)) {
         </div>
     </div>
 </div>
-<script src="inbox_status.js" defer></script>
+<script src="inbox_status.js?v=<?=filemtime(__DIR__ . '/inbox_status.js')?>" defer></script>
 <script src="upload_dropzone.js?v=<?=filemtime(__DIR__ . '/upload_dropzone.js')?>"></script>
 </body>
 </html>

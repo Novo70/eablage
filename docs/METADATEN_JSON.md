@@ -1,6 +1,6 @@
 # Dokumentmodell und JSON-Metadaten
 
-Datenbank und PDF-Archiv sind der maßgebliche Bestand. Begleitdateien machen Metadaten unabhängig von der Anwendung lesbar. Neue Schreibvorgänge verwenden JSON-Schema 3; die Schema-Version ist unabhängig von der Anwendungsversion.
+Datenbank und PDF-Archiv sind der maßgebliche Bestand. Begleitdateien machen Metadaten unabhängig von der Anwendung lesbar. Neue Schreibvorgänge verwenden JSON-Schema 4; die Schema-Version ist unabhängig von der Anwendungsversion.
 
 ## Schnittstelle
 
@@ -15,11 +15,11 @@ Doppelte/zusätzliche Schlüssel werden abgelehnt; unbekannte ganzzahlige Versio
 werden separat gemeldet und nicht automatisch repariert. Die Ausgabe ist auf
 16 MiB begrenzt, passend zum Leselimit der Archivwartung.
 
-## Vertrag für Schema 3
+## Vertrag für Schema 4
 
 | Quelle | JSON-Feld | Typ / Bedeutung |
 | --- | --- | --- |
-| Formatkonstante | schema_version | Ganze Zahl 3, unabhängig von Anwendungsversion |
+| Formatkonstante | schema_version | Ganze Zahl 4, unabhängig von Anwendungsversion |
 | DokID | document_id | Positive ganze Zahl; fachliche Dokument-ID |
 | DokID (abgeleitet) | pdf_filename | `<DokID>dok.pdf`, relativ zum Archivordner |
 | Datum | document_date | YYYY-MM-DD oder null |
@@ -33,11 +33,12 @@ werden separat gemeldet und nicht automatisch repariert. Die Ausgabe ist auf
 | doktyp_id, doktypBez | document_type | Objekt mit id und label |
 | Partner | partner | Text oder null |
 | Betreff | subject | Text oder null |
-| Nummer | number | Text oder null |
+| Nummer | number | Anzeigewert der ersten Nummer als Text oder null |
+| numbers | numbers | Liste der Nummern mit kind_id, label, value und position |
 | Tags | tags | Unveränderter Text oder null, keine Liste |
 | Doktext | document_text | Vollständiger Text oder null |
 
-Alle Quellschlüssel sind erforderlich, einschließlich der drei Bezeichnungen.
+Die aufgeführten bisherigen Quellschlüssel sind erforderlich, einschließlich der drei Bezeichnungen. `numbers` wird zusätzlich übergeben; ohne Angabe entsteht aus Kompatibilitätsgründen eine leere Liste. Die dokumentbezogenen Speicher- und Exportwege übergeben stets die vollständige Liste.
 Der Aufrufer muss die Bezeichnungen zum vorgesehenen Dokumentstand ergänzen;
 die Export-JOINs verwenden dieselben Aliasnamen.
 Explizites null bedeutet fehlende Daten; leere fachliche Textwerte werden ebenfalls
@@ -70,7 +71,7 @@ bei der Archivierung aus dem Eingang. Pfadbestandteile, Steuerzeichen und Namen
 ohne PDF-Endung werden abgelehnt. Er bleibt anschließend unverändert und wird
 nicht als Dateizugriffspfad benutzt. Exportbereinigung verändert nur die Darstellung.
 
-Schema 3 enthält kein `info`-Feld. Die Dokumenthistorie liegt ausschließlich in der Datenbank; `dokumente.Info` bleibt unveränderter Altbestand. Für eine Rekonstruktion der fachlichen Dokumentdaten aus JSON ist die Historie nicht erforderlich.
+Schema 3 und 4 enthalten kein `info`-Feld. Die Dokumenthistorie liegt ausschließlich in der Datenbank; `dokumente.Info` bleibt unveränderter Altbestand. Für eine Rekonstruktion der fachlichen Dokumentdaten aus JSON ist die Historie nicht erforderlich.
 
 Schema 1 und 2 enthalten weiterhin das damals vorgeschriebene `info`-Feld und bleiben strikt lesbar. Bei der Archivprüfung wird dieses Alt-Feld nicht mehr mit der Datenbank verglichen. Ein vorhandenes `info` allein löst keine Reparatur aus. Erst bei tatsächlichem Neuschreiben entfällt es.
 
@@ -78,8 +79,12 @@ Schema 1 ist strikt lesbar und enthält `original_filename`, `pdf_sha256` und `m
 Die Archivprüfung behandelt die fehlenden Felder als unbekannt (`null`), ohne
 allein wegen der Versionsnummer eine Reparatur anzubieten. Sobald die DB einen
 neuen Wert enthält, wird dessen Fehlen in der Metadatei als Abweichung gemeldet.
-Neue Schreibvorgänge erzeugen ausschließlich Schema 3. Unbekannte Versionen
+Neue Schreibvorgänge erzeugen ausschließlich Schema 4. Unbekannte Versionen
 bleiben vor automatischem Überschreiben geschützt.
+
+Schema 4 ergänzt `numbers`: je Nummernart höchstens ein Eintrag mit `kind_id` (Text-ID, höchstens 20 Zeichen), `label` (Text oder null), `value` (nicht leerer Text, höchstens 255 Zeichen, ohne Steuerzeichen) und `position` (nicht negative ganze Zahl; ohne Angabe ab 10 in Zehnerschritten). Der Serializer erhält die übergebene Reihenfolge und Originalschreibweise. Beim Speichern ordnet die Anwendung die Liste nach der Sortierung der Nummernarten (bei Gleichstand nach Bezeichnung und ID) und vergibt Positionen 10, 20, 30 usw. Die Anwendung pflegt `number` aus dem ersten Eintrag; das Feld bleibt für kompakte Anzeigen und bestehende Exportoptionen bestehen. Herkunftsbadges und Suchnormalisierungen gehören nicht in diese Liste.
+
+Schema 1 bis 3 enthalten keine Nummernliste und bleiben lesbar. Bei der Archivprüfung kann die Liste aus der Datenbank ergänzt werden; die SQL-Migration schreibt bestehende JSON-Dateien nicht um. Die Versionsnummer allein macht eine Datei nicht ungültig.
 
 ## Speicherwege und Altbestand
 
@@ -115,12 +120,12 @@ oder unklarem COMMIT-Ergebnis bleibt eine Archivprüfung erforderlich.
 
 Fehlende JSON-Dateien können durch die [Archivprüfung und Metadatenreparatur](ARCHIVPRUEFUNG.md) aus den Datenbankwerten erzeugt werden.
 
-`pdf_filename` wird aus `document_id` erzeugt; ein gespeicherter Quellpfad wird nicht verwendet. Für Schema 1, 2 und 3 gilt derselbe kanonische Archivdateiname. Ein abweichender Wert wird als ungültiger Formatvertrag gemeldet und muss gezielt geprüft werden.
+`pdf_filename` wird aus `document_id` erzeugt; ein gespeicherter Quellpfad wird nicht verwendet. Für Schema 1, 2, 3 und 4 gilt derselbe kanonische Archivdateiname. Ein abweichender Wert wird als ungültiger Formatvertrag gemeldet und muss gezielt geprüft werden.
 
 ## Vorbereitungs-API und PHP
 
 `POST /metadata/prepare` erwartet `{"document": {...}}` mit allen oben genannten
-Quellschlüsseln. Antwort bei Erfolg: `{"schema_version": 3, "filename":
+Quellschlüsseln. Antwort bei Erfolg: `{"schema_version": 4, "filename":
 "<DokID>meta.json", "content": "...JSON-Text..."}`. Ungültige Daten liefern HTTP 422. Der Endpunkt liest oder schreibt weder Datenbank noch Dateien; übermittelte
 Bezeichnungen werden nicht gegen die Datenbank geprüft. PHP ruft diesen Endpunkt intern auf.
 
@@ -135,3 +140,4 @@ reservierter DokID und exakt des zu speichernden Archivierungsdatums liefern.
 Es wird weder eine neue ID noch eine Uhrzeit in diesem Endpunkt erzeugt.
 Die PHP-Sperr-/Transaktionslogik sichert diese Identität; reine Vorschauwerte
 dürfen nicht ungeprüft später gespeichert werden.
+

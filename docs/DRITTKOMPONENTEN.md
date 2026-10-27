@@ -1,6 +1,6 @@
 # Drittkomponenten und Lizenzen
 
-Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellprojekts 4.3.0. Die dokumentierte Paketinventur stammt aus dem Stand 4.2.0; die Historienerweiterung führt keine neuen Abhängigkeiten ein. Neu gebaute Images müssen weiterhin anhand ihrer tatsächlichen Pakete geprüft werden. Sie ersetzt **keine** vollständige Software Bill of Materials (SBOM) oder die Lizenzinventur eines gebauten Containerimages. Maßgeblich sind die jeweils tatsächlich installierten Versionen und die mitgelieferten Lizenztexte.
+Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellprojekts 4.4.0. Die dokumentierte Paketinventur stammt aus dem Stand 4.2.0; die Erweiterungen bis 4.4.0 führen keine neuen Laufzeitabhängigkeiten ein. Ollama ist ein optionaler externer Dienst; Modell und Modelllizenz werden getrennt gewählt. Neu gebaute Images müssen weiterhin anhand ihrer tatsächlichen Pakete geprüft werden. Sie ersetzt **keine** vollständige Software Bill of Materials (SBOM) oder die Lizenzinventur eines gebauten Containerimages. Maßgeblich sind die jeweils tatsächlich installierten Versionen und die mitgelieferten Lizenztexte.
 
 | Komponente | Verwendung | Lizenz / Hinweis |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellpr
 | PHP 8.3 | Weboberfläche | PHP License 3.01 |
 | Apache HTTP Server | Webserver | Apache License 2.0 |
 | Python 3.11 | Backend-Laufzeit | Python Software Foundation License |
-| MariaDB | Datenbankserver, bei isolierter Installation als eigener Dienst | GPL-2.0 |
+| MariaDB | Datenbankserver, bei integrierter Datenbank als eigener Dienst | GPL-2.0 |
 | Poppler (pdftotext) | PDF-Textextraktion als externes Programm | GPL; genaue Paketlizenz und Version im Image prüfen |
 | Tesseract OCR | OCR als externes Programm | Apache License 2.0 |
 | Tesseract Sprachdaten (deu/eng) | OCR-Sprachmodelle | Lizenz der konkreten Paketdateien separat prüfen |
@@ -35,7 +35,7 @@ Die Dockerfiles installieren zusätzlich Pakete des Basisbetriebssystems. Bei Ve
 
 Diese Übersicht erhebt keinen Anspruch auf verbindliche Rechtsberatung.
 
-## Vollständige Python-Paketliste für eAblage 4.3.0
+## Vollständige Python-Paketliste für eAblage 4.4.0
 
 Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches extrahiert und umfasst **sämtliche 15 festgeschriebenen Python-Pakete**, einschließlich transitiver Abhängigkeiten. Die Lizenzspalte nennt die übliche Projektlizenz, nicht eine unabhängig geprüfte Lizenzdatei jedes konkreten Wheels.
 
@@ -69,11 +69,11 @@ Die Dockerfiles installieren folgende zusätzliche Betriebssystempakete ausdrüc
 
 Die tatsächlichen Paketlisten sind **nicht allein aus den Dockerfiles ableitbar**. Für die Freigabe auf dem System, auf dem die Images gebaut wurden, die Images neu bauen und danach für **jedes** Image die Paketliste, Paketversionen, Debian-Copyrightdateien und Python-Metadaten erfassen.
 
-Beispiel für die isolierte Installation:
+Beispiel für die Installation mit integrierter Datenbank:
 
 ```sh
-docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh build
-docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh images
+docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage build
+docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage images
 ```
 
 Die ausgegebenen Image-IDs anschließend jeweils prüfen (Web, Backend und Worker; Backend und Worker können dasselbe Image verwenden):
@@ -85,3 +85,4 @@ docker run --rm --entrypoint sh IMAGE_ID -c 'python -m pip list --format=freeze 
 ```
 
 Für eine rechtskonforme Weitergabe fertig gebauter Images genügt diese Liste allein nicht. Lizenztexte, Copyright-Hinweise und gegebenenfalls korrespondierende Quellen oder Bezugsangebote der enthaltenen Komponenten sind je nach Lizenz zu berücksichtigen. Besonders relevant sind GPL-Komponenten wie Poppler und MariaDB sowie die konkreten OCR-Sprachdaten.
+

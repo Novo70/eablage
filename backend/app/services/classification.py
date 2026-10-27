@@ -24,6 +24,7 @@ def classify(text, exclude_document_id=None):
     parts = []
     auto = analyze_autokat(text)
     result.update(autokat=auto, autokat_ok=True, autokat_sources=auto.get('sources') or {})
+    result['numbers'] = auto.get('numbers', [])
     rules = auto.get('matched_classification_rule_refs') or []
     result['additional_classification_rules'] = rules[1:]
     for field in ('date', 'partner', 'subject', 'category', 'category2', 'document_type', 'number', 'tags'):
@@ -38,6 +39,13 @@ def classify(text, exclude_document_id=None):
         comparison = analyze_text_compare(text, exclude_document_id)
         result.update(textcompare=comparison, textcompare_ok=True)
         if comparison.get('matched'):
+            kinds = {str(n['kind_id']) for n in result['numbers']}
+            result['numbers'].extend(
+                {**n, 'source': {'type': 'textcompare',
+                                 'source_document_id': comparison.get('source_document_id'),
+                                 'similarity': comparison.get('similarity')}}
+                for n in comparison.get('numbers', []) if str(n['kind_id']) not in kinds
+            )
             for field in ('partner', 'subject', 'category', 'category2', 'document_type', 'number', 'tags'):
                 lookup = field in ('category', 'category2', 'document_type')
                 value = str(comparison.get(field) or ('0' if lookup else '')).strip()
@@ -48,3 +56,4 @@ def classify(text, exclude_document_id=None):
             parts.append('Textvergleich' + (f':{source}' if source is not None else '') + (f' ({similarity}%)' if similarity is not None else ''))
     result['info'] = ' | '.join(parts) or 'Manuell'
     return result
+

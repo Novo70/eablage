@@ -1,0 +1,71 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const root=path.join(__dirname,'../web');
+test('typed numbers preserve manual values, hide absent proposals and fit mobile',async t=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH,args:['--no-sandbox']});t.after(()=>browser.close());
+ const page=await browser.newPage({viewport:{width:1000,height:800}});
+ await page.setContent(`<style>${fs.readFileSync(root+'/app.css','utf8')}</style><form data-classification-draft><div id="number-editor"><div data-number-rows></div><button type="button" data-number-add>Add</button><input type="hidden" id="numbers_json"><input type="hidden" id="Nummer"><script type="application/json" id="number-kinds">[{"id":"1","Bezeichnung":"Kundennummer","Aktiv":1},{"id":"2","Bezeichnung":"Vertragsnummer","Aktiv":1}]</script></div></form>`);
+ await page.evaluate(()=>document.getElementById('numbers_json').value=JSON.stringify([{kind_id:'1',value:'0001',source:{type:'K',regel_id:'R0042',version:2,rank:10,label:'Testregel'}}]));
+ await page.addScriptTag({content:fs.readFileSync(root+'/ki_badges.js','utf8')});
+ await page.addScriptTag({content:fs.readFileSync(root+'/nummern.js','utf8')});
+ assert.equal(await page.locator('.ea-ollama-apply').isVisible(),false);
+ assert.equal(await page.locator('.ea-source-badge--classification').textContent(),'R0042');
+ await page.evaluate(()=>window.eablageNumbers.suggest([{kind_id:'1',value:'0001',evidence:'Kundennummer: 0001'}],'test',true));
+ assert.equal(await page.locator('.ea-number-badges .ea-ollama-confirmed').isVisible(),true);
+ assert.equal(await page.locator('.ea-number-ai').isVisible(),false);
+ assert.equal(await page.locator('.ea-number-heading').count(),0);
+ for (const width of [1000, 600, 390, 320]) {
+  await page.setViewportSize({width,height:800});
+  const boxes = await Promise.all(['.ea-number-row > input','.ea-number-badges','.ea-number-remove'].map(selector=>page.locator(selector).first().boundingBox()));
+  assert.ok(boxes[0].x + boxes[0].width <= boxes[1].x + 1);
+  assert.ok(boxes[1].x + boxes[1].width <= boxes[2].x + 1);
+  assert.ok(boxes.every(box=>Math.abs(box.y + box.height/2 - (boxes[0].y + boxes[0].height/2)) < 2));
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ }
+
+ await page.locator('.ea-number-badges .ea-ollama-confirmed').click();
+ assert.match(await page.locator('#ea-ai-evidence-tooltip').innerText(),/Kundennummer: 0001/);
+ await page.keyboard.press('Escape');
+ assert.equal(await page.locator('.ea-source-badge--classification').textContent(),'R0042');
+ await page.evaluate(()=>window.eablageNumbers.suggest([{kind_id:'1',value:'0002'},{kind_id:'2',value:'V-2/3'}],'test',true));
+ assert.equal(await page.locator('[data-number-rows] input').first().inputValue(),'0001');
+ assert.equal(await page.locator('[data-number-rows] input').nth(1).inputValue(),'V-2/3');
+ await page.locator('[data-number-rows] input').nth(1).fill('manual');
+ await page.locator('.ea-ollama-apply').nth(1).click();
+ assert.equal(await page.locator('[data-number-rows] input').nth(1).inputValue(),'V-2/3');
+ await page.evaluate(()=>{
+  const hidden=document.getElementById('numbers_json');
+  hidden.value=JSON.stringify([{kind_id:'1',value:'0001',source:{type:'textcompare',source_document_id:42,similarity:98}}]);
+  hidden.dispatchEvent(new Event('change'));
+  window.eablageNumbers.suggest([{kind_id:'1',value:'0001',evidence:'Kundennummer: 0001'}],'test',true);
+ });
+ assert.equal(await page.locator('.ea-number-badges a').textContent(),'DokID 42');
+ assert.match(await page.locator('.ea-number-badges a').getAttribute('href'),/dokid=42/);
+ assert.equal(await page.locator('.ea-number-badges .ea-ollama-confirmed').isVisible(),true);
+ await page.locator('.ea-number-badges .ea-ollama-confirmed').click();
+ assert.match(await page.locator('#ea-ai-evidence-tooltip').innerText(),/Kundennummer: 0001/);
+ await page.keyboard.press('Escape');
+ await page.setViewportSize({width:390,height:700});
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+});
+test('priority changes preserve focused inputs, selection and rule badges',async t=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH,args:['--no-sandbox']});t.after(()=>browser.close());
+ const page=await browser.newPage();
+ await page.setContent(`<form data-classification-draft><div id="number-editor"><div data-number-rows></div><button type="button" data-number-add>Add</button><input type="hidden" id="numbers_json"><input type="hidden" id="Nummer"><script type="application/json" id="number-kinds">[{"id":"2","Bezeichnung":"Kundennummer","Aktiv":1},{"id":"13","Bezeichnung":"Referenznummer","Aktiv":1},{"id":"4","Bezeichnung":"Rechnungsnummer","Aktiv":1}]</script></div></form>`);
+ await page.evaluate(()=>document.getElementById('numbers_json').value=JSON.stringify([{kind_id:'4',value:'700460585',source:{type:'K',regel_id:'R0042'}}]));
+ await page.addScriptTag({content:fs.readFileSync(root+'/nummern.js','utf8')});
+ await page.locator('.ea-number-row input').evaluate(input=>{input.id='invoice';input.focus();input.setSelectionRange(2,4);});
+ await page.evaluate(()=>window.eablageNumbers.suggest([{kind_id:'2',value:'46648639'}],'test',true));
+ assert.equal(await page.evaluate(()=>document.activeElement.id),'invoice');
+ assert.deepEqual(await page.locator('#invoice').evaluate(el=>[el.selectionStart,el.selectionEnd]),[2,4]);
+ assert.equal(await page.locator('.ea-source-badge--classification').textContent(),'R0042');
+ assert.equal(await page.locator('#Nummer').inputValue(),'46648639');
+ await page.locator('[data-number-add]').click();
+ await page.locator('.ea-number-row select').last().evaluate(el=>el.id='new-kind');
+ await page.locator('#new-kind').selectOption('13');
+ assert.equal(await page.evaluate(()=>document.activeElement.id),'new-kind');
+ assert.deepEqual(await page.locator('.ea-number-row select').evaluateAll(nodes=>nodes.map(el=>el.value)),['2','13','4']);
+});

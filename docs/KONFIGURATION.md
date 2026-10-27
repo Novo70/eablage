@@ -40,9 +40,9 @@ Für Archivwartung müssen Archiv und Metadaten getrennte, nicht ineinander vers
 
 Archiv und Metadatenbestand sind flach: PDFs heißen `<DokID>dok.pdf`, Begleitdateien `<DokID>meta.json`. Unterordner im physischen Archiv werden durch die Wartung nicht rekursiv durchsucht. Die virtuelle Ordnerstruktur des Explorers ist davon unabhängig.
 
-## Regulärer Compose-Betrieb
+## Installation mit separater Datenbank
 
-`compose.yaml` nutzt eine separate MariaDB im externen Netzwerk `database`. `.env.example` nach `.env` und `web/konfiguration_example.php` nach `web/konfiguration.php` kopieren. Die vollständigen Einrichtungsschritte stehen unter [UGREEN-Installation](INSTALL_STANDARD.md).
+`compose.yaml` nutzt eine separate MariaDB im externen Netzwerk `database`. `.env.example` nach `.env` und `web/konfiguration_example.php` nach `web/konfiguration.php` kopieren. Die vollständigen Einrichtungsschritte stehen unter [Installation mit separater Datenbank](INSTALL_STANDARD.md).
 
 | `.env`-Variable | Beispiel / Funktion |
 | --- | --- |
@@ -54,21 +54,40 @@ Archiv und Metadatenbestand sind flach: PDFs heißen `<DokID>dok.pdf`, Begleitda
 | `EABLAGE_META_CONTAINER_PATH` | `/data/meta`; passend zum DB-Metadatenpfad |
 | `EABLAGE_BACKEND_UID`, `EABLAGE_BACKEND_GID` | jeweils `33`; Prozessidentität des Backends |
 | `EABLAGE_DB_HOST` | `mariadb`; interner Datenbankname im Docker-Netz |
-| `EABLAGE_DB_NAME`, `EABLAGE_DB_USER` | `eablage`; für Testinstanzen getrennte Namen verwenden |
+| `EABLAGE_DB_NAME`, `EABLAGE_DB_USER` | `eablage`; bei mehreren Instanzen auf demselben Server getrennte Datenbanken und Benutzer verwenden |
 | `EABLAGE_DB_PASSWORD` | Individuelles Passwort; an Backend übergeben |
 | `EABLAGE_BACKEND_URL` | `http://backend:8000`; als `BACKEND_URL` an PHP übergeben |
 
-In der lokalen PHP-Datei `MYSQL_HOST`, `MYSQL_BENUTZER`, `MYSQL_KENNWORT` und `MYSQL_DATENBANK` passend setzen. Die Archivtabellendefinition lautet `define('DB_TABELLE_ARCHIV', 'dokumente');`. PHP und Backend müssen dieselbe Datenbank verwenden. Im regulären Compose-Betrieb kommen die PHP-Datenbankwerte aus dieser Datei und nicht automatisch aus `.env`.
+In der lokalen PHP-Datei `MYSQL_HOST`, `MYSQL_BENUTZER`, `MYSQL_KENNWORT` und `MYSQL_DATENBANK` passend setzen. Die Archivtabellendefinition lautet `define('DB_TABELLE_ARCHIV', 'dokumente');`. PHP und Backend müssen dieselbe Datenbank verwenden. Bei der Installation mit separater Datenbank kommen die PHP-Datenbankwerte aus dieser Datei und nicht automatisch aus `.env`.
 
 `BACKEND_URL` ist die einzige Backend-Adressquelle für PHP. Das Backend veröffentlicht keinen Hostport und ist im App-Netz als `backend` erreichbar. `localhost` im Webcontainer bezeichnet diesen Container, nicht das Backend oder das NAS.
 
 Nur die lokale PHP-Konfiguration wird schreibgeschützt nach `/var/www/html/konfiguration.php` eingebunden. Der Anwendungscode steckt im Image; ein kompletter Host-Mount über `/var/www/html` würde ihn überdecken. Lokale Zugangsdaten bleiben außerhalb des Images und außerhalb der Versionsverwaltung.
 
-## Isolierte Compose-Installation
+## Installation mit integrierter Datenbank
 
 `compose.fresh.yaml` verwendet `.env.fresh` und einen eindeutigen Compose-Projektnamen. Web, Backend und eigene MariaDB erhalten dasselbe Anwendungspasswort. PHP nutzt die eingebundene `web/konfiguration_docker.php` und ihre Umgebungsvariablen. Es gibt keine separat zu pflegende PHP-Passwortkopie.
 
-Konfigurierbar sind der freie Webport, der neue Datenpfad, das Anwendungspasswort und das MariaDB-Rootpasswort. Die Containerdatenbank heißt intern `eablage`, ist aber durch projektspezifische Netze und Volume von anderen Instanzen getrennt. Details: [Isolierte Neuinstallation](INSTALL_FRESH.md).
+Konfigurierbar sind der freie Webport, der neue Datenpfad, das Anwendungspasswort und das MariaDB-Rootpasswort. Die Containerdatenbank heißt intern `eablage`, ist aber durch projektspezifische Netze und Volume von anderen Instanzen getrennt. Details: [Installation mit integrierter Datenbank](INSTALL_FRESH.md).
+
+## Mehrere Instanzen betreiben
+
+Die Datenbankanbindung und der Einsatzzweck sind unabhängig voneinander: Beide Installationsvarianten eignen sich für produktive Nutzung und für Tests. Regelmäßige Updates, zusammengehörige Sicherungen und eine Wiederherstellungsprobe sind bei beiden erforderlich.
+
+| Variante | Compose-Datei | Lokale Konfiguration | Datenbank |
+| --- | --- | --- | --- |
+| Integrierte Datenbank | `compose.fresh.yaml` | `.env.fresh` | MariaDB wird im selben Compose-Projekt bereitgestellt |
+| Separate Datenbank | `compose.yaml` | `.env` und `web/konfiguration.php` | Unabhängig betriebene MariaDB, beispielsweise in einem eigenen Compose-Projekt |
+
+Die Anleitungen verwenden alternative Beispiele für eine einzelne Instanz. Für mehrere gleichzeitig betriebene Instanzen pro Instanz getrennt festlegen:
+
+- **Projektverzeichnis und Compose-Projektname:** etwa `eablage-a` und `eablage-b`. Den gewählten Projektnamen bei Start, Update, Stopp und Sicherungsarbeiten einheitlich verwenden. Bei einer bestehenden Installation den bisherigen Namen beibehalten: Er bestimmt unter anderem die Zuordnung zum Datenbank-Volume.
+- **Webport:** beispielsweise `8082` und `8084`; jeder veröffentlichte Hostport darf nur einmal belegt sein.
+- **Datenverzeichnisse:** eigene Ordner für Eingang, Archiv, Metadaten, Export und Sicherungen. `EABLAGE_META_PATH` muss zum Datenpfad derselben Instanz passen.
+- **Datenbank:** Bei integrierter MariaDB sorgen unterschiedliche Projektnamen für getrennte Netze und Datenbank-Volumes; der interne Datenbankname darf jeweils `eablage` bleiben. Bei einem gemeinsamen separaten MariaDB-Server eigene Datenbanken und Benutzer mit passenden Rechten anlegen. Bei mehreren separaten Datenbankcontainern eindeutige Docker-Namen beziehungsweise getrennte Netze verwenden; keine mehrdeutigen `mariadb`-Aliasse im gemeinsamen Netzwerk.
+- **Konfiguration und Zugangsdaten:** die zur jeweiligen Variante gehörende lokale Konfiguration verwenden und Web sowie Backend an dieselbe Instanzdatenbank anbinden.
+
+`EABLAGE_INSTANCE=prod` beziehungsweise `test` ist ausschließlich eine Zielprüfung für die optionalen PowerShell-Deploymentskripte. Die Kennzeichnung entscheidet weder über die Installationsvariante noch trennt sie Ports, Datenbanken oder Verzeichnisse. Auch eine manuelle Instanzkennzeichnung unter `Version` ersetzt diese Trennung nicht.
 
 ## Rechte und Schutz des Betriebs
 
@@ -114,3 +133,20 @@ Das Web-Image übernimmt `web/uploads.ini` nach `/usr/local/etc/php/conf.d/uploa
 Die verbindlichen Definitionen sind `web/uploads.ini` (PHP-Anfragegrenzen), `EABLAGE_UPLOAD_MAX_BYTES` in `web/upload_funktionen.php` (Webprüfung) und `MAX_PDF` in `backend/app/services/pdf_text.py` (Erkennung). Bei Änderung des PDF-Limits alle drei gemeinsam anpassen und vor dem Deployment `PHP_BIN=php python tests/deployment_limits.py -v` ausführen. Dieser Konsistenztest ist Teil der Freigabeprüfung. Anschließend Web, Backend und Worker neu bauen.
 
 Die effektive Uploadgrenze ist das Minimum aus Anwendungslimit, `upload_max_filesize` und einem positiven `post_max_size` abzüglich 64 KiB Reserve für Multipart-Header und Formularfelder. `post_max_size=0` setzt keine zusätzliche POST-Grenze. Die Standardwerte bleiben 50 MiB pro Datei und 55 MiB pro Anfrage.
+
+## Lokale KI (optional)
+
+Die Parameter `ollamaAktiv`, `ollamaURL`, `ollamaModell`, `ollamaAnweisung` und `ollamaDenkmodus` stehen nach dem Parameterupdate in der Gruppe **Lokale KI**. Die Funktion ist zunächst deaktiviert. Einrichtung, Verbindungstest und Netzwerkfreigabe: [Ollama](OLLAMA.md).
+
+`ollamaAnweisung` ist ein mehrzeiliger Text bis 4000 Zeichen für fachliche Vorgaben. Nach Speichern gilt er für die nächste KI-Anfrage; leer verwendet Standardvorgaben. Die erstmalige Einrichtung benötigt `sql/update_ollama_instruction.sql` und den passenden Backendstand. Antwortformat und technische Prüfungen bleiben fest im Code. [Details](OLLAMA.md#fachliche-ki-anweisung-bearbeiten).
+
+`ollamaDenkmodus` ist optional (`ja`/`nein`, Vorgabe `nein`). Nach `sql/update_ollama_thinking.sql` in den Einstellungen aktivierbar; benötigt ein Modell mit Denkmodus. Aktiviert werden 8192 statt 1500 Ausgabetokens zugelassen. Änderungen gelten nach Speichern für neue Anfragen. [Details](OLLAMA.md#umfang-und-grenzen).
+
+## Entwicklerwerkzeuge
+
+**KI-Diagnose anzeigen** (`ollamaDiagnoseAnzeigen`, `ja`/`nein`, Vorgabe `nein`) schaltet den Menüeintrag **KI-Anfrage anzeigen** und den Diagnosebereich der Klassifizierung ein. Bestehende Installationen benötigen `sql/update_ollama_diagnostics.sql`. Nach Speichern die Klassifizierungsseite neu öffnen; ungespeicherte Eingaben vorher sichern. Die lokale KI arbeitet unabhängig vom Diagnoseschalter. [Bedienung](OLLAMA.md#tatsächliche-ki-anfrage-anzeigen).
+
+`ollamaHintergrund` unter **Lokale KI → KI im Hintergrund** steuert die Worker-KI: `aus` (Vorgabe), `fehlende` (ohne AutoKat-Klassifikationsregel oder Kategorie durch erfolgreichen Textvergleich), `alle` (alle vorbereiteten Eingänge). Ergänzungsregeln allein verhindern den KI-Aufruf nicht. Benötigt aktive lokale KI, laufenden Worker und `sql/update_ollama_background.sql`. [Ablauf und Grenzen](OLLAMA.md#ki-im-hintergrund).
+
+`ollamaTextAnfang` (Vorgabe 9000, mindestens 1) und `ollamaTextEnde` (Vorgabe 3000, mindestens 0) bestimmen die Textauswahl für manuelle und Worker-KI. Zusammen höchstens 12000 Zeichen; Ende 0 lässt den zusätzlichen Schlussteil weg. Kürzere Dokumente werden vollständig ausgewertet. Nach Speichern gelten neue Werte für neue Anfragen und veralten Hintergrundvorschläge. Einrichtung über `sql/update_ollama_text_selection.sql`. [Details](OLLAMA.md#textauswahl-einstellen).
+

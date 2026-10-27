@@ -2,6 +2,7 @@
 
 The database is authoritative. PDFs and database rows are never changed.
 """
+from app.services.numbers import read_numbers, attach_numbers
 import hashlib
 import hmac
 import json
@@ -133,7 +134,7 @@ def _meta_status(document, raw):
     except MetadataError:
         return 'meta_invalid', ['JSON-Format oder UTF-8-Kodierung ungültig']
     changed = [key for key in expected if key != 'schema_version'
-               and actual.get(key) != expected[key]]
+               and actual.get(key, [] if key == 'numbers' else None) != expected[key]]
     return ('meta_different', changed) if changed else ('ok', [])
 
 
@@ -154,6 +155,7 @@ def audit(database):
         meta_entries = list(meta.iterdir())
         cursor.execute(_DOCUMENT_SELECT + ' ORDER BY d.DokID')
         documents = cursor.fetchall()
+        attach_numbers(cursor, documents)
         issues = []
         expected_pdf, expected_meta = set(), set()
         checksums_checked = 0
@@ -233,6 +235,7 @@ def repair(database, selections):
             document = cursor.fetchone()
             if not document:
                 raise ArchiveError('Dokument existiert nicht mehr. Bitte erneut prüfen.')
+            document['numbers'] = read_numbers(cursor, item['dok_id'])
             target = meta / metadata_filename(int(document['DokID']))
             raw = _read(target)
             if not _verify(item['token'], _fingerprint(document, raw, database, meta)):
@@ -271,3 +274,4 @@ def repair(database, selections):
             connection.rollback()
             connection.close()
     return dict(results=results)
+

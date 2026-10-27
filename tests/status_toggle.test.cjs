@@ -22,10 +22,11 @@ function setup(kind, response, reject = false) {
     const input = { value: 'Neue Bezeichnung' };
     const activeField = { value: '0' };
     const controls = [button];
-    controls.namedItem = name => name === 'name' ? input : activeField;
+    controls.namedItem = name => name === 'name' ? input : name === 'aktiv' ? activeField : null;
     const actionValue = kind === 'rule' ? 'toggle' : kind === 'master' ? 'deactivate' : kind;
     const form = { action: {name:'action'}, elements:controls,
         dataset:kind === 'master' || kind === 'rule' ? {statusToggle:kind} : {rowAction:kind},
+        querySelector: () => null,
         getAttribute: () => kind === 'rule' ? null : 'stammdaten.php',
         addEventListener: (name, fn) => { handlers[name] = fn; }, closest: () => row };
     vm.runInNewContext(script, {
@@ -79,3 +80,4 @@ test('network failure keeps the previous status', async () => {
     assert.equal(h.button.textContent,'✅ aktiv');
     assert.equal(h.row.feedback.hidden,false);
 });
+

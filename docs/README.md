@@ -1,6 +1,6 @@
 # eAblage Dokumentation
 
-Diese Dokumentation beschreibt eAblage 4.3.0. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
+Diese Dokumentation beschreibt eAblage 4.4.0 mit optionaler lokaler KI und mehreren Nummern pro Dokument. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
 
 Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale Beispiele.
 
@@ -9,8 +9,8 @@ Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale B
 | Ziel | Anleitung |
 | --- | --- |
 | Erste Schritte und tägliche Ablage | [Benutzerhandbuch](BENUTZERHANDBUCH.md) |
-| Neue eigenständige Instanz mit eigener MariaDB aufsetzen | [Isolierte Neuinstallation](INSTALL_FRESH.md) |
-| Anwendung mit separater MariaDB auf NAS installieren | [Standard-Installation](INSTALL_STANDARD.md) |
+| Neue eigenständige Instanz mit eigener MariaDB aufsetzen | [Installation mit integrierter Datenbank](INSTALL_FRESH.md) |
+| Anwendung mit separater MariaDB auf NAS installieren | [Installation mit separater Datenbank](INSTALL_STANDARD.md) |
 | Vorhandene Instanz aktualisieren | [Aktualisierung und Deployment](UPDATE.md) |
 | Datenbank anlegen oder Schema prüfen | [Datenbank](DATENBANK.md) |
 
@@ -19,11 +19,13 @@ Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale B
 | Thema | Zuständige Beschreibung |
 | --- | --- |
 | Eingang, Klassifizierung, Archivierung, Suche und Bearbeitung | [Benutzerhandbuch](BENUTZERHANDBUCH.md) |
+| Ergänzende Klassifizierung mit lokaler KI | [Ollama](OLLAMA.md) |
 | Text aus gescannten oder gemischten PDFs erkennen | [Lokale OCR](OCR.md) |
 | Inbox automatisch vorbereiten und manuell prüfen | [Stapelverarbeitung](STAPELVERARBEITUNG.md) |
 | Ereignisprotokoll und Dokumenthistorie | [Dokumenthistorie](DOKUMENTHISTORIE.md) |
 | Dokumente verwerfen, Papierkorb und Wiederherstellen | [Papierkorb](PAPIERKORB.md) |
 | Ergänzungsregeln, Klassifikationsregeln und Extraktion | [AutoKat-Regeln](AUTOKAT.md) |
+| Nummernarten, Erkennung und Nummernsuche | [Nummern](NUMMERN.md) |
 | Kategorien und Dokumententypen | [Stammdaten](STAMMDATEN.md) |
 | Virtuelle Ordner, Filter und PDF-Auswahl | [Ablage-Explorer](EXPLORER.md) |
 | Einzel- und Gesamtexport, Dateinamen und Verzeichnisebenen | [Export](EXPORT.md) |
@@ -70,3 +72,6 @@ Die Datenbank und das PDF-Archiv bilden den maßgeblichen Bestand. JSON-Dateien 
 
 - [Lizenz und Weitergabe](LIZENZ.md)
 - [Drittkomponenten und Lizenzen](DRITTKOMPONENTEN.md)
+
+
+- [Nummernarten, Erkennung und Suche](NUMMERN.md)

@@ -1,6 +1,7 @@
 import re
 from datetime import date, datetime
 
+from app.services.numbers import read_numbers, attach_numbers
 from app.db.database import get_connection
 from app.services.metadata_service import original_filename
 
@@ -116,6 +117,7 @@ def load_document(dok_id: int) -> dict:
         row = cursor.fetchone()
         if not row:
             raise LookupError(f"Dokument mit DokID {dok_id} wurde nicht gefunden.")
+        row['numbers'] = read_numbers(cursor,dok_id)
         return row
     finally:
         connection.close()
@@ -127,7 +129,9 @@ def load_documents() -> list[dict]:
     try:
         cursor = connection.cursor(dictionary=True)
         cursor.execute(_document_select_sql("WHERE d.GeloeschtAm IS NULL") + " ORDER BY d.DokID")
-        return cursor.fetchall()
+        documents = cursor.fetchall()
+        attach_numbers(cursor, documents)
+        return documents
     finally:
         connection.close()
 
@@ -232,6 +236,7 @@ def prepare_single_export(dok_id: int) -> dict:
         "dok_id": dok_id,
         "filename": build_export_filename(document, settings),
         "profile": PROFILE_SINGLE,
+        "numbers": document.get("numbers", []),
     }
 
 
@@ -255,6 +260,7 @@ def build_full_export_plan(documents: list[dict], settings: dict) -> dict:
                     "partner": document.get("Partner"),
                     "subject": document.get("Betreff"),
                     "number": document.get("Nummer"),
+                    "numbers": document.get("numbers", []),
                 },
             }
         )
@@ -273,3 +279,4 @@ def build_full_export_plan(documents: list[dict], settings: dict) -> dict:
 def prepare_full_export() -> dict:
     """Load current full-export parameters and documents, without file access."""
     return build_full_export_plan(load_documents(), load_export_settings(PROFILE_FULL))
+

@@ -24,3 +24,13 @@ class ClassificationTest(unittest.TestCase):
     def test_empty_document_does_not_query_database(self):
         with patch('app.services.classification.analyze_autokat') as analyze:
             self.assertEqual(classify(' \n')['info'],'Manuell');analyze.assert_not_called()
+
+    def test_comparison_numbers_include_source_without_replacing_rule_numbers(self):
+        rule_number = {'kind_id': '1', 'value': 'AutoKat', 'source': {'type': 'E', 'regel_id': 'R0001'}}
+        comparison_numbers = [{'kind_id': '1', 'value': 'Vergleich'}, {'kind_id': '2', 'value': '000 123'}]
+        auto = {'numbers': [rule_number]}
+        comparison = {'matched': True, 'source_document_id': 42, 'similarity': 98, 'numbers': comparison_numbers}
+        with patch('app.services.classification.analyze_autokat', return_value=auto), patch('app.services.classification.analyze_text_compare', return_value=comparison):
+            result = classify('Text')
+        self.assertEqual(result['numbers'], [rule_number, {'kind_id': '2', 'value': '000 123', 'source': {'type': 'textcompare', 'source_document_id': 42, 'similarity': 98}}])
+        self.assertNotIn('source', comparison_numbers[1])

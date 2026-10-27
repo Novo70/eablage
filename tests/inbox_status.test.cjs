@@ -20,10 +20,9 @@ test('poll only visible filenames in bounded batches', async()=>{
     assert.equal(state.calls[0].names[0],'Dokument ä 0.pdf');
     assert.ok(state.elements.every(el=>el.textContent==='Zur Prüfung bereit'));
 });
-test('hidden and empty inbox never query historical jobs', async()=>{
-    for(const state of [setup(2,true),setup(0)]) {
-        await state.callbacks.shift()(); assert.equal(state.calls.length,0);
-    }
+test('hidden inbox does not poll; empty inbox polls worker status without historical filenames', async()=>{
+    const hidden=setup(2,true); await hidden.callbacks.shift()(); assert.equal(hidden.calls.length,0);
+    const empty=setup(0); await empty.callbacks.shift()(); assert.equal(empty.calls.length,1); assert.equal(empty.calls[0].names.length,0);
 });
 test('failed request retains current display and schedules next poll', async()=>{
     const state=setup(2,false,true); await state.callbacks.shift()();

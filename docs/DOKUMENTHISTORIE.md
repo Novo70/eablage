@@ -35,7 +35,7 @@ Technische Fehler, reine Lesezugriffe, Metadateireparaturen und noch nicht archi
 3. Web, Backend und Worker gemeinsam aktualisieren; Formulare neu öffnen.
 4. Die unten genannten Vorgänge testen und eine Sicherung mit Historie erstellen.
 
-Die Migration verändert keine Dokumentdatensätze. Das alte Info-Feld bleibt unverändert lesbar, wird nicht mehr neu befüllt und nicht automatisch in scheinbar datierte Ereignisse zerlegt. Neue Dokumente erhalten dort NULL. Neue JSON-Metadateien verwenden Schema 3 ohne `info`. Bestehende Versionen 1/2 bleiben lesbar; die Archivprüfung ignoriert das alte Info-Feld beim fachlichen Vergleich. Es gibt keinen automatischen Massenumbau der Metadateien.
+Die Migration verändert keine Dokumentdatensätze. Das alte Info-Feld bleibt unverändert lesbar, wird nicht mehr neu befüllt und nicht automatisch in scheinbar datierte Ereignisse zerlegt. Neue Dokumente erhalten dort NULL. Neue JSON-Metadateien verwenden Schema 4 ohne `info`. Bestehende Versionen 1/2 bleiben lesbar; die Archivprüfung ignoriert das alte Info-Feld beim fachlichen Vergleich. Es gibt keinen automatischen Massenumbau der Metadateien.
 
 Die SQL-Sicherung enthält die vollständige Historie. Neue Dumps kennzeichnen dies durch `-- Ereignisprotokoll: 1` in der zweiten Kopfzeile; fehlt die sechste Tabelle, wird der Dump abgewiesen. Bisherige Historienbackups mit `-- Dokumentprotokoll: 1` und `dokument_protokoll` bleiben importierbar; bei der Rücksicherung werden ausschließlich die Tabellennamen in SQL-Anweisungen angepasst, die Ereignisdaten bleiben erhalten. Ältere unterstützte Dumps enthalten fünf Tabellen und keine Historie. Beim Rücksichern solcher Dumps wird die bisherige Protokolltabelle geleert. Rücksicherung bleibt an die leere Dokumenttabelle gebunden. Benötigte frühere Historie vorher sichern. Eine Rekonstruktion aus PDF und JSON kann Dokumentdaten, aber keine Ereignishistorie liefern.
 
@@ -63,7 +63,7 @@ WHERE JSON_SEARCH(Details, 'one', 'R0042', NULL,
 
 ## Funktionsprüfung
 
-- Neue PDF archivieren: genau ein Archivierungsereignis; neue DB-Info ist NULL; JSON-Schema 3 enthält kein `info`.
+- Neue PDF archivieren: genau ein Archivierungsereignis; neue DB-Info ist NULL; JSON-Schema 4 enthält kein `info`.
 - Altbestandsdokument mit bestehendem Info-Text bearbeiten: Alttext unverändert, Feldänderungen korrekt protokolliert, JSON ohne `info`.
 - Ohne Änderungen speichern bzw. Neu-Klassifikation abbrechen: kein neues Ereignis.
 - Dokumenttext ändern: nur Änderungskennzeichen, keine Textkopie in Details.
@@ -74,3 +74,4 @@ WHERE JSON_SEARCH(Details, 'one', 'R0042', NULL,
 - Neue Sicherung inklusive Ereignissen rücksichern; ältere Sicherung ohne Historie importieren und sicherstellen, dass keine fremden Protokollzeilen bleiben.
 
 Automatisierte Prüfungen: Backend-Metadatentests, `tests/restore_preflight.php`, `tests/document_history.php` und `tests/metadata_php_integration.py`. PHP- bzw. Datenbankintegration erfordert die entsprechende lokale Laufzeit; NAS-Funktionstests bleiben vor Freigabe erforderlich.
+

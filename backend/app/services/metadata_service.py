@@ -3,8 +3,8 @@ from datetime import date, datetime
 import json
 import re
 
-SCHEMA_VERSION = 3
-SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3)
+SCHEMA_VERSION = 4
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4)
 V2_FIELDS = {'Originaldateiname': 'original_filename', 'DateiSHA256': 'pdf_sha256',
              'Aenderungsdatum': 'modified_at'}
 MAX_METADATA_BYTES = 16 * 1024 * 1024
@@ -107,7 +107,7 @@ def pdf_sha256(value):
 
 
 def build_metadata(document):
-    """Convert a complete DB-shaped row plus explicit lookup labels to schema v3.
+    """Convert a complete DB-shaped row plus explicit lookup labels to schema v4.
 
     No DB/filesystem access. Additional DB columns are ignored. Missing keys fail,
     while explicit None denotes absent data. Lookup IDs remain strings.
@@ -134,6 +134,22 @@ def build_metadata(document):
         result[target] = {'id': identifier, 'label': label}
     for source, target in TEXT_FIELDS.items():
         result[target] = _text(document[source], source)
+    numbers = document.get('numbers', [])
+    if not isinstance(numbers, list):
+        raise MetadataError('Ungültige Nummernliste.')
+    result['numbers'] = []
+    seen = set()
+    for n in numbers:
+        if not isinstance(n, dict):
+            raise MetadataError('Ungültige Nummer.')
+        kind = _text(n.get('kind_id'), 'Nummernart')
+        value = _text(n.get('value'), 'Nummer')
+        if (not kind or len(kind) > 20 or kind in seen or not value or len(value) > 255
+                or any(ord(char) < 32 or ord(char) == 127 for char in value)):
+            raise MetadataError('Ungültige oder doppelte Nummernart.')
+        seen.add(kind)
+        result['numbers'].append({'kind_id': kind, 'label': _text(n.get('label'), 'Nummernart'),
+                                  'value': value, 'position': _integer(n.get('position', len(seen)*10), 'Nummernsortierung', 0)})
     return result
 
 
@@ -151,7 +167,7 @@ def metadata_filename(document_id):
 
 
 def parse_metadata(raw):
-    """Read schemas 1, 2 and 3, preserving the version and validating exact keys."""
+    """Read schemas 1, 2, 3 and 4, preserving the version and validating exact keys."""
     def unique_object(pairs):
         result = {}
         for key, value in pairs:
@@ -183,7 +199,11 @@ def parse_metadata(raw):
             source[id_field], source[label_field] = lookup['id'], lookup['label']
         for source_field, target in TEXT_FIELDS.items():
             source[source_field] = value[target]
+        if version >= 4:
+            source['numbers'] = value['numbers']
         normalized = build_metadata(source)
+        if version < 4:
+            normalized.pop('numbers')
         normalized['schema_version'] = version
         if version < 3:
             normalized['info'] = _text(value['info'], 'Info')
@@ -197,3 +217,4 @@ def parse_metadata(raw):
         if isinstance(exc, MetadataError):
             raise
         raise MetadataError('Ungültige JSON-Metadaten.') from exc
+

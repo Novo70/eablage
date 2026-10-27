@@ -1,6 +1,7 @@
 <?php
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
+require_once 'nummern_funktionen.php';
 require_once 'meldungen.php';
 require_once 'status_toggle.php';
 require_once 'csrf.php';
@@ -388,7 +389,7 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                         if ($dokText !== '') $ziele[] = 'Dokumenttyp: ' . $dokText;
                         if ((string)$regel['partner'] !== '') $ziele[] = 'Partner: ' . $regel['partner'];
                         if ((string)$regel['betreff'] !== '') $ziele[] = 'Betreff: ' . $regel['betreff'];
-                        if ((string)$regel['nr'] !== '') $ziele[] = 'Nummer: ' . $regel['nr'];
+                        foreach (eablage_regel_nummern_laden($db,(int)$regel['id']) as $n) $ziele[] = 'Nummernart ' . $n['NummernartID'] . ': ' . ($n['Startanker'] !== '' ? 'Anker ' . $n['Startanker'] : $n['Festwert']);
                         if ((string)$regel['tags'] !== '') $ziele[] = 'Tags: ' . $regel['tags'];
 
                         $suchbegriffe = format_terms($regel['Suchbegriffe']);
@@ -543,3 +544,4 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
 <script src="status_toggle.js?v=<?=filemtime(__DIR__ . '/status_toggle.js')?>" defer></script>
 </body>
 </html>
+

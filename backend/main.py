@@ -11,7 +11,7 @@ from app.services.text_compare import analyze_text_compare
 from app.services.export_service import prepare_single_export, prepare_full_export
 
 APP_NAME = "e_ablage Backend API"
-APP_VERSION = "4.3.0"
+APP_VERSION = "4.4.0"
 
 app = FastAPI(
     title=APP_NAME,
@@ -20,6 +20,8 @@ app = FastAPI(
 app.include_router(metadata_router)
 from app.inbox_api import router as inbox_router
 app.include_router(inbox_router)
+from app.ollama_api import router as ollama_router
+app.include_router(ollama_router)
 
 
 class DateAnalysisRequest(BaseModel):
@@ -134,6 +136,8 @@ class MasterDataRequest(BaseModel):
     action: str = "list"
     entry_id: str = Field(default="", max_length=20)
     name: str = Field(default="", max_length=255)
+    explanation: str | None = Field(default=None, max_length=1000)
+    sort_order: int | None = Field(default=None, ge=0, le=9999)
 
 
 @app.post("/master-data/{kind}")
@@ -141,9 +145,10 @@ def master_data(kind: str, request: MasterDataRequest):
     try:
         if request.action == "list":
             return list_entries(kind, request.database)
-        return mutate(kind, request.database, request.action, request.entry_id, request.name)
+        return mutate(kind, request.database, request.action, request.entry_id, request.name, request.explanation, request.sort_order)
     except MasterDataError as exc:
         raise HTTPException(status_code=409, detail={"message": str(exc), "rules": exc.rules}) from exc
     except Exception as exc:
         logging.exception("Stammdatenverwaltung fehlgeschlagen")
         raise HTTPException(status_code=500, detail={"message": "Stammdaten konnten nicht verarbeitet werden. SQL-Update, Datenbankrechte und Backend-Log prüfen.", "rules": []}) from exc
+

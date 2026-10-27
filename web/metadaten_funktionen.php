@@ -61,16 +61,17 @@ function eablage_metadaten_vorbereiten(array $document, int $timeout = 10): arra
         throw new RuntimeException('Metadaten konnten nicht vorbereitet werden: ' . $response['error']);
     }
     $data = $response['data'];
-    if (!is_array($data) || ($data['schema_version'] ?? null) !== 3 ||
+    if (!is_array($data) || ($data['schema_version'] ?? null) !== 4 ||
         !is_string($data['content'] ?? null) || !is_string($data['filename'] ?? null) ||
         !is_int($document['DokID'] ?? null) || $document['DokID'] < 1 ||
         $data['filename'] !== $document['DokID'] . 'meta.json') {
         throw new RuntimeException('Ungültige Metadatenantwort des Backends.');
     }
     $metadata = json_decode($data['content'], true, 512, JSON_THROW_ON_ERROR);
-    if (!is_array($metadata) || ($metadata['schema_version'] ?? null) !== 3 ||
+    if (!is_array($metadata) || ($metadata['schema_version'] ?? null) !== 4 ||
         ($metadata['document_id'] ?? null) !== $document['DokID']) {
         throw new RuntimeException('Metadatenantwort gehört nicht zum angeforderten Dokument oder Format.');
     }
     return $data;
 }
+

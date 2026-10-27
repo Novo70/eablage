@@ -10,7 +10,7 @@ Zuerst betroffene Instanz, eingesetzten Commit und letzte Änderung bestimmen. F
 | Backend nicht erreichbar | Service `eablage-backend`, App-Netz, Alias `backend` und interne URL prüfen. Kein `localhost` als Backendadresse verwenden. |
 | Ungültige JSON-Antwort | Backend-Logs und gemeinsam eingesetzten Web-/Backendstand prüfen; nach Codeänderung Images neu bauen. |
 | `service "web" is not running` | Der Compose-Service heißt `eablage-web`. |
-| `network database not found` | Für regulären Compose-Betrieb das externe Netz anlegen und MariaDB daran anbinden. Die isolierte Installation erzeugt ein eigenes Netz. |
+| `network database not found` | Für die Installation mit separater Datenbank das externe Netz anlegen und MariaDB daran anbinden. Die Installation mit integrierter Datenbank erzeugt ein eigenes Netz. |
 | Datenbankzugriff verweigert | PHP-Datei und Backend-Umgebung auf dieselbe Datenbank und passende Zugangsdaten prüfen. Änderung einer MariaDB-Initialisierungsvariable ändert ein vorhandenes Benutzerpasswort nicht automatisch. |
 | Tabellen fehlen nach Neustart | SQL-Initialisierung läuft nur beim ersten Start eines leeren MariaDB-Volumes; Logs und SQL-Mounts prüfen. |
 | Lokale PHP-Datei nicht lesbar | Hostpfad, reguläre Datei, Eigentümer, Elternordner und UGOS-ACL prüfen. Kein kompletter Quellcode-Mount über das Image. |
@@ -56,6 +56,7 @@ sudo docker compose exec eablage-web php -r "echo file_get_contents('http://back
 sudo docker compose exec eablage-backend python -c "from app.db.database import get_connection; c=get_connection(); print(c.is_connected()); c.close()"
 ```
 
-Die ersten Verbindungsantworten sind JSON mit `status=ok` beziehungsweise `True`. Für die isolierte Installation dieselben Optionen `--env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh` vor jedem Unterbefehl verwenden; die MariaDB-Logs stehen dort unter `logs mariadb --tail 100`. Für eine separate MariaDB im zugehörigen Datenbankprojekt die Logs prüfen.
+Die ersten Verbindungsantworten sind JSON mit `status=ok` beziehungsweise `True`. Für die Installation mit integrierter Datenbank dieselben Optionen `--env-file .env.fresh -f compose.fresh.yaml -p eablage` vor jedem Unterbefehl verwenden; die MariaDB-Logs stehen dort unter `logs mariadb --tail 100`. Für eine separate MariaDB im zugehörigen Datenbankprojekt die Logs prüfen.
 
 Diagnoseausgaben können Datenbank-, Datei- und Fehlermeldungen enthalten. Zugangsdaten und Dokumenttexte vor einer Weitergabe entfernen. Eine erfolgreiche Health-Antwort allein prüft nicht Dateirechte, Schema, PDF-Zugriff oder vollständige Wiederherstellbarkeit.
+

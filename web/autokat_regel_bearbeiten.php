@@ -1,6 +1,7 @@
 <?php
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
+require_once 'nummern_funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
 
@@ -123,6 +124,11 @@ if (!$neu) {
     $regel = array_merge($regel, $geladen);
 }
 
+$numberDefinitions = !$neu ? eablage_regel_nummern_laden($db,(int)$regel['id']) : [];
+if ($neu && $sourceDokId) {
+    foreach (eablage_nummern_laden($db,$sourceDokId) as $n) $numberDefinitions[]=['NummernartID'=>$n['kind_id'],'Startanker'=>'','Endmodus'=>'zeile','Endanker'=>'','Festwert'=>$n['value'],'Praefix'=>'','MaxLaenge'=>0,'Sortierung'=>count($numberDefinitions)*10+10];
+}
+$numberDefinitionsRaw = $isPost && is_string($_POST['number_rules_json']??null) ? $_POST['number_rules_json'] : json_encode($numberDefinitions);
 if ($isPost && $fehler === '') {
     $isNew = $isNewPost;
     $postedRegelId = trim((string)($_POST['regel_id'] ?? ''));
@@ -207,9 +213,15 @@ if ($isPost && $fehler === '') {
             }
 
             $db->beginTransaction();
+            $newNumberDefinitions = eablage_regel_nummern_pruefen($db,$numberDefinitionsRaw);
+            if (!$isNew && json_encode($newNumberDefinitions) !== json_encode($numberDefinitions) && !$fachlichGeaendert) {
+                $version++; $params[':Version']=$version;
+            }
             eablage_pruefe_zuordnungen($db, ['kategorie_id'=>$regel['kat'], 'kategorie2_id'=>$regel['kat2'], 'doktyp_id'=>$regel['dok']]);
             $stmtSave = $db->prepare($sql);
             $stmtSave->execute($params);
+            $savedRuleStmt=$db->prepare('SELECT id FROM autokat WHERE RegelID=?'); $savedRuleStmt->execute([$postedRegelId]);
+            eablage_regel_nummern_speichern($db,(int)$savedRuleStmt->fetchColumn(),$newNumberDefinitions);
             $db->commit();
 
             $msg = $isNew
@@ -319,7 +331,6 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
                             <div class="col-md-6"><div class="form-group"><label for="betreff">Betreff</label><input type="text" class="form-control" id="betreff" name="betreff" value="<?= h($regel['betreff']) ?>"></div></div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6"><div class="form-group"><label for="nr">Nummer</label><input type="text" class="form-control" id="nr" name="nr" value="<?= h($regel['nr']) ?>"></div></div>
                             <div class="col-md-6"><div class="form-group"><label for="tags">Tags</label><input type="text" class="form-control" id="tags" name="tags" value="<?= h($regel['tags']) ?>"></div></div>
                         </div>
                     </div>
@@ -337,14 +348,16 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
                             <div class="col-md-3"><div class="form-group"><label for="BetreffEnde">Endmarkierung</label><input type="text" class="form-control" id="BetreffEnde" name="BetreffEnde" value="<?= h($regel['BetreffEnde']) ?>"></div></div>
                         </div>
                         <div class="row">
-                            <div class="col-md-4"><div class="form-group"><label for="prNum">Nummer-Anker</label><input type="text" class="form-control" id="prNum" name="prNum" value="<?= h($regel['prNum']) ?>"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label for="prNumAnz">Anzeigepräfix</label><input type="text" class="form-control" id="prNumAnz" name="prNumAnz" value="<?= h($regel['prNumAnz']) ?>"></div></div>
-                            <div class="col-md-2"><div class="form-group"><label for="NumLänge">max. Länge</label><input type="number" min="0" class="form-control" id="NumLänge" name="NumLänge" value="<?= h($regel['NumLänge']) ?>"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label for="NumEnde">Endmarkierung</label><input type="text" class="form-control" id="NumEnde" name="NumEnde" value="<?= h($regel['NumEnde']) ?>"></div></div>
                         </div>
                     </div>
                 </div>
 
+                <div class="ea-rule-section"><div class="ea-rule-section__title">Nummern erkennen</div><div class="ea-rule-section__body" id="number-rule-editor">
+                <p>Je Nummernart wird ausschließlich das erste Vorkommen des Startankers ausgewertet. Ein Festwert wird verwendet, wenn kein Startanker angegeben ist.</p>
+                <div data-rule-number-rows></div><button type="button" class="btn btn-default" data-rule-number-add>Nummernerkennung hinzufügen</button>
+                <input type="hidden" name="number_rules_json" id="number_rules_json" value="<?=h($numberDefinitionsRaw)?>">
+                <script type="application/json" id="rule-number-kinds"><?=json_encode($db->query('SELECT id,Bezeichnung FROM nummernart WHERE Aktiv=1 ORDER BY Sortierung,Bezeichnung')->fetchAll(PDO::FETCH_ASSOC),JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?></script>
+                </div></div><script src="nummern_regeln.js"></script>
                 <div class="ea-form-actions">
                     <a href="<?= h($returnUrl) ?>" class="btn btn-default">Abbrechen</a>
                     <button type="submit" class="btn btn-primary">💾 Speichern</button>
@@ -356,3 +369,4 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
 </div>
 </body>
 </html>
+

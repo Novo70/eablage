@@ -28,6 +28,8 @@ class Cursor:
         return next((d for d in self.case.documents if d['DokID'] == self.params[0]), None)
 
     def fetchall(self):
+        if 'FROM dokument_nummer' in self.query:
+            return [dict(n, DokumentID=self.case.documents[0]['DokID']) for n in self.case.documents[0].get('numbers',[])] if 'n.DokumentID,' in self.query else self.case.documents[0].get('numbers',[])
         if 'FROM parameter' in self.query:
             return [{'param_key': key, 'param_value': value} for key, value in self.case.settings.items()]
         return self.case.documents
@@ -77,6 +79,7 @@ class ArchiveTests(unittest.TestCase):
     def test_legacy_info_is_not_a_repair_reason(self):
         document = self.documents[0]
         expected = json.loads(serialize_metadata(document))
+        expected.pop('numbers')
         legacy = {**expected, 'schema_version': 2, 'info': 'Historischer Text'}
         self.assertEqual(service._meta_status(document, json.dumps(legacy).encode()), ('ok', []))
         document['Info'] = 'Anderer Alttext'
@@ -213,6 +216,7 @@ class ArchiveTests(unittest.TestCase):
 
     def test_schema1_with_unknown_new_values_is_current(self):
         data = json.loads(serialize_metadata(self.documents[0]))
+        data.pop('numbers')
         data['schema_version'] = 1
         data['info'] = None
         for key in ('original_filename', 'pdf_sha256', 'modified_at'):
@@ -223,7 +227,7 @@ class ArchiveTests(unittest.TestCase):
         issue = service.audit('test')['issues'][0]
         self.assertEqual(issue['details'], ['original_filename'])
         self.assertTrue(service.repair('test', self.selection())['results'][0]['success'])
-        self.assertEqual(parse_metadata(self.target.read_bytes())['schema_version'], 3)
+        self.assertEqual(parse_metadata(self.target.read_bytes())['schema_version'], 4)
 
     def test_pdf_hash_audit_never_rebases_reference_or_repairs_pdf(self):
         reference = hashlib.sha256(self.pdf.read_bytes()).hexdigest()
@@ -262,3 +266,4 @@ class ArchiveTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
