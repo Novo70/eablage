@@ -21,6 +21,8 @@ function history_details($value): string
         'vergleich_dokid' => 'Vergleichsdokument',
         'originaldateiname' => 'Originaldateiname',
         'felder' => 'Geänderte Felder',
+        'nummern_vorher' => 'Nummern vorher', 'nummern_nachher' => 'Nummern nachher',
+        'kind_id' => 'Nummernart-ID', 'label' => 'Nummernart', 'value' => 'Wert', 'position' => 'Reihenfolge',
         'vorher' => 'Vorher',
         'nachher' => 'Nachher',
         'dokumenttext_geaendert' => 'Dokumenttext geändert',

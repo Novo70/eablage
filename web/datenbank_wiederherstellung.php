@@ -2,7 +2,7 @@
 // Initialbefüllung aus einer unterstützten eAblage-Sicherung.
 // Die Archivprüfung bleibt ein eigenständiger Vorgang.
 
-const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0'];
+const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0', '4.4.0'];
 const EABLAGE_RESTORE_TABLES = ['autokat', 'doktyp', 'dokumente', 'kategorie', 'parameter'];
 
 function eablage_restore_empty(PDO $db): bool
@@ -91,7 +91,10 @@ function eablage_restore_validate(string $path): array
     if ((str_starts_with((string)$format, '-- Ereignisprotokoll:') || str_starts_with((string)$format, '-- Dokumentprotokoll:')) && !$hasHistory) {
         throw new RuntimeException('Nicht unterstützte Protokollversion in der Sicherung.');
     }
+    $hasNumbers=false;
+    foreach (eablage_restore_statements($path) as $sql) if (str_starts_with($sql,'CREATE TABLE `nummernart` (')) $hasNumbers=true;
     $expectedTables = EABLAGE_RESTORE_TABLES;
+    if ($hasNumbers) $expectedTables=array_merge($expectedTables,['nummernart','dokument_nummer','autokat_nummer']);
     if ($hasHistory) $expectedTables[] = $historyTable;
     $supportedHeaders = array_map(
         static fn(string $version): string => '-- e_ablage MariaDB-Datensicherung; Version: ' . $version . "\n",
@@ -121,6 +124,9 @@ function eablage_restore_validate(string $path): array
             $required = match ($table) {
                 'dokumente' => ['DokID', 'Originaldateiname', 'DateiSHA256', 'Aenderungsdatum', 'GeloeschtAm'],
                 'doktyp', 'kategorie' => ['Aktiv'],
+                'nummernart' => ['id','Bezeichnung','Erlaeuterung','Aktiv'],
+                'dokument_nummer' => ['DokumentID','NummernartID','Wert','Suchwert'],
+                'autokat_nummer' => ['AutoKatID','NummernartID','Startanker','Endmodus'],
                 'parameter' => ['param_key', 'param_value'],
                 'autokat' => ['RegelID', 'Version', 'Rang'],
                 'ereignisprotokoll', 'dokument_protokoll' => ['ID', 'DokID', 'Zeitpunkt', 'Ereignistyp', 'Quelle', 'Details'],
@@ -138,7 +144,7 @@ function eablage_restore_validate(string $path): array
     if ($phase !== 2 || $count < 3 || count($created) !== count($expectedTables) || count($dropped) !== count($expectedTables)) {
         throw new RuntimeException('Sicherungsdatei enthält keinen vollständigen eAblage-Tabellenbestand.');
     }
-    return ['tables' => count($created), 'statements' => $count, 'history' => $hasHistory, 'legacy_history' => $legacyHistory];
+    return ['tables' => count($created), 'statements' => $count, 'history' => $hasHistory, 'legacy_history' => $legacyHistory, 'numbers'=>$hasNumbers];
 }
 
 /** Used only after validating the complete dump. Preserve all stored values. */
@@ -147,6 +153,24 @@ function eablage_restore_history_statement(string $sql, bool $legacy): string
     if (!$legacy) return $sql;
     return preg_replace('/^(DROP TABLE IF EXISTS|CREATE TABLE|INSERT INTO) `dokument_protokoll`/', '$1 `ereignisprotokoll`', $sql);
 }
+
+/** Add optional columns when importing older supported master-table definitions.
+ * INSERT statements already name their columns explicitly. Existing fields and values stay intact.
+ */
+function eablage_restore_master_statement(string $sql): string
+{
+    if (!preg_match('/^CREATE TABLE `(kategorie|doktyp)` \(/', $sql) || str_contains($sql, '`Erlaeuterung`')) return $sql;
+    return preg_replace('/^(CREATE TABLE `(kategorie|doktyp)` \()/', '$1`Erlaeuterung` varchar(1000) DEFAULT NULL, ', $sql, 1);
+}
+
+
+/** Retain long parameter values when restoring older VARCHAR-based schemas. */
+function eablage_restore_parameter_statement(string $sql): string
+{
+    if (!str_starts_with($sql, 'CREATE TABLE `parameter` (')) return $sql;
+    return preg_replace('/(`param_value`\s+)varchar\(\d+\)/i', '$1text', $sql, 1);
+}
+
 
 function eablage_restore_database_unlocked(PDO $db, string $path): array
 {
@@ -161,9 +185,17 @@ function eablage_restore_database_unlocked(PDO $db, string $path): array
     fclose($handle);
     // Legacy snapshots have no history: do not retain events from a different archive.
     if (!$summary['history']) $db->exec('DELETE FROM ereignisprotokoll');
+    if (!$summary['numbers']) {
+        $db->exec('SET FOREIGN_KEY_CHECKS=0');
+        try { foreach (['autokat_nummer','dokument_nummer','nummernart'] as $table) $db->exec('DROP TABLE IF EXISTS `'.$table.'`'); }
+        finally { $db->exec('SET FOREIGN_KEY_CHECKS=1'); }
+    }
     // Ein abgebrochener DDL-Import kann nicht mit ROLLBACK zurückgenommen werden.
     foreach (eablage_restore_statements($path) as $sql) {
-        $db->exec(eablage_restore_history_statement($sql, $summary['legacy_history']));
+        $db->exec(eablage_restore_parameter_statement(eablage_restore_master_statement(eablage_restore_history_statement($sql, $summary['legacy_history']))));
+    }
+    if (!$summary['numbers']) {
+        foreach (eablage_restore_statements(__DIR__.'/nummern_schema.sql') as $sql) $db->exec($sql);
     }
     $summary['documents'] = (int)$db->query('SELECT COUNT(*) FROM dokumente')->fetchColumn();
     unlink($marker);
@@ -182,6 +214,10 @@ function eablage_restore_database(PDO $db, string $path): array
         $stmt->execute([$gate]);
         if ((int)$stmt->fetchColumn() !== 1) throw new RuntimeException('Inbox-Verarbeitung läuft. Bitte kurz warten und Rücksicherung erneut starten.');
         $held[] = $gate;
+        $aiLock = 'eablage.ollama.' . substr(hash('sha256', $database), 0, 40);
+        $stmt->execute([$aiLock]);
+        if ((int)$stmt->fetchColumn() !== 1) throw new RuntimeException('Eine KI-Anfrage läuft. Bitte nach Abschluss Rücksicherung erneut starten.');
+        $held[] = $aiLock;
         $exists = $db->query("SHOW TABLES LIKE 'verarbeitungsauftraege'")->fetchColumn() !== false;
         if ($exists) {
             foreach ($db->query('SELECT dateischluessel FROM verarbeitungsauftraege')->fetchAll(PDO::FETCH_COLUMN) as $key) {
@@ -193,6 +229,8 @@ function eablage_restore_database(PDO $db, string $path): array
         }
         $result = eablage_restore_database_unlocked($db, $path);
         if ($exists) $db->exec('DELETE FROM verarbeitungsauftraege');
+        if ($db->query("SHOW TABLES LIKE 'ki_vorschlaege'")->fetchColumn() !== false) $db->exec('DELETE FROM ki_vorschlaege');
+        if ($db->query("SHOW TABLES LIKE 'ki_worker_status'")->fetchColumn() !== false) $db->exec('DELETE FROM ki_worker_status');
         return $result;
     } finally {
         foreach (array_reverse($held) as $lock) {
@@ -201,3 +239,4 @@ function eablage_restore_database(PDO $db, string $path): array
         }
     }
 }
+

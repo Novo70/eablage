@@ -160,4 +160,10 @@ foreach (['retain', 'clear', 'cleanup-failure', 'insert-failure', 'changed-polic
     check_history(!glob($root . '/archiv/.eablage-delete-*') && !glob($root . '/meta/.eablage-delete-*'), 'Temporäre Dateien bleiben zurück');
     rmdir($root . '/archiv'); rmdir($root . '/meta'); rmdir($root);
 }
+$ki = eablage_protokoll_klassifizierung('Manuell | KI (Ollama: qwen3.5:9b)');
+check_history($ki['erkennung'] === 'KI' && $ki['ki_modell'] === 'qwen3.5:9b', 'KI-Herkunft fehlt');
+$kiMixed = eablage_protokoll_klassifizierung('AutoKat | KI (Ollama: qwen3.5:9b)');
+check_history($kiMixed['erkennung'] === 'AutoKat + KI', 'Gemischte KI-Herkunft fehlt');
+$kiDisplay = eablage_protokoll_anzeige(['klassifizierung' => $kiMixed], 'archiviert');
+check_history($kiDisplay['klassifizierung']['erkennung'] === 'AutoKat + KI', 'Anzeige verliert KI-Herkunft');
 echo "Dokumenthistorie: Parameter, vollständige Löschung, Detailbereinigung und Fehler-Rollback OK\n";

@@ -35,25 +35,17 @@ Groß-/Kleinschreibung spielt keine Rolle. Begriffe werden an Wortgrenzen erkann
 
 ## Feste Werte und Textextraktion
 
-Feste Vorgaben sind für Kategorie, zweite Kategorie, Dokumenttyp, Partner, Betreff, Nummer und Tags möglich. Dynamische Betreff-/Nummernextraktion ersetzt innerhalb derselben Regel den festen Feldvorschlag, wenn ein nicht leerer Extraktionswert entsteht.
+Feste Vorgaben sind für Kategorie, zweite Kategorie, Dokumenttyp, Partner, Betreff und Tags möglich. Nummern werden getrennt nach Nummernart konfiguriert; siehe [Nummern erkennen](NUMMERN.md#autokat).
 
 | Regelfeld | Bedeutung |
 | --- | --- |
-| `prDatum` | Suchanker; Datumssuche beginnt hinter dessen erstem eigenständigen Auftreten |
-| `prBetreff` | Suchanker, hinter dem Betrefftext entnommen wird |
-| `prBetreffAnz` | Anzeigepräfix, das dem entnommenen Betreff vorangestellt wird |
-| `BetreffLänge` | Maximale Zeichenlänge ab dem Suchanker; `0` begrenzt die Länge nicht |
-| `BetreffEnde` | Optionaler Endanker nach dem Startanker |
-| `prNum` | Suchanker für die Nummer |
-| `prNumAnz` | Anzeigepräfix für die entnommene Nummer |
-| `NumLänge` | Maximale Zeichenlänge; `0` begrenzt die Länge nicht |
-| `NumEnde` | Optionaler Endanker nach dem Startanker |
+| `prDatum` | Datumssuche hinter dem ersten eigenständigen Vorkommen |
+| `prBetreff` | Startanker für den Betreff |
+| `prBetreffAnz` | Anzeigepräfix vor dem Betreff |
+| `BetreffLänge` | Maximale Entnahmelänge; 0 begrenzt nicht |
+| `BetreffEnde` | Optionale Endmarkierung |
 
-Wenn Endanker und positive Längenbegrenzung vorliegen, endet die Entnahme an der früheren Grenze. Wird der Endanker nicht gefunden, gilt die Längenbegrenzung beziehungsweise der verbleibende Text. Der Sonderwert `99` stoppt zusätzlich an einer Leerzeile innerhalb der ersten 99 Zeichen.
-
-Start- und Endanker werden ohne Beachtung der Groß-/Kleinschreibung als eigenständige Begriffe oder Phrasen gesucht. Bei Betreff/Nummer werden Zeilenumbrüche entfernt, mehrfache Leerzeichen zusammengefasst und Schrägstriche durch Bindestriche ersetzt. Das Anzeigepräfix gehört nicht zum Suchanker.
-
-Beispiel: Text `Rechnungsnummer: 12345 Zahlungsziel ...`; `prNum=Rechnungsnummer`, `NumEnde=Zahlungsziel`, `prNumAnz` leer und eine ausreichende Maximallänge liefern `12345`. Den tatsächlichen PDF-Text zum Test verwenden, da Layout und OCR das Ergebnis beeinflussen.
+Beim Betreff gilt die frühere Grenze aus Endanker und positiver Maximallänge. Ohne gefundenen Endanker gilt die Maximallänge beziehungsweise der verbleibende Text. Der Sonderwert 99 beendet die Übernahme zusätzlich an einer Leerzeile innerhalb der ersten 99 Zeichen. Zeilenumbrüche werden entfernt, mehrfache Leerzeichen zusammengefasst und Schrägstriche durch Bindestriche ersetzt. Dieses Betreffverhalten gilt nicht für die neuen Nummernerkennungen.
 
 ## Neue Regel anlegen
 
@@ -84,3 +76,4 @@ Typische Dokumente und ähnliche Gegenbeispiele verwenden. Mehrere K-Treffer dur
 Trefferzahl und Zeitpunkt des letzten Treffers werden beim tatsächlichen Archivieren aktualisiert. Eine beteiligte Regel wird je archiviertem Dokument höchstens einmal gezählt. Analyseaufrufe und Tests ohne Archivierung erhöhen die Statistik nicht. Weitere gemeldete K-Treffer sind keine zusätzliche primäre Klassifikation.
 
 Ein regelbasiert gesetztes Feld besitzt eine Herkunftskennzeichnung. Die Dokumenthistorie hält bei der Archivierung beteiligte Regelreferenzen strukturiert fest. Änderungen an der heutigen Regel verändern diese gespeicherten Referenzen nicht rückwirkend. Das frühere Info-Feld bleibt nur für den Altbestand erhalten.
+

@@ -7,6 +7,8 @@ import time
 from app.db.database import get_connection
 from app.services.inbox import settings, file_path, process, reconcile_missing, list_jobs
 from app.services.archive_service import _root
+from app.services.ollama_background import run_one
+from app.services.ki_status import WorkerMonitor
 
 LOG = logging.getLogger('eablage.worker')
 stop = threading.Event()
@@ -58,11 +60,39 @@ def scan(previous, completed=None):
     return observed
 
 
+def ai_loop(database, interval):
+    # Separate thread and DB connections: inference never occupies the OCR lane.
+    monitor=WorkerMonitor(database)
+    monitor.start()
+    try:
+        while not stop.is_set():
+            outcome = 'idle'
+            if os.getenv('EABLAGE_INBOX_ENABLED', 'true').lower() not in ('0', 'false', 'off', 'no'):
+                monitor.update('pruefen')
+                try:
+                    outcome = run_one(database, on_start=monitor.processing)
+                except Exception as exc:
+                    LOG.error('Hintergrund-KI nicht verfügbar (%s, Fehlernummer=%s, SQLSTATE=%s); SQL-Update und Einstellungen prüfen.',
+                              type(exc).__name__, getattr(exc, 'errno', None), getattr(exc, 'sqlstate', None))
+                    outcome = 'failed'
+                if outcome=='failed':
+                    monitor.update('pausiert',delay=300,error='Ein KI-Auftrag ist fehlgeschlagen; Details am Dokument oder im Worker-Protokoll prüfen.')
+                else:
+                    monitor.update('pruefen')
+            else:
+                monitor.update('deaktiviert')
+            stop.wait(300 if outcome == 'failed' else 1 if outcome in ('done', 'stopped') else interval)
+    finally:
+        monitor.close()
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, lambda *_: stop.set())
     interval = max(5, min(3600, int(os.getenv('EABLAGE_INBOX_INTERVAL', '60'))))
+    ai = threading.Thread(target=ai_loop, args=(os.environ['DB_NAME'], interval), name='ollama-worker', daemon=True)
+    ai.start()
     previous, completed = {}, {}
     LOG.info('Inbox-Worker gestartet; Prüfintervall %ss.', interval)
     while not stop.is_set():
@@ -72,6 +102,7 @@ def main():
             except Exception:
                 LOG.exception('Inbox-Prüfung fehlgeschlagen; nächster Versuch im nächsten Intervall.')
         stop.wait(interval)
+    ai.join(timeout=1)
 
 if __name__ == '__main__':
     main()

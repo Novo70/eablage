@@ -7,7 +7,7 @@
     const prefix = editing ? 'eablage.document-draft:' : 'eablage.classification-draft:';
     const maxAge = 24 * 60 * 60 * 1000;
     const names = new Set(['Datum', 'Partner', 'Betreff', 'Doktyp', 'Kategorie',
-        'Kategorie2', 'Nummer', 'Tags', 'dokument_text', 'erkennungs_info',
+        'Kategorie2', 'Nummer', 'numbers_json', 'Tags', 'dokument_text', 'erkennungs_info',
         'document_revision', 'reclassification_info', 'pending_document_text']);
     const controls = () => Array.from(form.elements).filter(el => names.has(el.name));
     const identity = () => {
@@ -48,7 +48,9 @@
                     el.add(new Option(entry.label + ' (bitte prüfen)', entry.value));
                 }
                 el.value = entry.value;
+                if (el.name === 'numbers_json') el.dispatchEvent(new Event('change', {bubbles: true}));
             }
+            if (!editing) form.dataset.classificationDraftRestored = 'true';
             if (editing) {
                 const pending = fields.find(el => el.name === 'pending_document_text')?.value;
                 const preview = document.querySelector('#textDocumentView pre');
@@ -114,3 +116,4 @@
     document.querySelectorAll('[data-draft-cancel]').forEach(link => link.addEventListener('click', clearCurrent));
     // Snapshots are consumed on return, so a later save/failure cannot resurrect them.
 })();
+

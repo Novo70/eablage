@@ -46,7 +46,9 @@ function eablage_protokoll_klassifizierung(string $summary): array
     $methods = [];
     if (str_contains($summary, 'AutoKat')) $methods[] = 'AutoKat';
     if (str_contains($summary, 'Textvergleich')) $methods[] = 'Textvergleich';
+    if (preg_match('/(?:^|[ |+])KI(?: \(Ollama:|$)/', $summary)) $methods[] = 'KI';
     $result = ['erkennung' => $methods ? implode(' + ', $methods) : 'Manuell', 'regeln' => []];
+    if (preg_match('/KI \(Ollama: ([^()]+)\)/', $summary, $model)) $result['ki_modell'] = $model[1];
     foreach (['E', 'K'] as $type) {
         if (!preg_match('/\b' . $type . '\[([^\]]*)\]/', $summary, $group)) continue;
         preg_match_all('/\b(R\d{4,})(?:\/v(\d+))?(?:\/r(-?\d+))?\b/i', $group[1], $matches, PREG_SET_ORDER);

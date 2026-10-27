@@ -9,10 +9,10 @@ document.querySelectorAll('[data-status-toggle], [data-row-action]').forEach((fo
     let labelTimer;
     const showLabel = (text) => { button.textContent = text; };
     if (action === 'rename') {
-        form.addEventListener('input', () => {
-            clearTimeout(labelTimer);
-            showLabel(originalLabel);
-        });
+        const edited = () => { clearTimeout(labelTimer); showLabel(originalLabel); };
+        form.addEventListener('input', edited);
+        // The number type sort field lives in its own table cell.
+        form.elements.namedItem('sort_order')?.addEventListener('input', edited);
     }
     if (!rowFeedback.has(row)) {
         const feedback = document.createElement('div');
@@ -78,7 +78,12 @@ document.querySelectorAll('[data-status-toggle], [data-row-action]').forEach((fo
             if (action === 'rename') {
                 // Do not overwrite text edited while the request was in flight.
                 const input = form.elements.namedItem('name');
-                if (input.value === body.get('name')) {
+                const explanation = form.elements.namedItem('explanation');
+                const sortOrder = form.elements.namedItem('sort_order');
+                if (input.value === body.get('name') && (!explanation || explanation.value === body.get('explanation'))
+                        && (!sortOrder || sortOrder.value === body.get('sort_order'))) {
+                    const summary = form.querySelector('.ea-master-explanation summary');
+                    if (summary && explanation) summary.textContent = explanation.value.trim() ? 'Erläuterung (vorhanden)' : 'Erläuterung (optional)';
                     showLabel('✓ Gespeichert');
                     labelTimer = setTimeout(() => showLabel(originalLabel), 2000);
                 }
@@ -127,3 +132,4 @@ document.querySelectorAll('[data-status-toggle], [data-row-action]').forEach((fo
         }
     });
 });
+

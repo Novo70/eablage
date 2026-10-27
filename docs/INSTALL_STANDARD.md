@@ -1,8 +1,10 @@
-# Neuinstallation (getestet auf einem UGREEN NAS)
+# Installation mit separater Datenbank
 
-Diese Anleitung beschreibt die einmalige Installation von eAblage auf einem UGREEN NAS mit UGOS Pro (das Verfahren sollte auch in vergleichbaren Umgebungen funktionieren). Sie richtet eine eigene MariaDB, die PHP-Oberfläche, das Python-Backend und den Inbox-Worker in Docker ein.
+Diese Anleitung beschreibt die einmalige Installation von eAblage auf einem UGREEN NAS mit UGOS Pro (das Verfahren sollte auch in vergleichbaren Umgebungen funktionieren). Die Anwendung verbindet sich mit einer separat betriebenen MariaDB; Weboberfläche, Backend und Inbox-Worker werden mit `compose.yaml` eingerichtet. Die Anleitung zeigt auch das Einrichten eines separaten MariaDB-Stacks. Ein bereits vorhandener geeigneter MariaDB-Dienst kann entsprechend eingebunden werden.
 
-**Dokumentationsstand:** eAblage 4.3.0, auf `develop` vorbereitet. Für die Installation einen vollständigen, zusammengehörigen Projektstand verwenden und dessen Commit dokumentieren. Für den regulären Produktivbetrieb einen freigegebenen Stand wählen; `develop` zunächst getrennt testen. Die Beispiele setzen ein NAS mit Docker und Docker Compose, SSH-Zugang sowie ausreichend Speicherplatz voraus. Alle Befehle werden per SSH **auf dem NAS** ausgeführt. Alle Pfade, Instanznamen und Passwörter sind neutrale Beispiele und müssen bei abweichender Installation einheitlich angepasst werden.
+Die Variante eignet sich sowohl für den Produktivbetrieb als auch für eine Testinstanz. Alternativ steht die vereinfachte [Installation mit integrierter Datenbank](INSTALL_FRESH.md) zur Verfügung. Bei mehreren Instanzen gelten die Hinweise unter [Mehrere Instanzen betreiben](KONFIGURATION.md#mehrere-instanzen-betreiben).
+
+**Dokumentationsstand:** eAblage 4.4.0. Für die Installation einen vollständigen, zusammengehörigen Projektstand verwenden und dessen Commit dokumentieren. Für den regulären Produktivbetrieb einen freigegebenen Stand wählen; `develop` zunächst getrennt testen. Die Beispiele setzen ein NAS mit Docker und Docker Compose, SSH-Zugang sowie ausreichend Speicherplatz voraus. Alle Befehle werden per SSH **auf dem NAS** ausgeführt. Alle Pfade, Instanznamen und Passwörter sind neutrale Beispiele und müssen bei abweichender Installation einheitlich angepasst werden.
 
 ## Überblick und Beispielpfade
 
@@ -154,7 +156,7 @@ define('MYSQL_KENNWORT', 'DAS_ANWENDUNGSPASSWORT_AUS_DER_MARIADB_ENV');
 define('MYSQL_DATENBANK', 'eablage');
 ```
 
-`MYSQL_KENNWORT` muss mit dem Passwort in **beiden** `.env`-Dateien übereinstimmen. Die Vorlage enthält bereits `DB_TABELLE_ARCHIV = dokumente`; ändere den Tabellennamen nicht. Verwende beim ersten Test ein Passwort ohne Apostroph, da es sonst in PHP maskiert werden müsste.
+`MYSQL_KENNWORT` muss mit dem Passwort in **beiden** `.env`-Dateien übereinstimmen. Die Vorlage enthält bereits `DB_TABELLE_ARCHIV = dokumente`; ändere den Tabellennamen nicht. Verwende bei der ersten Einrichtung ein Passwort ohne Apostroph, da es sonst in PHP maskiert werden müsste.
 
 Schütze die Zugangsdaten und mache die Verzeichnisse für Docker betretbar. Die PHP-Datei gehört dabei dem Containerbenutzer `www-data` (UID/GID 33), damit er sie trotz Modus `600` lesen kann:
 
@@ -247,3 +249,4 @@ sudo docker compose logs mariadb --tail 100
 Weitere Einrichtung und Parameter: [Konfiguration](KONFIGURATION.md). Nach der Einrichtung die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen und eine [zusammengehörige Sicherung](SICHERUNG.md) einrichten.
 
 Der Worker bereitet die Inbox automatisch vor. Status und Konfiguration: [Stapelverarbeitung](STAPELVERARBEITUNG.md).
+

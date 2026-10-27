@@ -2,13 +2,15 @@
 
 eAblage klassifiziert, archiviert und recherchiert PDF-Dokumente im Browser. Apache/PHP und FastAPI laufen in getrennten Containern und nutzen dieselbe MariaDB. Datenbank und PDF-Archiv sind der maßgebliche Bestand; JSON-Begleitdateien machen die Metadaten unabhängig lesbar.
 
-Diese Dokumentation beschreibt eAblage in der Version 4.3.0. Web, Backend und Worker gehören zu derselben Version.
+Diese Dokumentation beschreibt eAblage in der Version 4.4.0.
 
 ## Funktionen
 
 - PDF-Eingang mit Einzelupload und Drag & Drop; lokale OCR, Datumserkennung, AutoKat und Textvergleich.
+- Optionale lokale KI über Ollama mit manuellen und im Hintergrund vorbereiteten Vorschlägen.
+- Mehrere Nummern pro Dokument mit Nummernarten, AutoKat-Ankern und Schreibvariantensuche.
 - Automatische Vorbereitung der Inbox im Hintergrund; manuelles Klassifizieren und Prüfen vor der Archivierung.
-- Archivierung mit JSON Schema 3, Originaldateiname und SHA-256-Referenz; Recherche und Metadatenbearbeitung.
+- Archivierung mit JSON Schema 4, Originaldateiname und SHA-256-Referenz; Recherche und Metadatenbearbeitung.
 - Virtueller Ablage-Explorer mit Metadatenfilter und Original-PDF-Zugriff.
 - Einzel-/Gesamtexport mit generierten oder bekannten Originalnamen und bis zu fünf Verzeichnisebenen.
 - Ereignisprotokoll mit Dokumenthistorie, aufklappbaren Details und nachvollziehbaren Löschungen.
@@ -23,8 +25,8 @@ Diese Dokumentation beschreibt eAblage in der Version 4.3.0. Web, Backend und Wo
 | Vollständige Übersicht | [Dokumentation](docs/README.md) |
 | Tägliche Bedienung | [Benutzerhandbuch](docs/BENUTZERHANDBUCH.md) |
 | Lokale Texterkennung und Eingangsverarbeitung | [OCR](docs/OCR.md), [Stapelverarbeitung](docs/STAPELVERARBEITUNG.md) |
-| Eigenständige Instanz mit eigener MariaDB | [Isolierte Neuinstallation](docs/INSTALL_FRESH.md) |
-| UGREEN mit separater MariaDB | [UGREEN-Installation](docs/INSTALL_STANDARD.md) |
+| Eigenständige Instanz mit eigener MariaDB | [Installation mit integrierter Datenbank](docs/INSTALL_FRESH.md) |
+| UGREEN mit separater MariaDB | [Installation mit separater Datenbank](docs/INSTALL_STANDARD.md) |
 | Bestehende Instanz aktualisieren | [Aktualisierung](docs/UPDATE.md) |
 | Datenbank und Dateien sichern/wiederherstellen | [Sicherung](docs/SICHERUNG.md) |
 
@@ -47,3 +49,4 @@ Obwohl die Anwendung bei mir sauber läuft und ich damit mein kleines privates D
 Copyright (C) 2026 Novo70
 
 Der eigene eAblage-Quellcode steht unter der [GNU Affero General Public License Version 3 (AGPL-3.0-only)](LICENSE). Hinweise zu Nutzung, Weitergabe und Beiträgen enthält die [Lizenzdokumentation](docs/LIZENZ.md). Lizenzen externer Komponenten sind unter [Drittkomponenten](docs/DRITTKOMPONENTEN.md) beschrieben.
+

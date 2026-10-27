@@ -74,7 +74,8 @@ try:
         cursor.execute(f'CREATE DATABASE `{db}` CHARACTER SET utf8mb4')
         created.append(db)
     cursor.execute(f'USE `{name}`')
-    for statement in (ROOT/'sql/schema.sql').read_text().split(';'):
+    schema = '\n'.join(line for line in (ROOT/'sql/schema.sql').read_text().splitlines() if not line.lstrip().startswith('--'))
+    for statement in schema.split(';'):
         if statement.strip(): cursor.execute(statement)
     with tempfile.TemporaryDirectory(prefix='eablage-regression-') as temporary, metadata_backend() as (backend_url, failure):
         base = Path(temporary)
@@ -149,7 +150,7 @@ try:
             archived, info, original_name, reference_hash, modified=cursor.fetchone()
             assert metadata['archived_at']==archived.isoformat(timespec='seconds')
             assert 'info' not in metadata and info is None and metadata['document_id']==dokid
-            assert metadata['schema_version']==3
+            assert metadata['schema_version']==4
             assert metadata['original_filename']==original_name==partner
             assert metadata['pdf_sha256']==reference_hash==hashlib.sha256(expected).hexdigest()
             assert metadata['modified_at'] is None and modified is None
@@ -158,7 +159,8 @@ try:
         print('Parallel archive requests: PASS')
         # Exercise the real POST parsing in bearbeiten.php via PHP's HTTP server.
         web=base/'web'; web.mkdir()
-        for file in (ROOT/'web').glob('*.php'): shutil.copy2(file,web/file.name)
+        for file in (ROOT/'web').iterdir():
+            if file.suffix in ('.php', '.js', '.sql'): shutil.copy2(file,web/file.name)
         shutil.copy2(base/'konfiguration.php',web/'konfiguration.php')
         shutil.copy2(ROOT/'web/app.css',web/'app.css')
         with socket.socket() as listener:
@@ -223,7 +225,7 @@ try:
             legacy_json=json.loads(old_json)
             legacy_json['schema_version']=1
             legacy_json['info']='Historischer Text'
-            for key in ('original_filename', 'pdf_sha256', 'modified_at'): del legacy_json[key]
+            for key in ('original_filename', 'pdf_sha256', 'modified_at', 'numbers'): del legacy_json[key]
             json_path.write_text(json.dumps(legacy_json))
             cursor.execute('UPDATE dokumente SET Info=%s WHERE DokID=%s', ('Altbestand unverändert', dokid))
             edit('Geändert')
@@ -235,7 +237,7 @@ try:
             assert info == 'Altbestand unverändert'
             assert metadata['archived_at']==archived.isoformat(timespec='seconds')
             before=json.loads(old_json)
-            assert metadata['schema_version']==3
+            assert metadata['schema_version']==4
             assert metadata['original_filename']==original_name==before['original_filename']
             assert metadata['pdf_sha256']==reference_hash==before['pdf_sha256']
             assert metadata['modified_at']==modified.isoformat(timespec='seconds')
@@ -283,7 +285,12 @@ try:
         backup=json.loads(result.stdout)
         cursor.execute('SELECT COUNT(*) FROM ereignisprotokoll')
         event_count=cursor.fetchone()[0]
-        assert backup['tables']==6 and backup['rows']==2+event_count,backup
+        auxiliary_count = 0
+        for table in ('parameter', 'nummernart', 'dokument_nummer', 'autokat_nummer', 'autokat', 'kategorie', 'doktyp'):
+            cursor.execute(f'SELECT COUNT(*) FROM `{table}`')
+            auxiliary_count += cursor.fetchone()[0]
+        assert backup['tables']==9 and backup['rows']==2+event_count+auxiliary_count,backup
+        assert Path(backup['path']).read_text().startswith('-- e_ablage MariaDB-Datensicherung; Version: 4.4.0\n')
         # Let PDO execute the generated SQL, preserving quoted strings/semicolons.
         restore_runner=base/'restore.php'
         restore_runner.write_text("<?php require 'konfiguration.php'; $db_config->exec('USE " + restore + "'); $db_config->exec(file_get_contents(" + json.dumps(backup['path']) + '));')
@@ -338,3 +345,4 @@ try:
 finally:
     for db in reversed(created): cursor.execute(f'DROP DATABASE `{db}`')
     connection.close()
+

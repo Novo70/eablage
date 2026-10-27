@@ -21,7 +21,7 @@ Ein NAS-Backup ergänzt die SQL-Sicherung. Ein Docker-Volume oder eine erfolgrei
 
 PHP erzeugt den Dump über die bestehende PDO-Verbindung. Die Datei heißt beispielsweise `eablage_2026-10-02_210000.sql`. Ein identisches vorhandenes Ziel wird nicht überschrieben. Bei einem erkannten Schreibfehler wird die unvollständige Datei entfernt.
 
-Gesichert werden Strukturen und Datensätze der InnoDB-Basistabellen dieser Datenbank mit Ausnahme von `verarbeitungsauftraege`. Views, Trigger, Routinen, Datenbankbenutzer, Rechte und PDF-/Metadateien sind nicht enthalten. Währenddessen keine Schemaänderungen oder Tabellenmigrationen durchführen. Für eine übergreifend konsistente Sicherung zusätzlich die oben genannte Schreibpause einhalten.
+Gesichert werden Strukturen und Datensätze der InnoDB-Basistabellen dieser Datenbank mit Ausnahme von `verarbeitungsauftraege`, `ki_vorschlaege` und `ki_worker_status`. Views, Trigger, Routinen, Datenbankbenutzer, Rechte und PDF-/Metadateien sind nicht enthalten. Währenddessen keine Schemaänderungen oder Tabellenmigrationen durchführen. Für eine übergreifend konsistente Sicherung zusätzlich die oben genannte Schreibpause einhalten.
 
 ## Voraussetzungen für die Rücksicherung
 
@@ -32,17 +32,17 @@ Die SQL-Datei muss im aktuell konfigurierten Sicherungsverzeichnis liegen. Ein B
 Der Import akzeptiert ausschließlich den unterstützten, vollständigen eAblage-Dump mit dieser ersten Zeile:
 
 ```sql
--- e_ablage MariaDB-Datensicherung; Version: 4.3.0
+-- e_ablage MariaDB-Datensicherung; Version: 4.4.0
 -- Ereignisprotokoll: 1
 ```
 
-Unterstützte Sicherungen mit der Kennung `Version: 4.1.0` oder `Version: 4.2.0` bleiben ebenfalls importierbar. Die Kennung allein genügt nicht: geprüft werden SQL-Form, Reihenfolge, InnoDB und erwartete Spalten einschließlich `GeloeschtAm` der fünf Grundtabellen `autokat`, `doktyp`, `dokumente`, `kategorie`, `parameter` sowie bei neuen Sicherungen der Tabelle `ereignisprotokoll`. Die zusätzliche zweite Kopfzeile `-- Ereignisprotokoll: 1` macht diese sechste Tabelle verbindlich. Bisherige Historienbackups mit `-- Dokumentprotokoll: 1` und `dokument_protokoll` werden ebenfalls akzeptiert und beim Import auf den neuen Tabellennamen umgesetzt. Ältere Sicherungen ohne diese Kennzeichnung enthalten weiterhin fünf Tabellen. Dumps anderer Versionen oder unmarkierte Dumps, einschließlich 4.0.0-Dumps, und Sicherungen mit zusätzlichen Basistabellen werden von dieser Funktion abgewiesen. Die manuelle Parameterkennzeichnung `Version` ersetzt diese Prüfung nicht. Eine ältere Sicherung zuerst in einer getrennten Umgebung fachgerecht importieren und auf das [aktuelle Schema](DATENBANK.md) bringen; danach mit der aktuellen Sicherungsfunktion neu sichern. Nicht nur die Kopfzeile ändern.
+Unterstützte Sicherungen mit der Kennung `Version: 4.1.0`, `Version: 4.2.0` oder `Version: 4.3.0` bleiben ebenfalls importierbar. Die Kennung allein genügt nicht: geprüft werden SQL-Form, Reihenfolge, InnoDB und erwartete Spalten einschließlich `GeloeschtAm` der fünf Grundtabellen `autokat`, `doktyp`, `dokumente`, `kategorie`, `parameter` sowie bei Historien-Sicherungen der Tabelle `ereignisprotokoll` und bei Nummern-Sicherungen der drei Tabellen `nummernart`, `dokument_nummer` und `autokat_nummer`. Die zusätzliche zweite Kopfzeile `-- Ereignisprotokoll: 1` macht die Protokolltabelle verbindlich. Aktuelle 4.4.0-Sicherungen umfassen insgesamt neun Tabellen einschließlich der Nummerntabellen. Bisherige Historienbackups mit `-- Dokumentprotokoll: 1` und `dokument_protokoll` werden ebenfalls akzeptiert und beim Import auf den neuen Tabellennamen umgesetzt. Ältere Sicherungen ohne diese Kennzeichnung enthalten weiterhin fünf Tabellen. Dumps anderer Versionen oder unmarkierte Dumps, einschließlich 4.0.0-Dumps, und Sicherungen mit zusätzlichen Basistabellen werden von dieser Funktion abgewiesen. Die manuelle Parameterkennzeichnung `Version` ersetzt diese Prüfung nicht. Eine ältere Sicherung zuerst in einer getrennten Umgebung fachgerecht importieren und auf das [aktuelle Schema](DATENBANK.md) bringen; danach mit der aktuellen Sicherungsfunktion neu sichern. Nicht nur die Kopfzeile ändern.
 
 Vor der Entfernung der drei alten AutoKat-Spalten bereits mit 4.1.0 gekennzeichnete Test-Sicherungen bleiben importierbar: Der Import übernimmt das vollständige Tabellenschema des Dumps. Falls darin `Suchbegriff1`, `Suchbegriff2` oder `sucheBeenden` enthalten sind, danach [update_autokat_4.1.0.sql](../sql/update_autokat_4.1.0.sql) bei Schreibpause ausführen und eine neue Sicherung erstellen. Für einen älteren 4.0.0-Dump gilt weiterhin der oben beschriebene gesonderte Migrationsweg.
 
 ## Leere Installation befüllen
 
-1. Eine Installation mit leerer Tabelle `dokumente` vorbereiten; für eine Probe die [isolierte Installation](INSTALL_FRESH.md) verwenden. Einen gefüllten Bestand nicht allein zum Freischalten der Schaltfläche löschen.
+1. Eine Installation mit leerer Tabelle `dokumente` vorbereiten; für eine Probe die [Installation mit integrierter Datenbank](INSTALL_FRESH.md) verwenden. Einen gefüllten Bestand nicht allein zum Freischalten der Schaltfläche löschen.
 2. Die zusammengehörigen Archiv-PDFs und Metadateien in die für diese Installation erreichbaren Datenordner zurückkopieren. Dateiinhalte unverändert übernehmen.
 3. Den kompatiblen SQL-Dump in das vor dem Import konfigurierte Sicherungsverzeichnis legen.
 4. Datenbanknamen und Instanz prüfen. Alle anderen Schreiber während des Imports ausschließen.
@@ -71,10 +71,27 @@ Unterstützte Sicherungen mit der früheren Spalte `dokumente.Dateipfad` bleiben
 
 ## Vorläufige Inbox-Ergebnisse
 
-Die reproduzierbare Tabelle `verarbeitungsauftraege` ist vom integrierten SQL-Archivbackup ausgeschlossen. Noch nicht archivierte Original-PDFs liegen in der Inbox und benötigen eine Dateisicherung. Bei Rücksicherung werden alte Aufträge entfernt und später neu erstellt. Während aktiver Verarbeitung wird die Rücksicherung abgelehnt; bei Bedarf den Worker vorher stoppen. [Stapelverarbeitung](STAPELVERARBEITUNG.md).
+Die reproduzierbaren Tabellen `verarbeitungsauftraege` und `ki_vorschlaege` sind vom integrierten SQL-Archivbackup ausgeschlossen. Noch nicht archivierte Original-PDFs liegen in der Inbox und benötigen eine Dateisicherung. Bei Rücksicherung werden alte Aufträge entfernt und später neu erstellt. Während aktiver Verarbeitung wird die Rücksicherung abgelehnt; bei Bedarf den Worker vorher stoppen. [Stapelverarbeitung](STAPELVERARBEITUNG.md).
 
 ## Historie bei Sicherung und Rücksicherung
 
 Die Protokolltabelle gehört zum konsistenten SQL-Backup, einschließlich Ereignissen endgültig gelöschter Dokumente. Ein Backup nur aus PDF und JSON kann die Ereignishistorie nicht rekonstruieren. Neue Backups werden ohne vorhandene Protokolltabelle abgewiesen; zuerst die Migration ausführen.
 
 Vor einer Rücksicherung muss die Protokolltabelle ebenfalls vorhanden sein. Neue Backups ersetzen ihren Inhalt vollständig. Bei einer alten Sicherung ohne Protokoll wird eine vorhandene Historie geleert, damit keine Ereignisse eines anderen Bestands an rückgesicherte DokIDs angehängt werden. Deshalb auch bei leerer Tabelle `dokumente` eine noch benötigte bisherige Historie vorher sichern. Die Rücksicherung selbst schreibt keine künstlichen Dokumentereignisse.
+
+## Stammdaten-Erläuterungen
+
+Die integrierte SQL-Sicherung erfasst automatisch `Erlaeuterung` in Kategorien und Dokumententypen, einschließlich Zeilenumbrüchen, da Tabellenstruktur und alle Spalten exportiert werden. Die Rücksicherung erhält Erläuterungen aus aktuellen Sicherungen. Bei älteren unterstützten Sicherungen werden die optionalen Spalten beim Wiederanlegen der Tabellen ergänzt; die Texte bleiben zunächst leer. Bestehende Erläuterungen der Zielinstallation werden wie die übrigen Stammdaten durch den Sicherungsstand ersetzt. Erläuterungen sind kein Bestandteil der Dokument-JSON-Dateien.
+
+## Fachliche KI-Anweisung
+
+Die SQL-Sicherung enthält die längere TEXT-Spalte `parameter.param_value` und den aktuellen Wert von `ollamaAnweisung` einschließlich Zeilenumbrüchen. Die Rücksicherung übernimmt diesen Stand. Bei älteren Sicherungen wird eine VARCHAR-basierte Parameterdefinition beim Import auf TEXT erweitert. Fehlt der Anweisungsparameter, gelten zunächst die Backend-Standards; `sql/update_ollama_instruction.sql` ergänzt ihn anschließend für die Bearbeitung in den Einstellungen, ohne andere Werte zu ersetzen.
+
+Die abgeleiteten Eingangsaufträge `verarbeitungsauftraege` und Hintergrund-KI-Vorschläge `ki_vorschlaege` sind kein Archivbestand und werden nicht gesichert. Bei einer Rücksicherung werden vorhandene Caches geleert; der Worker kann sie anschließend neu aufbauen. Eine laufende KI-Generierung verhindert die Rücksicherung bis zu ihrem Abschluss. Stammdaten, Erläuterungen und alle KI-Parameter werden weiterhin regulär gesichert.
+
+Die Laufzeittabelle `ki_worker_status` wird ebenfalls nicht gesichert und bei Rücksicherung geleert. Nach Rücksicherung den Worker neu starten, damit seine Rückmeldung mit einer neuen Startkennung angelegt wird.
+
+
+## Nummernarten und Nummern
+
+SQL-Sicherungen enthalten `nummernart`, `dokument_nummer` und `autokat_nummer` mit allen Werten und Erläuterungen. Die Rücksicherung erhält diese Tabellen vollständig. Unterstützte ältere Sicherungen ohne Nummerntabellen werden nach dem Import automatisch migriert: bestehende Nummern und Regelerkennungen erhalten die Art Allgemein. Die zugehörigen PDFs und JSON-Dateien werden weiterhin separat unverändert zurückkopiert. Nach dem Import die Archivprüfung und eine Probe mit mehreren Nummern durchführen.

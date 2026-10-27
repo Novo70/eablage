@@ -104,7 +104,7 @@ class ExportStructureTests(unittest.TestCase):
         self.assertEqual(item['display'], {
             'date': date(2026, 9, 20), 'category': 'Versicherung',
             'type': 'Rechnung', 'partner': 'Müller & Söhne',
-            'subject': 'Monatsauszug', 'number': '4711',
+            'subject': 'Monatsauszug', 'number': '4711', 'numbers': [],
         })
         self.assertTrue(item['filename'].endswith('.pdf'))
 
@@ -126,7 +126,7 @@ class ExportStructureTests(unittest.TestCase):
                 patch.object(export, 'load_export_settings', return_value={'expDokID': 'ja'}) as load:
             result = export.prepare_single_export(10001)
             load.assert_called_once_with(export.PROFILE_SINGLE)
-            self.assertEqual(result, {'dok_id': 10001, 'filename': '10001.pdf', 'profile': 2})
+            self.assertEqual(result, {'dok_id': 10001, 'filename': '10001.pdf', 'profile': 2, 'numbers': []})
 
     def test_original_mode_and_legacy_fallback(self):
         doc = {**self.document, 'Originaldateiname': 'Konto Müller 09.PDF'}
@@ -182,3 +182,4 @@ class ExportStructureTests(unittest.TestCase):
                 {**self.document, 'DokID': 3, 'Originaldateiname': 'müller & söhne.pdf'}]
         items = export.build_full_export_plan(docs, {**self.settings, 'expDateinameModus': 'original'})['items']
         self.assertEqual(len({item['filename'].casefold() for item in items}), 3)
+

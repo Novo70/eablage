@@ -542,6 +542,12 @@ mark {
     border: 1px solid #b8d3ed;
 }
 
+.ea-source-badge--ai {
+    color: #66358a;
+    background: #f2eafb;
+    border: 1px solid #cbb2e0;
+}
+
 .ea-source-warning {
     margin-bottom: 18px;
     padding: 11px 13px;
@@ -1513,4 +1519,57 @@ mark {
         flex-wrap: wrap;
     }
     .ea-form-actions.ea-document-actions .btn { width: auto; }
+}
+
+/* Optional local AI proposals beside their classification fields. */
+.ea-recognition-note { overflow-wrap:anywhere; }
+.ea-recognition-note > :last-child, .ea-recognition-note [data-ai-history] > :last-child { margin-bottom:0; }
+.ea-ollama-panel { margin-bottom: 15px; font-size: .9em; }
+.ea-ollama-panel[hidden], .ea-ollama-field[hidden], .ea-ollama-field [hidden] { display: none; }
+.ea-ollama-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.ea-ollama-heading > span { flex: 1 1 180px; }
+.ea-ollama-panel p { margin: 8px 0 0; }
+.ea-ollama-field { margin-top: 5px; font-size: .9em; overflow-wrap: anywhere; }
+.ea-ollama-apply { display: block; max-width: 100%; padding: 4px 8px; border: 1px solid var(--ea-blue-300, #90b8d8); border-radius: 4px; background: var(--ea-blue-100); color: var(--ea-blue-900); text-align: left; white-space: normal; overflow-wrap: anywhere; cursor: pointer; }
+.ea-ollama-apply:hover { background: var(--ea-blue-200, #dceaf5); }
+.ea-ollama-apply:focus-visible { outline: 2px solid var(--ea-blue-700); outline-offset: 2px; }
+.ea-ollama-confirmed { color: var(--ea-gray-600, #666); }
+.ea-ollama-evidence { margin-top: 3px; color: var(--ea-gray-600, #666); }
+.ea-ollama-evidence summary { cursor: pointer; }
+
+.ea-ollama-diagnostic { padding: 10px; border: 1px solid var(--ea-gray-300); border-radius: 4px; }
+.ea-ollama-diagnostic pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 360px; overflow-y: auto; }
+.ea-ollama-diagnostic textarea { margin: 8px 0; resize: vertical; }
+.ea-ollama-diagnostic details { margin-top: 8px; }
+.ea-ollama-diagnostic details[hidden] { display: none; }
+.ea-ollama-diagnostic summary { cursor: pointer; font-weight: 600; }
+
+
+/* Compact AI confirmation at field labels, with touch-accessible evidence. */
+.ea-source-badge[hidden] { display:none; }
+.ea-source-badge.ea-ollama-confirmed { color:#63556d; background:#f6f3f8; border:1px solid #d8cede; }
+.ea-source-badge[data-ai-evidence] { cursor:help; }
+.ea-source-badge[data-ai-evidence]:focus-visible { outline:2px solid var(--ea-blue-700); outline-offset:2px; }
+.ea-ai-evidence-tooltip { pointer-events:none; position:fixed; z-index:2000; width:max-content; max-width:min(340px,calc(100vw - 24px)); padding:10px 12px; border:1px solid var(--ea-gray-300); border-radius:6px; background:#fff; color:var(--ea-gray-900,#222); box-shadow:0 4px 18px #0002; white-space:pre-line; overflow-wrap:anywhere; font-size:.9rem; }
+.ea-ai-evidence-tooltip[hidden] { display:none; }
+
+/* Typed document numbers and AutoKat number extraction. */
+.ea-number-row { display:grid; grid-template-columns:minmax(100px,1fr) minmax(120px,2fr) auto auto; gap:6px; align-items:center; }
+.ea-number-row > .ea-number-badges { grid-column:3; grid-row:1; display:flex; align-items:center; flex-wrap:wrap; gap:4px; max-width:10rem; }
+.ea-number-badges > .ea-source-badge:empty, .ea-number-row > .ea-number-badges[hidden] { display:none; }
+.ea-number-row > select { grid-column:1; grid-row:1; }
+.ea-number-row > input { grid-column:2; grid-row:1; }
+.ea-number-row > .ea-number-remove { grid-column:4; grid-row:1; }
+.ea-number-row > .ea-number-ai { grid-column:2 / -1; grid-row:2; justify-self:start; }
+.ea-number-row > .ea-number-ai[hidden] { display:none; }
+#number-rule-editor fieldset { border:1px solid var(--ea-gray-300); border-radius:6px; padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+#number-rule-editor fieldset > button { justify-self:start; }
+@media (max-width:600px) {
+    .ea-number-row { grid-template-columns:minmax(0,1fr) auto auto; }
+    .ea-number-row > select { grid-column:1 / -1; }
+    .ea-number-row > input { grid-column:1; grid-row:2; min-width:0; }
+    .ea-number-row > .ea-number-badges { grid-column:2; grid-row:2; max-width:7rem; }
+    .ea-number-row > .ea-number-remove { grid-column:3; grid-row:2; }
+    .ea-number-row > .ea-number-ai { grid-column:1 / -1; grid-row:3; }
+    #number-rule-editor fieldset { grid-template-columns:1fr; }
 }

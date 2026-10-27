@@ -33,6 +33,9 @@ Schreibende Webformulare senden den sitzungsgebundenen `aktion_token`. `web/csrf
 
 | Methode und Pfad | Zweck |
 | --- | --- |
+| `POST /ollama/check` | Gespeicherte lokale KI-Konfiguration und Modell prüfen; Datenbankkennung erforderlich |
+| `POST /ollama/background` | Gespeicherte Worker-KI-Vorschläge abrufen; dieselbe Dokumentidentität wie beim manuellen Abruf; keine Modellanfrage. Veralteter Kontext wird zur erneuten Vorbereitung markiert |
+| `POST /ollama/suggest` | Manuellen Vorschlag für einen vorbereiteten Auftrag erzeugen; Datenbank, Dateiname, Auftrag-ID, PDF- und Texthash sowie optionale begrenzte `current_fields` für ergänzende Tags; keine Schreiboperation. Antwort enthält die vor dem Versand erfasste `diagnostic` mit Request-Body, Zieladresse und Empfangsstatus, auch bei Fehlern nach Erfassung |
 | `POST /inbox/process` | Auftrag unmittelbar verarbeiten oder gespeichertes Ergebnis liefern; Datenbank, Dateiname, optional `retry` und `ocr_requested` |
 | `POST /inbox/jobs` | Status ohne Dokumenttexte; optional `filenames` mit höchstens 200 Namen, ohne Liste nur vorhandene Inbox-PDFs |
 | `POST /documents/text` | PDF aus Inbox oder Archiv auslesen; `ocr_requested=true` erkennt alle Seiten ausdrücklich neu |
@@ -46,7 +49,7 @@ Schreibende Webformulare senden den sitzungsgebundenen `aktion_token`. `web/csrf
 | `POST /metadata/prepare` | JSON aus vollständigem Dokumentstand validieren und vorbereiten |
 | `POST /archive/audit` | Bestand prüfen |
 | `POST /archive/repair` | Ausgewählte JSON-Dateien aus DB reparieren, höchstens 100 je Aufruf |
-| `POST /master-data/{kind}` | Kategorien oder Dokumententypen lesen/ändern |
+| `POST /master-data/{kind}` | Kategorien oder Dokumententypen lesen/ändern; optionale `explanation` bis 1000 Zeichen gemeinsam mit der Bezeichnung speichern |
 
 Bei `POST /inbox/process` erzwingt `ocr_requested=true` eine neue Verarbeitung einschließlich OCR aller Seiten, auch ohne `retry=true` und bei einem bereits vorbereiteten oder fehlgeschlagenen Ergebnis. Neue Klassifikationsvorschläge ersetzen das bisherige Auftragsergebnis. Ohne OCR-Anforderung bleibt die Verwendung fertiger Ergebnisse unverändert. Dateisperren gelten weiterhin; bei laufender Verarbeitung wird keine parallele OCR gestartet. Bereits archivierte Aufträge werden nicht erneut geöffnet. Details zur Bedienung: [OCR](OCR.md).
 
@@ -110,3 +113,7 @@ PDF-Textextraktion, OCR und die Zusammenführung der Klassifizierung laufen geme
 ## Inbox-Aufträge
 
 Ablauf, Zustände, Datenbanksperren und Wiederanlauf: [Stapelverarbeitung](STAPELVERARBEITUNG.md). Fertige Ergebnisse bleiben bis zur expliziten Neuerkennung erhalten; Regeländerungen lösen keine automatische Überschreibung aus.
+
+Die optionale Ollama-Anbindung läuft über `web/ollama.php` und `backend/app/ollama_api.py`. Der Backend-Dienst lädt Konfiguration, Stammdaten und vorbereiteten Text selbst. Der Browser spricht ausschließlich die Webanwendung an. Grenzen und Einrichtung: [Ollama](OLLAMA.md).
+
+Die Hintergrund-KI läuft in einem separaten Thread des Inbox-Workers, mit eigenen Datenbankverbindungen und reproduzierbarem Cache `ki_vorschlaege`. Eine verbindungsgebundene Generierungssperre serialisiert Worker und manuellen Abruf pro Datenbank. Revisionsgebundene Schreiboperationen verändern weder OCR-Ergebnis noch archivierte Dokumente. [Ablauf](OLLAMA.md#ki-im-hintergrund).

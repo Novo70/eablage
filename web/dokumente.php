@@ -77,14 +77,26 @@ if ($datumbis !== '') {
     $types .= 's';
     $params[] = $datumbis;
 }
-$searchColumns = ['dokumente.Partner', 'dokumente.Betreff', 'dokumente.Nummer', 'dokumente.Tags'];
+$searchColumns = ['dokumente.Partner', 'dokumente.Betreff', 'dokumente.Tags'];
 if ($volltextsuche) $searchColumns[] = 'dokumente.Doktext';
+// Nur Nummern zusätzlich ohne typische Schreibtrennzeichen vergleichen.
+// Dasselbe Muster in PHP und MariaDB verwenden; Originalwerte bleiben erhalten.
+$nummerTrennzeichen = '[[:space:]\x{00A0}\x{202F}./()‐‑‒–—−-]';
 foreach ($terms as $term) {
     $orParts = [];
     foreach ($searchColumns as $column) {
         $orParts[] = $column . ' LIKE ?';
         $types .= 's';
         $params[] = '%' . $term . '%';
+    }
+    $orParts[] = 'EXISTS (SELECT 1 FROM dokument_nummer n WHERE n.DokumentID=dokumente.DokID AND n.Wert LIKE ?)';
+    $types .= 's'; $params[] = '%' . $term . '%';
+    $nummerTerm = preg_replace('/[^a-zA-Z0-9]/', '', $term);
+    if ($nummerTerm !== null && $nummerTerm !== '') {
+        $orParts[] = "EXISTS (SELECT 1 FROM dokument_nummer n WHERE n.DokumentID=dokumente.DokID AND n.Suchwert LIKE ? ESCAPE '=')";
+        $types .= 's';
+        // Wildcards im zusätzlichen Vergleich als Bestandteil der Nummer behandeln.
+        $params[] = '%' . strtr(strtoupper($nummerTerm), ['=' => '==', '%' => '=%', '_' => '=_']) . '%';
     }
     $where[] = '(' . implode(' OR ', $orParts) . ')';
 }
@@ -223,3 +235,4 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
 </body>
 
 </html>
+

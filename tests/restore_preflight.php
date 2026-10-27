@@ -25,9 +25,25 @@ try {
     file_put_contents($file, $sql);
     $summary = eablage_restore_validate($file);
     assert_restore($summary['tables'] === 5 && $summary['statements'] === 18, 'Gültiger Dump nicht erkannt');
+    foreach (['kategorie', 'doktyp'] as $table) {
+        $legacyCreate = "CREATE TABLE `$table` (`id` varchar(20), `Aktiv` int) ENGINE=InnoDB";
+        $upgraded = eablage_restore_master_statement($legacyCreate);
+        assert_restore(str_contains($upgraded, '`Erlaeuterung` varchar(1000) DEFAULT NULL'), 'Ältere Stammdatenstruktur nicht ergänzt');
+        assert_restore(eablage_restore_master_statement($upgraded) === $upgraded, 'Erläuterung doppelt ergänzt');
+        $insert = "INSERT INTO `$table` (`id`, `Erlaeuterung`) VALUES ('1', 'Gebäudeversicherung; Zeile 2')";
+        assert_restore(eablage_restore_master_statement($insert) === $insert, 'Erläuterungsdaten bei Rücksicherung verändert');
+    }
+    assert_restore(eablage_restore_master_statement('CREATE TABLE `dokumente` (`ID` int) ENGINE=InnoDB') === 'CREATE TABLE `dokumente` (`ID` int) ENGINE=InnoDB', 'Andere Tabelle verändert');
+    $parameterCreate = "CREATE TABLE `parameter` (`param_key` varchar(255), `param_value` varchar(255) DEFAULT NULL) ENGINE=InnoDB";
+    $upgradedParameters = eablage_restore_parameter_statement($parameterCreate);
+    assert_restore(str_contains($upgradedParameters, '`param_value` text DEFAULT NULL'), 'Ältere Parameterstruktur nicht erweitert');
+    assert_restore(str_contains($upgradedParameters, '`param_key` varchar(255)'), 'Andere Parameterspalte verändert');
+    assert_restore(eablage_restore_parameter_statement($upgradedParameters) === $upgradedParameters, 'Aktuelle Parameterstruktur verändert');
+    $parameterInsert = "INSERT INTO `parameter` (`param_key`, `param_value`) VALUES ('ollamaAnweisung', 'Text mit varchar(255); Zeile 2')";
+    assert_restore(eablage_restore_parameter_statement($parameterInsert) === $parameterInsert, 'Gespeicherte Anweisung verändert');
     assert_restore(count(eablage_restore_files($dir)) === 1, 'Sicherung nicht gelistet');
     assert_restore(eablage_restore_path($dir, basename($file)) === realpath($file), 'Pfadprüfung fehlgeschlagen');
-    foreach (['4.1.0', '4.2.0', '4.3.0'] as $version) {
+    foreach (['4.1.0', '4.2.0', '4.3.0', '4.4.0'] as $version) {
         $supported = str_replace('Version: 4.1.0', 'Version: ' . $version, $sql);
         file_put_contents($file, $supported);
         assert_restore(eablage_restore_validate($file)['tables'] === 5, 'Unterstützte Sicherung abgewiesen: ' . $version);
@@ -42,7 +58,7 @@ try {
     file_put_contents($file, $withHistory);
     $summary = eablage_restore_validate($file);
     assert_restore($summary['tables'] === 6 && $summary['history'] === true, 'Protokollbackup nicht erkannt');
-    foreach (['4.1.0', '4.2.0', '4.3.0'] as $version) {
+    foreach (['4.1.0', '4.2.0', '4.3.0', '4.4.0'] as $version) {
         file_put_contents($file, str_replace('Version: 4.1.0', 'Version: ' . $version, $withHistory));
         $summary = eablage_restore_validate($file);
         assert_restore($summary['tables'] === 6 && $summary['history'], 'Historienbackup abgewiesen: ' . $version);
@@ -62,7 +78,7 @@ try {
         str_replace("-- Ereignisprotokoll: 1\n", '', $withHistory),
         str_replace('-- Ereignisprotokoll: 1', '-- Ereignisprotokoll: 2', $withHistory),
         str_replace('`Details`', '`Fremd`', $withHistory),
-        str_replace('Version: 4.1.0', 'Version: 4.4.0', $sql),
+        str_replace('Version: 4.1.0', 'Version: 4.5.0', $sql),
         str_replace('Version: 4.1.0', 'Version: 4.0.0', $sql),
         str_replace('`GeloeschtAm`', '`AlterWert`', $sql),
         str_replace('`DateiSHA256`', '`AlterWert`', $sql),
@@ -80,3 +96,4 @@ try {
     @unlink($file);
     rmdir($dir);
 }
+

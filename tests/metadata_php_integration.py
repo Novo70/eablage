@@ -84,7 +84,7 @@ class PhpMetadataIntegration(unittest.TestCase):
         self.assertEqual(metadata['document_text'], self.document['Doktext'])
         self.assertEqual(metadata['category']['id'], '001')
         self.assertEqual(metadata['archived_at'], '2026-09-20T12:34:56')
-        self.assertEqual(metadata['schema_version'], 3)
+        self.assertEqual(metadata['schema_version'], 4)
         self.assertEqual(metadata['original_filename'], 'Müller.PDF')
         self.assertEqual(metadata['pdf_sha256'], 'a' * 64)
         self.assertEqual(metadata['modified_at'], '2026-09-21T14:34:56')
@@ -122,3 +122,4 @@ class PhpMetadataIntegration(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

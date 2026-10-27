@@ -17,7 +17,7 @@ Unterverzeichnisse werden nicht rekursiv durchsucht. Die Prüfung kontrolliert Z
 Nicht erreichbare Verzeichnisse sind ein Fehler und gelten nicht als leerer Bestand.
 
 JSON wird vorrangig geprüft: Version, Struktur, Typen und alle Felder einschließlich
-Bezeichnungen, Archivierungsdatum und reservierter Aufbewahrungsdauer. Das in Schema 1/2 vorhandene Info-Feld wird strikt eingelesen, aber nicht mehr fachlich mit der Datenbank verglichen; neue Metadateien verwenden Schema 3 ohne `info`.
+Bezeichnungen, Archivierungsdatum und reservierter Aufbewahrungsdauer. Das in Schema 1/2 vorhandene Info-Feld wird strikt eingelesen, aber nicht mehr fachlich mit der Datenbank verglichen; neue Metadateien verwenden Schema 4 ohne `info`.
 Einrückung/Schlüsselreihenfolge spielen keine Rolle; Zeilenumbrüche innerhalb
 von JSON-Textwerten gehören zum Inhalt. BOM wird akzeptiert. Unbekannte
 Formatversionen werden ohne Reparaturauswahl gemeldet.
@@ -58,3 +58,4 @@ Datenbank und DokID im Backend-Log protokolliert, ohne Dokumentinhalt.
 Die Implementierung verwendet synchrone Aufrufe (PHP-Backend-Zeitlimit 120 Sekunden) und hält den Prüfreport im Speicher. Laufzeit und Speicherbedarf wachsen mit dem Bestand; eine Fortsetzung als Hintergrundauftrag ist nicht implementiert.
 
 PDF-Probleme und nicht zugeordnete Dateien zuerst inhaltlich prüfen; die Reparatur stellt keine PDFs wieder her.
+

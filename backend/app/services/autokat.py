@@ -2,6 +2,7 @@ import re
 from typing import Optional
 
 from app.db.database import get_connection
+from app.services.numbers import extract_number
 from app.services.date_parser import find_document_date
 from app.services.text_extractor import extract_text_after
 
@@ -33,7 +34,12 @@ def load_autokat_rules() -> list[dict]:
             ORDER BY Rang ASC, id ASC
             """
         )
-        return cursor.fetchall()
+        rules = cursor.fetchall()
+        cursor.execute("SELECT n.* FROM autokat_nummer n JOIN nummernart a ON a.id=n.NummernartID WHERE a.Aktiv=1 ORDER BY n.Sortierung,n.ID")
+        definitions = cursor.fetchall()
+        for rule in rules:
+            rule['number_definitions'] = [d for d in definitions if d['AutoKatID'] == rule['id']]
+        return rules
     finally:
         connection.close()
 
@@ -208,6 +214,15 @@ def _extract_rule_values(text: str, rule: dict) -> dict:
 
 def _apply_rule(result: dict, text: str, rule: dict, rule_type: str) -> None:
     values = _extract_rule_values(text, rule)
+    for definition in rule.get('number_definitions', []):
+        kind = str(definition['NummernartID'])
+        if any(n['kind_id'] == kind for n in result['numbers']):
+            continue
+        value = extract_number(text, definition)
+        if value:
+            result['numbers'].append({'kind_id': kind, 'value': value,
+                'position': len(result['numbers']) * 10 + 10,
+                'source': _rule_source(rule, rule_type, 'number_anchor' if definition.get('Startanker') else 'fixed')})
 
     for field, (value, method) in values.items():
         _set_field(
@@ -243,6 +258,7 @@ def analyze_autokat(text: str) -> dict:
         "partner": "",
         "subject": "",
         "number": "",
+        "numbers": [],
         "tags": "",
         "matched": False,
         "matched_rules": 0,
@@ -279,6 +295,8 @@ def analyze_autokat(text: str) -> dict:
     supplement_rules = [rule for rule in rules if _rule_type(rule) == "E"]
     classification_rules = [rule for rule in rules if _rule_type(rule) == "K"]
 
+    # A matching classification rule excludes all supplements for numbers.
+    number_classification = next((r for r in classification_rules if _text_matches_rule(text, r)), None)
     # Phase 1: matching supplement rules refine values in rank/id order.
     # Later nonempty values overwrite earlier supplement values; empty ones retain them.
     for rule in supplement_rules:
@@ -290,7 +308,10 @@ def analyze_autokat(text: str) -> dict:
         result["matched_ranks"].append(rule.get("Rang"))
         result["matched_supplement_rules"].append(rule.get("Rang"))
         result["matched_supplement_rule_refs"].append(_rule_reference(rule, "E"))
+        saved_numbers = list(result['numbers'])
         _apply_rule(result, text, rule, "E")
+        if number_classification:
+            result['numbers'] = saved_numbers
 
     # Phase 2: inspect all matching classification rules. The first one in rank
     # order is the primary rule and supplies the classification values. Further
@@ -313,6 +334,9 @@ def analyze_autokat(text: str) -> dict:
             _apply_rule(result, text, rule, "K")
             primary_classification_applied = True
 
+    if any('number_definitions' in r for r in rules):
+        result['number'] = result['numbers'][0]['value'] if result['numbers'] else ''
+        result['sources']['number'] = result['numbers'][0]['source'] if result['numbers'] else None
     result["multiple_classification_matches"] = len(result["matched_classification_rule_refs"]) > 1
 
     source_types = {
@@ -323,3 +347,4 @@ def analyze_autokat(text: str) -> dict:
     result["mixed_rule_sources"] = source_types == {"E", "K"}
 
     return result
+

@@ -22,25 +22,35 @@ function master_call(string $kind, array $payload): array {
 }
 
 $kind = $_POST['kind'] ?? $_GET['kind'] ?? 'categories';
-if (!is_string($kind) || !in_array($kind, ['categories', 'document_types'], true)) $kind = 'categories';
-$title = $kind === 'categories' ? 'Kategorien' : 'Dokumententypen';
+if (!is_string($kind) || !in_array($kind, ['categories', 'document_types', 'number_types'], true)) $kind = 'categories';
+$title = ['categories'=>'Kategorien','document_types'=>'Dokumententypen','number_types'=>'Nummernarten'][$kind];
 $error = '';
 $blockingRules = [];
 $items = [];
 $newName = '';
+$newExplanation = '';
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         eablage_aktion_pruefen($_POST['aktion_token'] ?? null);
         $action = $_POST['action'] ?? '';
         $id = $_POST['entry_id'] ?? '';
         $name = $_POST['name'] ?? '';
+        $explanation = $_POST['explanation'] ?? null;
         if (!is_string($action) || !in_array($action, ['create','rename','activate','deactivate','delete'], true)
-            || !is_string($id) || !is_string($name)) throw new RuntimeException('Ungültige Eingabe.');
+            || !is_string($id) || !is_string($name) || ($explanation !== null && !is_string($explanation))) throw new RuntimeException('Ungültige Eingabe.');
         if ($statusRequest && !in_array($action, ['activate', 'deactivate', 'rename', 'delete'], true)) {
             throw new RuntimeException('Ungültige Zeilenaktion.');
         }
         $newName = $action === 'create' ? $name : '';
-        $response = master_call($kind, ['action'=>$action, 'entry_id'=>$id, 'name'=>$name]);
+        $newExplanation = $action === 'create' ? ($explanation ?? '') : '';
+        $payload = ['action'=>$action, 'entry_id'=>$id, 'name'=>$name];
+        if ($explanation !== null) $payload['explanation'] = $explanation;
+        if ($kind==='number_types' && isset($_POST['sort_order'])) {
+            $sort=filter_var($_POST['sort_order'],FILTER_VALIDATE_INT);
+            if ($sort===false || $sort<0 || $sort>9999) throw new RuntimeException('Ungültige Sortierung.');
+            $payload['sort_order']=$sort;
+        }
+        $response = master_call($kind, $payload);
         if ($response['ok']) {
             if ($statusRequest) {
                 $result = ['ok'=>true, 'action'=>$action];
@@ -64,6 +74,12 @@ try {
         throw new RuntimeException(is_array($detail) ? ($detail['message'] ?? 'Stammdaten nicht verfügbar.') : 'Stammdaten nicht verfügbar.');
     }
     $items = $response['data']['items'];
+    if ($error !== '' && ($action ?? '') === 'rename') {
+        foreach ($items as &$item) {
+            if ((string)$item['id'] === $id) { $item['name'] = $name; $item['explanation'] = $explanation ?? ($item['explanation'] ?? ''); }
+        }
+        unset($item);
+    }
 } catch (Throwable $e) {
     $error = $e->getMessage();
     if ($statusRequest) eablage_status_json(['ok'=>false, 'message'=>$error], 400);
@@ -82,9 +98,18 @@ try {
         .ea-master-section { margin-top:24px; }
         .ea-master-section + .ea-master-section { padding-top:24px; border-top:1px solid var(--ea-gray-300); }
         .ea-master-section h2 { margin:0 0 16px; font-size:1.05rem; color:var(--ea-blue-900); }
+        .ea-master-create-number-fields { display:grid; grid-template-columns:minmax(0,1fr) 7rem; gap:16px; align-items:start; }
+        .ea-master-create-number-fields .form-control { min-width:0; }
         .ea-master-table td { vertical-align:middle; }
         .ea-master-edit { margin:0; }
+        .ea-master-sort-button { border:0; padding:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-align:left; }
+        .ea-master-sort-button:hover { text-decoration:underline; }
+        .ea-master-sort-button:focus-visible { outline:2px solid var(--ea-blue-700); outline-offset:4px; }
         .ea-master-edit .form-control { min-width:0; }
+        .ea-master-table td.ea-master-sort { width:7rem; min-width:7rem; vertical-align:top; }
+        .ea-master-explanation { margin-top:6px; }
+        .ea-master-explanation summary { cursor:pointer; font-size:.9em; color:var(--ea-blue-900); }
+        .ea-master-explanation textarea { margin-top:5px; resize:vertical; }
         .ea-master-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
         .ea-master-actions form { margin:0; }
         .ea-master-actions .btn { margin:0; white-space:nowrap; }
@@ -114,6 +139,7 @@ try {
             <nav class="ea-tabs" aria-label="Stammdatenbereiche">
                 <a href="stammdaten.php?kind=categories" <?=$kind === 'categories' ? 'aria-current="page"' : ''?>>Kategorien</a>
                 <a href="stammdaten.php?kind=document_types" <?=$kind === 'document_types' ? 'aria-current="page"' : ''?>>Dokumententypen</a>
+                <a href="stammdaten.php?kind=number_types" <?=$kind === 'number_types' ? 'aria-current="page"' : ''?>>Nummernarten</a>
             </nav>
             <section class="ea-master-section" aria-labelledby="master-create-heading">
                 <h2 id="master-create-heading">Neuen Eintrag anlegen</h2>
@@ -121,9 +147,17 @@ try {
                         <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                         <input type="hidden" name="kind" value="<?=h($kind)?>">
                         <input type="hidden" name="action" value="create">
-                        <label for="new-name">Bezeichnung</label>
-                        <input class="form-control" id="new-name" name="name" required maxlength="255" value="<?=h($newName)?>">
-                        <p>Neue Einträge sind aktiv. Die ID wird automatisch vergeben.</p>
+                        <div<?=$kind==='number_types' ? ' class="ea-master-create-number-fields"' : ''?>>
+                            <div>
+                                <label for="new-name">Bezeichnung</label>
+                                <input class="form-control" id="new-name" name="name" required maxlength="255" value="<?=h($newName)?>">
+                            </div>
+                            <?php if ($kind==='number_types'): ?><div><label for="new-sort-order">Sortierung</label><input type="number" id="new-sort-order" name="sort_order" class="form-control" min="0" max="9999" value="10"></div><?php endif; ?>
+                        </div>
+                        <label for="new-explanation">Erläuterung (optional, bis 1000 Zeichen)</label>
+                        <textarea class="form-control" id="new-explanation" name="explanation" maxlength="1000" rows="3"><?=h($newExplanation)?></textarea>
+                        <p>Definition, typische Inhalte und Abgrenzungen dokumentieren die Ablagesystematik und unterstützen die lokale KI.</p>
+                        <p>Neue Einträge sind aktiv.</p>
                         <button class="btn btn-primary" type="submit">Anlegen</button>
                     </form>
             </section>
@@ -132,20 +166,32 @@ try {
                     <p>Umbenennen gilt auch für bestehende Dokumente. Deaktivierte Einträge bleiben recherchierbar und vorhandene Zuordnungen bleiben erhalten.</p>
                     <p>Deaktivieren ist erst ohne Regelverknüpfungen möglich; Löschen zusätzlich nur ohne Dokumentverknüpfungen.</p>
                     <div class="table-responsive">
-                    <table class="table table-striped ea-master-table">
-                        <thead><tr><th>ID</th><th>Bezeichnung</th><th>Verwendung</th><th>Aktionen</th><th>Status</th></tr></thead>
+                    <table class="table table-striped ea-master-table"<?=$kind==='number_types' ? ' data-master-sort' : ''?>>
+                        <thead><tr>
+                            <?php if ($kind==='number_types'): ?>
+                            <th aria-sort="none"><button type="button" class="ea-master-sort-button" data-sort-key="name">Bezeichnung / Erläuterung<span data-sort-arrow aria-hidden="true"></span></button></th>
+                            <th aria-sort="ascending"><button type="button" class="ea-master-sort-button" data-sort-key="sort_order">Sortierung<span data-sort-arrow aria-hidden="true"> ↑</span></button></th>
+                            <?php else: ?><th>Bezeichnung / Erläuterung</th><?php endif; ?>
+                            <th>Verwendung</th><th>Aktionen</th><th>Status</th>
+                        </tr></thead>
                         <tbody><?php foreach ($items as $item): ?>
                         <tr>
-                            <td><?=h($item['id'])?></td>
                             <td>
                                 <form method="POST" action="stammdaten.php" data-row-action="rename" class="ea-master-edit" id="master-edit-<?=bin2hex((string)$item['id'])?>">
                                     <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                                     <input type="hidden" name="kind" value="<?=h($kind)?>">
                                     <input type="hidden" name="entry_id" value="<?=h($item['id'])?>">
                                     <input type="hidden" name="action" value="rename">
-                                    <input class="form-control" name="name" required maxlength="255" aria-label="Bezeichnung für ID <?=h($item['id'])?>" value="<?=h($item['name'])?>">
+                                    <input class="form-control" name="name" required maxlength="255" aria-label="Bezeichnung: <?=h($item['name'])?>" value="<?=h($item['name'])?>">
+                                    <details class="ea-master-explanation">
+                                        <summary>Erläuterung <?=trim((string)($item['explanation'] ?? '')) !== '' ? '(vorhanden)' : '(optional)'?></summary>
+                                        <textarea class="form-control" name="explanation" maxlength="1000" rows="3" aria-label="Erläuterung: <?=h($item['name'])?>"><?=h($item['explanation'] ?? '')?></textarea>
+                                    </details>
                                 </form>
                             </td>
+                            <?php if ($kind==='number_types'): ?>
+                            <td class="ea-master-sort"><input type="number" name="sort_order" form="master-edit-<?=bin2hex((string)$item['id'])?>" class="form-control" min="0" max="9999" aria-label="Sortierung: <?=h($item['name'])?>" value="<?=h($item['sort_order']??10)?>"></td>
+                            <?php endif; ?>
                             <td><?=h($item['documents'])?> Dokumente
                                 <?php if ($item['rules']): ?>
                                     <details><summary><?=count($item['rules'])?> AutoKat-Regeln</summary>
@@ -189,5 +235,7 @@ try {
     </div>
 </div>
 <script src="status_toggle.js?v=<?=filemtime(__DIR__ . '/status_toggle.js')?>" defer></script>
+<?php if ($kind==='number_types'): ?><script src="master_data_sort.js?v=<?=filemtime(__DIR__ . '/master_data_sort.js')?>" defer></script><?php endif; ?>
 </body>
 </html>
+

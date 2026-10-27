@@ -23,7 +23,7 @@ class MetadataApiTests(unittest.TestCase):
         response = self.client.post('/metadata/prepare', json={'document': self.document})
         self.assertEqual(response.status_code, 200)
         result = response.json()
-        self.assertEqual(result['schema_version'], 3)
+        self.assertEqual(result['schema_version'], 4)
         self.assertEqual(result['filename'], '10001meta.json')
         content = json.loads(result['content'])
         self.assertEqual(content['document_id'], 10001)
@@ -46,6 +46,17 @@ class MetadataApiTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 422)
                 self.assertNotIn('content', response.json())
 
+    def test_invalid_number_position_and_control_characters_return_422(self):
+        invalid = [{'position': 'invalid'}, {'position': 1.5}, {'position': True},
+                   {'position': -1}, {'value': '123\n456'}, {'kind_id': 'x' * 21}]
+        for changes in invalid:
+            with self.subTest(changes=changes):
+                number = {'kind_id': '1', 'value': '123 456', 'position': 10, **changes}
+                response = self.client.post('/metadata/prepare', json={
+                    'document': {**self.document, 'numbers': [number]}})
+                self.assertEqual(response.status_code, 422)
+                self.assertNotIn('content', response.json())
+
     def test_invalid_envelopes_are_rejected(self):
         for payload in [{}, {'document': None}, {'document': []},
                         {'document': self.document, 'write': True}]:
@@ -57,3 +68,4 @@ class MetadataApiTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

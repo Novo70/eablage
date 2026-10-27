@@ -1,6 +1,7 @@
 import re
 from typing import Any
 
+from app.services.numbers import attach_numbers
 from app.db.database import get_connection
 
 
@@ -117,7 +118,9 @@ def _load_documents() -> list[dict]:
             ORDER BY DokID ASC
             """
         )
-        return cursor.fetchall()
+        documents = cursor.fetchall()
+        attach_numbers(cursor, documents, active_only=True)
+        return documents
     finally:
         connection.close()
 
@@ -214,8 +217,10 @@ def analyze_text_compare(text: str, exclude_document_id: int | None = None) -> d
         "partner": str(best_document.get("partner") or ""),
         "subject": str(best_document.get("betreff") or ""),
         "number": str(best_document.get("Nummer") or ""),
+        "numbers": best_document.get("numbers", []),
         "tags": str(best_document.get("tags") or ""),
         "reason": "matched",
     })
 
     return result
+

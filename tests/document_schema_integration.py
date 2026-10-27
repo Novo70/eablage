@@ -98,10 +98,13 @@ class DocumentSchemaIntegration(unittest.TestCase):
             self.execute('INSERT INTO parameter (param_key,param_value) VALUES (%s,%s)',
                          (key, value))
         before = self.execute('SHOW COLUMNS FROM dokumente')
+        preserved = dict(self.execute('SELECT param_key,param_value FROM parameter'))
+        for key in obsolete:
+            preserved.pop(key)
         for _ in range(2):
             self.run_script('sql/update_access_parameters_4.0.0.sql')
             self.assertEqual(sorted(self.execute('SELECT param_key,param_value FROM parameter ORDER BY param_key')),
-                             sorted(current.items()))
+                             sorted(preserved.items()))
             self.assertEqual(self.execute('SHOW COLUMNS FROM dokumente'), before)
             self.assertFalse(self.execute("SHOW COLUMNS FROM autokat LIKE 'Suchbegriff1'"))
 
@@ -189,6 +192,29 @@ class DocumentSchemaIntegration(unittest.TestCase):
             self.assertTrue(self.execute("SHOW COLUMNS FROM dokumente LIKE 'Dateipfad'"))
             self.execute('DELETE FROM dokumente')
 
+    def test_master_explanation_migration_preserves_data_and_is_repeatable(self):
+        for table, label in [('kategorie', 'katBez'), ('doktyp', 'doktypBez')]:
+            self.execute(f'ALTER TABLE {table} DROP COLUMN Erlaeuterung')
+            self.execute(f'INSERT INTO {table} (id,{label},Aktiv) VALUES (%s,%s,0)', ('001', 'Haus und Garten'))
+        self.run_script('sql/update_master_explanations.sql')
+        for table in ['kategorie', 'doktyp']:
+            self.assertEqual(self.execute(f'SELECT id,Aktiv,Erlaeuterung FROM {table}'), [('001', 0, None)])
+            self.execute(f'UPDATE {table} SET Erlaeuterung=%s', ('Gebäudeversicherung\nAbgrenzung',))
+        self.run_script('sql/update_master_explanations.sql')
+        for table in ['kategorie', 'doktyp']:
+            self.assertEqual(self.execute(f'SELECT id,Aktiv,Erlaeuterung FROM {table}'), [('001', 0, 'Gebäudeversicherung\nAbgrenzung')])
+
+    def test_instruction_migration_retains_values_and_custom_guidance(self):
+        self.execute('ALTER TABLE parameter MODIFY param_value VARCHAR(255) DEFAULT NULL')
+        self.execute("INSERT INTO parameter (param_key,param_value) VALUES ('bestehenderParameter','Erhalten')")
+        self.run_script('sql/update_ollama_instruction.sql')
+        self.assertEqual(self.execute("SELECT param_value FROM parameter WHERE param_key='bestehenderParameter'"), [('Erhalten',)])
+        guidance = 'Ausführliche Hinweise\n' + 'x'*1000
+        self.execute("UPDATE parameter SET param_value=%s WHERE param_key='ollamaAnweisung'", (guidance,))
+        self.run_script('sql/update_ollama_instruction.sql')
+        self.assertEqual(self.execute("SELECT param_value FROM parameter WHERE param_key='ollamaAnweisung'"), [(guidance,)])
+
 
 if __name__ == '__main__':
     unittest.main()
+

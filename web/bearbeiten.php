@@ -1,6 +1,7 @@
 <?php
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
+require_once 'nummern_funktionen.php';
 require_once 'metadaten_funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
@@ -50,7 +51,7 @@ function normalize_document_text($value): string
 function document_revision(array $document): string
 {
     ksort($document);
-    return hash('sha256', serialize(array_map(static fn($value) => $value === null ? null : (string)$value, $document)));
+    return hash('sha256', serialize(array_map(static fn($value) => $value === null ? null : (is_array($value) ? json_encode($value) : (string)$value), $document)));
 }
 
 $dokId = filter_input(INPUT_GET, 'dokid', FILTER_VALIDATE_INT);
@@ -86,6 +87,7 @@ if (!$document) {
     http_response_code(404);
     die('Das angeforderte Dokument wurde nicht gefunden.');
 }
+$document['numbers'] = eablage_nummern_laden($db,(int)$dokId);
 $storedDocument = $document;
 // Retain the original form revision across helper actions and failed saves.
 $documentRevision = $_SERVER['REQUEST_METHOD'] === 'POST'
@@ -126,6 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
     ) {
         if (isset($_POST[$input]) && is_string($_POST[$input])) $document[$field] = $_POST[$input];
     }
+    if (isset($_POST['numbers_json']) && is_string($_POST['numbers_json'])) {
+        try { $document['numbers'] = eablage_nummern_pruefen($db,$_POST['numbers_json'],$storedDocument['numbers']); }
+        catch (Throwable $e) { $error=$e->getMessage(); }
+    }
     $reclassificationInfo = trim((string)($_POST['reclassification_info'] ?? ''));
 
     if (!hash_equals(document_revision($storedDocument), $documentRevision)) {
@@ -153,6 +159,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
             $document['doktyp_id'] = (string)($result['document_type'] ?? '0');
             $document['Partner'] = (string)($result['partner'] ?? '');
             $document['Betreff'] = (string)($result['subject'] ?? '');
+            // Reclassification can fill missing kinds; manual/current values remain.
+            $existingKinds=array_map('strval',array_column($document['numbers'],'kind_id'));
+            foreach ($result['numbers'] ?? [] as $n) if (!in_array((string)$n['kind_id'],$existingKinds,true)) {
+                $document['numbers'][]=$n; $existingKinds[]=(string)$n['kind_id'];
+            }
             $document['Nummer'] = (string)($result['number'] ?? '');
             $document['Tags'] = (string)($result['tags'] ?? '');
             foreach (['Datum', 'kategorie_id', 'kategorie2_id', 'doktyp_id', 'Partner', 'Betreff', 'Nummer', 'Tags'] as $field) {
@@ -180,13 +191,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
         $updated['doktyp_id'] = $doktypId;
         $updated['Partner'] = $partner;
         $updated['Betreff'] = $betreff;
+        $updated['numbers'] = $document['numbers'];
         $updated['Nummer'] = $nummer;
         $updated['Tags'] = $tags;
         if ($pendingDocumentText !== '') $updated['Doktext'] = $pendingDocumentText;
 
         if ($error === '') {
             $documentTextChanged = normalize_document_text($updated['Doktext'] ?? '') !== $storedDocumentText;
-            $hasChanges = $documentTextChanged;
+            $hasChanges = $documentTextChanged || $updated['numbers'] !== $storedDocument['numbers'];
             foreach (['Datum', 'kategorie_id', 'kategorie2_id', 'doktyp_id', 'Partner', 'Betreff', 'Nummer', 'Tags'] as $field) {
                 if (normalized_compare_value($field, $updated[$field] ?? null) !== normalized_compare_value($field, $storedDocument[$field] ?? null)) {
                     $hasChanges = true;
@@ -208,9 +220,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
                 $currentStmt->execute([$dokId]);
                 $currentAssignments = $currentStmt->fetch(PDO::FETCH_ASSOC);
                 if (!$currentAssignments) throw new RuntimeException('Dokument nicht mehr vorhanden.');
+                $currentAssignments['numbers'] = eablage_nummern_laden($db,(int)$dokId);
                 if (!hash_equals(document_revision(array_intersect_key($currentAssignments, $storedDocument)), $documentRevision)) {
                     throw new UnexpectedValueException('Das Dokument wurde zwischenzeitlich geändert. Bitte die eigenen Eingaben sichern und das Dokument neu öffnen.');
                 }
+                $updated['numbers'] = eablage_nummern_pruefen($db,$_POST['numbers_json'] ?? '[]',$currentAssignments['numbers']);
+                $nummer = ($updated['numbers'][0]['value'] ?? '');
+                $updated['Nummer'] = $nummer;
                 eablage_pruefe_zuordnungen($db, $updated, $currentAssignments);
                 // Use the same database clock as the initial archive timestamp.
                 $bearbeitungsdatum = $db->query('SELECT NOW()')->fetchColumn();
@@ -225,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
                 if ($oldMeta !== null) {
                     $oldJson = str_starts_with($oldMeta, "\xEF\xBB\xBF") ? substr($oldMeta, 3) : $oldMeta;
                     $oldFormat = json_decode($oldJson, true);
-                    if (is_array($oldFormat) && isset($oldFormat['schema_version']) && !in_array($oldFormat['schema_version'], [1, 2, 3], true)) {
+                    if (is_array($oldFormat) && isset($oldFormat['schema_version']) && !in_array($oldFormat['schema_version'], [1, 2, 3, 4], true)) {
                         throw new RuntimeException('Unbekannte Metadatenversion; Datei wird nicht überschrieben.');
                     }
                     $backupMeta = eablage_metadaten_temp(dirname($metaPath), $oldMeta);
@@ -233,6 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
                 $tempMeta = eablage_metadaten_temp(dirname($metaPath), $metadata['content']);
                 $updateStmt = $db->prepare('UPDATE ' . DB_TABELLE_ARCHIV . ' SET Datum=:datum, kategorie_id=:kategorie_id, kategorie2_id=:kategorie2_id, doktyp_id=:doktyp_id, Partner=:partner, Betreff=:betreff, Nummer=:nummer, Tags=:tags, Doktext=:doktext, Aenderungsdatum=:aenderungsdatum WHERE DokID=:dokid');
                 $updateStmt->execute([':datum' => $datum, ':kategorie_id' => $kategorieId, ':kategorie2_id' => $kategorie2Id, ':doktyp_id' => $doktypId, ':partner' => $partner, ':betreff' => $betreff, ':nummer' => $nummer, ':tags' => $tags, ':doktext' => normalize_document_text($updated['Doktext']), ':aenderungsdatum' => $bearbeitungsdatum, ':dokid' => $dokId]);
+                eablage_nummern_speichern($db,(int)$dokId,$updated['numbers']);
                 if (eablage_metadaten_lesen($metaPath) !== $oldMeta) throw new RuntimeException('Metadatei wurde zwischenzeitlich geändert.');
                 if ($oldMeta === null) {
                     // Atomic exclusive publication, never overwrite a newly appeared file.
@@ -246,6 +263,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
                 $tempMeta = null;
                 $details = ['felder' => eablage_protokoll_aenderungen($currentAssignments, $updated),
                     'dokumenttext_geaendert' => $documentTextChanged];
+                if ($currentAssignments['numbers'] !== $updated['numbers']) {
+                    $details['nummern_vorher']=$currentAssignments['numbers']; $details['nummern_nachher']=$updated['numbers'];
+                }
                 if ($reclassificationInfo !== '') {
                     $details['klassifizierung'] = eablage_protokoll_klassifizierung($reclassificationInfo);
                 }
@@ -327,7 +347,7 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
                                     <div class="form-group"><label for="Kategorie2">Kategorie 2<?= changed_marker($reclassificationChanged, 'kategorie2_id') ?></label><select class="form-control" id="Kategorie2" name="Kategorie2"><?php foreach ($kategorien2 as $id => $bez): ?><option value="<?= h($id) ?>" <?= (string)$id === (string)$document['kategorie2_id'] ? 'selected' : '' ?>><?= h($bez) ?></option><?php endforeach; ?></select></div>
                                 </div>
                             </div>
-                            <div class="form-group"><label for="Nummer">Dokumenten-Nummer<?= changed_marker($reclassificationChanged, 'Nummer') ?></label><input type="text" id="Nummer" name="Nummer" class="form-control" value="<?= h($document['Nummer']) ?>"></div>
+                            <?php eablage_nummern_editor($db,$document['numbers']); ?>
                             <div class="form-group"><label for="Tags">Stichworte / Tags<?= changed_marker($reclassificationChanged, 'Tags') ?></label><input type="text" id="Tags" name="Tags" class="form-control" value="<?= h($document['Tags']) ?>"></div>
                             <div class="ea-edit-actions">
                                 <div class="ea-form-actions ea-document-actions">
@@ -412,3 +432,4 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
 </body>
 
 </html>
+

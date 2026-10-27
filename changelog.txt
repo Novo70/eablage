@@ -1,11 +1,41 @@
 # Changelog
 
+## 4.4.0 – Lokale KI und mehrere Nummern pro Dokument – 26.10.2026
+
+### Klassifizierung und lokale KI
+
+- Hinweise zu verworfenen KI-Nummern nennen auch den betroffenen Wert, einschließlich unbekannter oder doppelter Nummernarten.
+- Einheitliche Hinweisboxen in den Erkennungsdetails für KI, AutoKat und Textvergleich; KI-Modell und Verlauf zusammengefasst, Warnungen und Fehler gesondert hervorgehoben.
+- Optionale manuelle Klassifizierung mit Ollama im lokalen Netzwerk. Vorschläge für Datum, Partner, Betreff, Kategorie, Dokumententyp, Nummern und ergänzende Tags; Kategorie 2 bleibt manuell.
+- Leere Felder werden ergänzt, bestehende Werte erst per Klick übernommen. Nach manuellen Änderungen bleiben abweichende KI-Vorschläge erneut übernehmbar. Herkunft und KI-Bestätigung erscheinen als kompakte Badges; Datums- und Nummernbelege sind per Maus, Tastatur und Antippen erreichbar.
+- Optionale Hintergrund-KI im Worker mit den Modi Aus, Nur ohne automatische Klassifizierung und Für alle Dokumente. Separate Verarbeitung, gemeinsame Generierungssperre, Prüfung von Dokumentrevision und Kontext sowie Schutz zwischenzeitlicher Eingaben.
+- Bearbeitbare fachliche KI-Anweisung, optionale Stammdaten-Erläuterungen, Denkmodus und einstellbare Textauswahl. Stammdaten werden als Namen übermittelt und in Python zu IDs zugeordnet; unbekannte oder unbelegte Vorschläge werden verworfen.
+- Einmaliger Rückfall ohne Denkmodus nach bestätigtem Abbruch eines Denkversuchs. Status und begrenzter Durchlaufverlauf stehen unter Erkennungsdetails; die optional aktivierbare Diagnose zeigt die tatsächlich gesendete Anfrage und verfügbare Laufzeit-/Tokenmesswerte.
+
+### Nummern und Stammdaten
+
+- Nummernzeilen und gespeicherte Nummernlisten folgen der Stammdatensortierung; die wichtigste vorhandene Nummer steht zuerst und im Kompatibilitätsfeld `number`.
+- Mehrere Nummern pro Dokument, jeweils höchstens ein Wert pro Nummernart. Neue Stammdatenverwaltung mit Bezeichnung, optionaler Erläuterung, Sortierung und Aktivstatus. Änderungen werden mit dem Dokument gespeichert und protokolliert.
+- AutoKat erkennt mehrere Nummernarten über das jeweils erste Ankervorkommen, Zeilenende, Leerzeichen oder Endanker und optionale maximale Länge. Enthaltene Leerzeichen zählen mit. Bestehende Regeln werden unter Erhalt ihrer bisherigen Erkennung übernommen.
+- Nur die erste passende K-Regel liefert Nummern. Ohne K-Regel gilt je Art der erste erfolgreiche E-Wert; nachrangige E-Regeln können weitere Arten ergänzen.
+- Herkunftsbadges für AutoKat und Textvergleich mit Link zur Regel beziehungsweise zum Vergleichsdokument. KI kann vorhandene Nummern bestätigen oder fehlende Arten ergänzen.
+- Suche über alle Nummern mit zusätzlichem Vergleich aus A–Z und 0–9: etwa `AB-123/45` und `AB12345`. Originalwerte und führende Nullen bleiben erhalten.
+- Stammdatenlisten beginnen mit der Bezeichnung und zeigen keine technischen ID-Spalten. Nummernarten lassen sich per Überschrift alphabetisch oder nach hinterlegter Sortierung anzeigen; ungespeicherte Eingaben bleiben erhalten.
+
+### Datenhaltung und Update
+
+- Wiederholtes KI-Textauswahl-Update erzeugt im unveränderten Zweig keine unnötige Ergebnismenge.
+- Installationsanleitungen und Konfigurationsbeispiele nach integrierter beziehungsweise separater Datenbank benannt; beide Varianten neutral für Produktiv- und Testbetrieb beschrieben. Hinweise für mehrere Instanzen zusammengeführt.
+- Metadatenprüfung weist ungültige Nummern-Sortierungen und Steuerzeichen kontrolliert ab; Speicherbestätigung berücksichtigt zwischenzeitliche Änderungen am Sortierungsfeld.
+- JSON-Schema 4 mit vollständiger Nummernliste; Schema 1 bis 3 bleiben lesbar. Export, Archivprüfung, Ereignisprotokoll und SQL-Sicherung berücksichtigen Nummernarten und Nummern.
+- SQL-Sicherungen tragen Version 4.4.0; unterstützte Sicherungen von 4.1.0 bis 4.4.0 sind rücksicherbar. Ältere Nummern werden beim Import automatisch migriert.
+- **Datenbankupdate erforderlich.** Alle Schritte von 4.3.0 auf 4.4.0 stehen in [docs/UPDATE.md](docs/UPDATE.md). Web, Backend und Worker gemeinsam neu bauen. Neue Installationen verwenden Schema und Seed dieses Releases.
+- Nummernmigration ergänzt einen im Altbestand fehlenden eindeutigen DokID-Index. Doppelte DokIDs führen zum Abbruch und werden nicht automatisch bereinigt. Vorhandene Nummern und Regelerkennungen werden einmalig als Allgemein übernommen.
+
 ## 4.3.0 – Erste öffentliche Version
 
-eAblage ist eine lokal betriebene Webanwendung zur regelbasierten
-Klassifizierung, Archivierung und Recherche von PDF-Dokumenten.
-Die Anwendung besteht aus einer PHP-Weboberfläche, einem
-Python/FastAPI-Backend, einem Hintergrunddienst und MariaDB.
+eAblage ist eine lokal betriebene Webanwendung zur regelbasierten Klassifizierung, Archivierung und Recherche von PDF-Dokumenten.
+Die Anwendung besteht aus einer PHP-Weboberfläche, einem Python/FastAPI-Backend, einem Hintergrunddienst und MariaDB.
 
 ### Funktionen
 
@@ -54,3 +84,4 @@ Python/FastAPI-Backend, einem Hintergrunddienst und MariaDB.
 
 Der eigene eAblage-Quellcode steht unter AGPL-3.0-only.
 Externe Komponenten behalten ihre jeweiligen Lizenzen.
+

@@ -2,7 +2,7 @@ import logging
 from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from app.services import inbox
+from app.services import inbox, ki_status
 from app.services.classification import classify
 
 router = APIRouter()
@@ -44,7 +44,7 @@ def process(request: ProcessRequest):
 
 @router.post('/inbox/jobs')
 def jobs(request: JobsRequest):
-    return call(inbox.list_jobs, request.database, request.filenames)
+    return ki_status.enrich(call(inbox.list_jobs, request.database, request.filenames), request.database)
 
 @router.post('/documents/text')
 def text(request: ExtractRequest):

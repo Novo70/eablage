@@ -30,7 +30,7 @@ class MetadataTests(unittest.TestCase):
         raw = serialize_metadata(self.document)
         data = json.loads(raw.encode('utf-8'))
         self.assertEqual(data, {
-            'schema_version': 3, 'document_id': 10001, 'pdf_filename': '10001dok.pdf',
+            'schema_version': 4, 'numbers': [], 'document_id': 10001, 'pdf_filename': '10001dok.pdf',
             'original_filename': 'Konto Müller 09.PDF', 'pdf_sha256': 'a' * 64,
             'modified_at': '2026-09-20T16:40:00',
             'document_date': '2026-09-19', 'archived_at': '2026-09-19T14:30:05',
@@ -126,6 +126,7 @@ class MetadataTests(unittest.TestCase):
 
     def test_v1_is_readable_but_has_no_v2_fields(self):
         legacy = build_metadata(self.document)
+        legacy.pop('numbers')
         legacy['schema_version'] = 1
         legacy['info'] = self.document['Info']
         for field in ('original_filename', 'pdf_sha256', 'modified_at'):
@@ -138,7 +139,7 @@ class MetadataTests(unittest.TestCase):
         current = build_metadata(self.document)
         self.assertNotIn('info', current)
         self.assertNotIn('Info', REQUIRED_FIELDS)
-        old = {**current, 'schema_version': 2, 'info': self.document['Info']}
+        old = {**{k:v for k,v in current.items() if k != 'numbers'}, 'schema_version': 2, 'info': self.document['Info']}
         self.assertEqual(parse_metadata(json.dumps(old).encode()), old)
         self.assertEqual(build_metadata({**self.document, 'Info': 'Andere Historie'}), current)
         with self.assertRaises(MetadataError):
@@ -167,3 +168,4 @@ class MetadataTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

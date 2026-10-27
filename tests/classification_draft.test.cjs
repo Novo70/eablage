@@ -28,7 +28,7 @@ function screen(href, storage, target = 'autokat_regel_bearbeiten.php?regel=R000
     const notices = [];
     const context = {
         document:{
-            querySelector:selector=>selector === '#textDocumentView pre' ? preview : ({elements:fields,hasAttribute:()=>editing}),
+            querySelector:selector=>selector === '#textDocumentView pre' ? preview : ({elements:fields,dataset:{},hasAttribute:()=>editing}),
             querySelectorAll:selector=>selector === 'a[data-draft-link]' ? [link] : [],
             getElementById:()=>({style:{display:'none'}})
         },

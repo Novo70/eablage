@@ -73,7 +73,7 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
         $db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         $db->beginTransaction();
         $snapshotStarted = true;
-        eablage_backup_write($handle, "-- e_ablage MariaDB-Datensicherung; Version: 4.3.0\n");
+        eablage_backup_write($handle, "-- e_ablage MariaDB-Datensicherung; Version: 4.4.0\n");
         eablage_backup_write($handle, "-- Ereignisprotokoll: 1\n");
         eablage_backup_write($handle, '-- Datenbank: ' . $databaseName . "\n");
         eablage_backup_write($handle, '-- Erstellt: ' . date('Y-m-d H:i:s') . "\n\n");
@@ -83,7 +83,7 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
         $tableStmt = $db->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
         $tables = [];
         while (($row = $tableStmt->fetch(PDO::FETCH_NUM)) !== false) {
-            if (isset($row[0]) && $row[0] !== 'verarbeitungsauftraege') {
+            if (isset($row[0]) && !in_array($row[0], ['verarbeitungsauftraege', 'ki_vorschlaege', 'ki_worker_status'], true)) {
                 $tables[] = (string)$row[0];
             }
         }
@@ -152,3 +152,4 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
         'created_at' => date('d.m.Y H:i:s'),
     ];
 }
+

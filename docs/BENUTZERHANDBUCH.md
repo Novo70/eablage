@@ -69,7 +69,7 @@ E-Regeln füllen freie Felder und überschreiben mit befüllten Vorgaben die Wer
 | Dokumententyp | Art des Dokuments |
 | Partner | Absender, Vertragspartner oder andere zugehörige Person/Organisation |
 | Betreff | Inhaltliche Kurzbeschreibung |
-| Nummer | Beispielsweise Rechnungs-, Vertrags- oder Kontonummer |
+| Nummern | Mehrere benannte Nummern, beispielsweise Kunden- und Vertragsnummer; je Art genau ein Wert ([Details](NUMMERN.md)) |
 | Tags | Ergänzende Suchbegriffe als Text |
 | Dokumenttext | Extrahierter, bei Bedarf korrigierbarer Text für Volltextsuche und Vergleich |
 
@@ -119,7 +119,7 @@ Die beste Vorlage wird nach Ähnlichkeit, Zahl gemeinsamer Wörter und bei Gleic
 1. Die nächste DokID wird aus der höchsten vorhandenen DokID ermittelt; bei leerer Tabelle gilt `dokStartwert`.
 2. Ein Datensatz mit Metadaten, Dokumenttext, Zielpfad, Archivierungsdatum, Originaldateiname und SHA-256-Referenz wird vorbereitet und angelegt.
 3. Die PDF wird exklusiv als `<DokID>dok.pdf` ins Archiv kopiert. Vorhandene Ziele werden nicht überschrieben; die Kopie muss dieselbe Prüfsumme besitzen wie die Eingangskopie.
-4. `<DokID>meta.json` mit Schema 3 wird erstellt; beteiligte AutoKat-Regeln erhalten ihre Trefferstatistik.
+4. `<DokID>meta.json` mit Schema 4 wird erstellt; beteiligte AutoKat-Regeln erhalten ihre Trefferstatistik.
 5. Nach erfolgreichem Datenbank-Commit wird die Eingangskopie entfernt und der Eingang angezeigt.
 
 Neue Dokumente haben zunächst kein Änderungsdatum. Die Dokumenthistorie dokumentiert die Erkennung einschließlich Regelreferenzen. Das bisherige Info-Feld wird nicht mehr befüllt und nicht in neue JSON-Metadateien geschrieben.
@@ -135,6 +135,8 @@ Datenbank und Dateisystem bilden keine gemeinsame atomare Transaktion. Nach eine
 Unter **Dokumente** lassen sich Suchbegriff, Datum von/bis, Kategorie und Dokumententyp kombinieren. Der Kategoriefilter berücksichtigt auch die zweite Kategorie. Inaktive Stammdaten bleiben in den Recherchefiltern auswählbar.
 
 Der Suchbegriff wird an Leerraum in einzelne Wörter zerlegt. Jedes Wort muss in mindestens einem der Felder Partner, Betreff, Nummer oder Tags vorkommen. **Volltextsuche** ergänzt den gespeicherten Dokumenttext; die PDF wird dafür nicht erneut eingelesen. Die Suche arbeitet mit Teilzeichenketten, anders als die Wortgrenzensuche der AutoKat-Regeln.
+
+In den **Nummern** werden zusätzlich unterschiedliche Schreibweisen gefunden: Leerraum, Punkte, Schrägstriche, Klammern sowie Bindestriche und gebräuchliche Strichvarianten werden für diesen Vergleich ignoriert, ebenso Groß-/Kleinschreibung. So findet `AB-123/45` auch `AB12345` und umgekehrt. Führende Nullen bleiben erhalten. Die gespeicherte Nummer wird nicht geändert. In den anderen Feldern bleibt die bisherige Suche erhalten; sämtliche Filter und die UND-Verknüpfung mehrerer Suchwörter gelten weiterhin. Eingaben, die nur aus den genannten Trennzeichen bestehen, lösen keinen zusätzlichen Nummernvergleich aus.
 
 ### Ergebnisliste
 
@@ -187,3 +189,18 @@ Im Bearbeitungsformular verschiebt **In den Papierkorb** ein archiviertes Dokume
 | Begleitdateien prüfen, reparieren oder ergänzen | [Archivprüfung](ARCHIVPRUEFUNG.md) |
 
 Die Archivprüfung ist auch unabhängig von einer Wiederherstellung verwendbar. Änderungen am Bestand erfolgen nur über die jeweils ausdrücklich gestartete Aktion; die Vorschauen der Wartungsfunktionen schreiben noch nichts.
+
+## Ablagesystematik dokumentieren
+
+Unter **Stammdaten** können Kategorien und Dokumententypen eine optionale mehrzeilige **Erläuterung** erhalten. Sie dokumentiert Definition, Beispiele und Abgrenzungen und wird bei lokalen KI-Vorschlägen berücksichtigt. In der Liste unter der Bezeichnung aufklappen und mit **Speichern** sichern. [Details](STAMMDATEN.md#optionale-erläuterung).
+
+## Ergänzender KI-Vorschlag
+
+Bei aktivierter lokaler KI kann in der Klassifizierung über das Drei-Punkte-Menü **KI-Vorschlag erstellen** ein Vorschlag abgerufen werden. Leere Felder werden beim Eintreffen der Antwort direkt ergänzt und mit einem violetten **KI**-Badge gekennzeichnet. Die Angaben bleiben bis zum Speichern bearbeitbare Vorschläge. Für bereits gefüllte Felder erscheinen abweichende Vorschläge direkt darunter; Anklicken übernimmt den angezeigten Wert; identische Werte erhalten das Badge **KI bestätigt** bei der Feldbezeichnung beziehungsweise neben dem Nummernfeld. Ein Klick auf den Vorschlag ersetzt auch einen bereits gefüllten Wert ohne Bestätigungsdialog. Alle Angaben bleiben bis zum Speichern manuell änderbar; **Abbrechen** verwirft die ungespeicherte Klassifizierung. Die KI kann außerdem bis zu fünf konkrete Tags mit zusätzlichem Informationswert vorschlagen; Wiederholungen der übrigen Angaben werden herausgefiltert. Einrichtung und Bedienung: [Ollama](OLLAMA.md).
+
+Für die Diagnose falscher Zuordnungen unter Einstellungen → Entwicklerwerkzeuge zunächst „KI-Diagnose anzeigen“ einschalten. Danach nach einem manuellen KI-Abruf im Drei-Punkte-Menü **KI-Anfrage anzeigen** wählen. Die reine Anzeige zeigt den ursprünglichen Anfrageinhalt und erlaubt das Kopieren des Anfrage-JSON, ohne weitere KI-Verarbeitung oder Änderung der Formularwerte. [Anleitung](OLLAMA.md#tatsächliche-ki-anfrage-anzeigen).
+
+Bei aktivierter **KI im Hintergrund** bereitet der Worker Vorschläge bereits vor dem Öffnen vor. Auswählbar sind Aus, Nur ohne automatische Klassifizierung und Für alle Dokumente. Ergänzungsregeln allein verhindern die KI nicht. Die Maske bleibt während der Berechnung bedienbar; vorhandene und seit dem Öffnen bearbeitete Angaben werden nicht automatisch ersetzt. [Bedienung](OLLAMA.md#ki-im-hintergrund).
+
+
+Die Verwaltung der Nummernarten und das Verhalten von AutoKat, KI und Suche beschreiben die [Nummernhinweise](NUMMERN.md).

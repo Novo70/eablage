@@ -2,6 +2,7 @@
 
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
+require_once 'nummern_funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
 
@@ -215,6 +216,10 @@ $pythonTextvergleichFehler = $klassifizierung['textcompare_error'];
 $pythonTextvergleich = $klassifizierung['textcompare'];
 $backendFehler = $pythonAutoKatFehler !== '' || $pythonTextvergleichFehler !== '';
 $erkennungsDetailsOffen = empty($dokumentText) || $backendFehler;
+$ollamaSetting = $db_config->query("SELECT param_value FROM parameter WHERE param_key = 'ollamaAktiv'")->fetchColumn();
+$ollamaDiagnosticEnabled = $db_config->query("SELECT param_value FROM parameter WHERE param_key = 'ollamaDiagnoseAnzeigen'")->fetchColumn() === 'ja';
+$ollamaBackgroundMode = $db_config->query("SELECT param_value FROM parameter WHERE param_key = 'ollamaHintergrund'")->fetchColumn();
+$ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit' && trim($dokumentText) !== '';
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -262,10 +267,16 @@ $erkennungsDetailsOffen = empty($dokumentText) || $backendFehler;
             <div class="panel panel-primary ea-classification-panel">
                 <div class="panel-heading ea-classification-heading">
                     <span>✍️ Dokument klassifizieren</span>
-                    <?php if ($job || $regelVorbereitungMoeglich): ?>
+                    <?php if ($job || $regelVorbereitungMoeglich || $ollamaAvailable): ?>
                         <details class="ea-more-actions" id="classification-more-actions">
                             <summary aria-label="Weitere Aktionen" title="Weitere Aktionen">⋮</summary>
                             <div class="ea-more-actions-list">
+                                <?php if ($ollamaAvailable): ?>
+                                    <button type="button" id="ollama-suggest" data-background="<?=in_array($ollamaBackgroundMode, ['fehlende', 'alle'], true) ? 'true' : 'false'?>" aria-controls="ollama-panel classification-document-form" data-text-sha256="<?=h(hash('sha256', $dokumentText))?>">🤖 KI-Vorschlag erstellen</button>
+                                    <?php if ($ollamaDiagnosticEnabled): ?>
+                                    <button type="button" id="ollama-diagnostic-open" aria-controls="ollama-diagnostic-panel" aria-expanded="false">🔎 KI-Anfrage anzeigen</button>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                                 <?php if ($job): ?>
                                     <button type="submit" form="retry-inbox-file-form" name="retry" value="1">🔄 Erkennung erneut starten</button>
                                     <button type="submit" form="ocr-inbox-file-form" name="ocr_requested" value="1">🔎 OCR-Text einlesen</button>
@@ -278,6 +289,14 @@ $erkennungsDetailsOffen = empty($dokumentText) || $backendFehler;
                     <?php endif; ?>
                 </div>
                 <div class="panel-body">
+                    <?php if ($ollamaAvailable): ?>
+                    <section class="ea-ollama-panel" id="ollama-panel" aria-label="KI-Vorschlag" hidden>
+                        <div class="ea-ollama-heading">
+                            <span id="ollama-status" role="status" aria-live="polite"></span>
+                        </div>
+                    </section>
+                    <?php endif; ?>
+
                     <form action="speichern.php" method="POST" id="classification-document-form" data-classification-draft>
                         <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                         <input type="hidden" name="inbox_job_id" value="<?=h($job['id'] ?? '')?>">
@@ -335,8 +354,7 @@ $erkennungsDetailsOffen = empty($dokumentText) || $backendFehler;
                         </div>
 
                         <div class="form-group">
-                            <label for="Nummer">Dokumenten-Nummer (optional) <?=eablage_source_badge($autokatQuellen['number'] ?? null)?><?=eablage_textcompare_badge($pythonTextvergleich, !empty($textvergleichQuellen['number']))?></label>
-                            <input type="text" id="Nummer" name="Nummer" class="form-control" value="<?=h($erkannteNummer)?>" placeholder="">
+                            <?php eablage_nummern_editor($db_config, $klassifizierung['numbers'] ?? ($erkannteNummer !== '' ? [['kind_id'=>'1','value'=>$erkannteNummer]] : [])); ?>
                         </div>
 
                         <div class="form-group">
@@ -393,7 +411,7 @@ $erkennungsDetailsOffen = empty($dokumentText) || $backendFehler;
 </div>
 
 <div class="container" style="margin-top:20px;margin-bottom:20px;">
-    <details <?=$erkennungsDetailsOffen ? 'open' : ''?> style="border:1px solid #ddd;border-radius:4px;background:#fff;">
+    <details id="classification-recognition-details" <?=$erkennungsDetailsOffen ? 'open' : ''?> style="border:1px solid #ddd;border-radius:4px;background:#fff;">
         <summary style="cursor:pointer;padding:12px 15px;font-weight:600;background:#f7f7f7;">🔎 Erkennungsdetails</summary>
 
         <div style="padding:15px;">
@@ -463,6 +481,26 @@ $erkennungsDetailsOffen = empty($dokumentText) || $backendFehler;
             <?php if (empty($dokumentText)): ?>
                 <div class="alert alert-warning">⚠️ Es konnte kein Dokumenttext extrahiert werden.</div>
             <?php endif; ?>
+            <?php if ($ollamaAvailable): ?>
+            <section id="ollama-recognition-details" aria-label="KI-Erkennung" hidden>
+                <div id="ollama-recognition-notes"></div>
+            </section>
+            <?php endif; ?>
+            <?php if ($ollamaAvailable && $ollamaDiagnosticEnabled): ?>
+            <section class="ea-ollama-panel ea-ollama-diagnostic" id="ollama-diagnostic-panel" aria-label="KI-Anfrage" hidden>
+                <div class="ea-ollama-heading">
+                    <strong>KI-Anfrage</strong>
+                    <button type="button" class="btn btn-default btn-sm" id="ollama-diagnostic-close">Schließen</button>
+                </div>
+                <p id="ollama-diagnostic-status" role="status" aria-live="polite">Noch keine Anfrage erfasst. Bitte „KI-Vorschlag erstellen“ aufrufen und anschließend hier prüfen.</p>
+                <div id="ollama-diagnostic-content"></div>
+                <details id="ollama-diagnostic-json-details" hidden>
+                    <summary>Gesendete Anfrage als JSON</summary>
+                    <textarea class="form-control" id="ollama-diagnostic-json" rows="12" readonly aria-label="Gesendete Ollama-Anfrage als JSON"></textarea>
+                    <button type="button" class="btn btn-default btn-sm" id="ollama-diagnostic-copy" disabled>JSON kopieren</button>
+                </details>
+            </section>
+            <?php endif; ?>
         </div>
     </details>
 </div>
@@ -497,5 +535,7 @@ if (classificationMoreActions) {
 }
 </script>
 <script src="classification_draft.js?v=<?=filemtime(__DIR__ . '/classification_draft.js')?>" defer></script>
+<script src="ollama.js?v=<?=filemtime(__DIR__ . '/ollama.js')?>" defer></script>
 </body>
 </html>
+

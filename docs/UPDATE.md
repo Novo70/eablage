@@ -2,6 +2,31 @@
 
 Web, Backend und Worker werden zusammen aus einem vollständigen Projektstand aktualisiert. Vorhandene lokale Konfigurationen und Dokumentdaten müssen dabei erhalten bleiben.
 
+## Aktualisierung von 4.3.0 auf 4.4.0
+
+1. Zusammengehörige Sicherung von Datenbank, PDFs, Metadaten und Konfiguration mit dem bisherigen Stand erstellen. Offene Dokumententwürfe schließen. Web, Backend und Worker stoppen; Datenbank und Datenbankwerkzeug bleiben für die Migration erreichbar.
+2. In der **richtigen Anwendungsdatenbank** die folgenden Skripte in dieser Reihenfolge vollständig ausführen. Schema und Seed nicht in einen vorhandenen Bestand importieren. Die Skripte sind wiederholbar und erhalten vorhandene Einstellungen.
+
+   1. [update_ollama.sql](../sql/update_ollama.sql) – standardmäßig deaktivierte lokale KI.
+   2. [update_master_explanations.sql](../sql/update_master_explanations.sql) – optionale Stammdaten-Erläuterungen.
+   3. [update_ollama_instruction.sql](../sql/update_ollama_instruction.sql) – Parametertexte und fachliche KI-Anweisung.
+   4. [update_ollama_thinking.sql](../sql/update_ollama_thinking.sql) – optionaler Denkmodus.
+   5. [update_ollama_diagnostics.sql](../sql/update_ollama_diagnostics.sql) – Schalter für die Diagnose.
+   6. [update_ollama_background.sql](../sql/update_ollama_background.sql) – Hintergrundcache und Verarbeitungsmodus.
+   7. [update_ollama_worker_status.sql](../sql/update_ollama_worker_status.sql) – Worker-Rückmeldung.
+   8. [update_ollama_text_selection.sql](../sql/update_ollama_text_selection.sql) – Textauswahl und Cache-Kontext.
+   9. [update_document_numbers.sql](../sql/update_document_numbers.sql) – Nummernarten, Nummern und Regelerkennungen.
+
+3. Vorläufige Eingangs-/KI-Ergebnisse des alten Softwarestands leeren: `DELETE FROM ki_vorschlaege;` und `DELETE FROM verarbeitungsauftraege;`. Die archivierten Dokumente und Original-PDFs im Eingang bleiben erhalten; der Worker bereitet die Ergebnisse neu vor. Das gilt auch beim Wechsel von einem zuvor getesteten Entwicklungsstand.
+4. Web, Backend und Worker aus demselben 4.4.0-Stand gemeinsam **neu bauen und erstellen**, siehe unten. Ein Containerneustart allein übernimmt keine Codeänderungen.
+5. Oberfläche und `/health` müssen 4.4.0 melden. Nummernarten, eine migrierte Nummer, mehrere Nummern im Dokument, AutoKat-Anker einschließlich maximaler Länge und Leerzeichen, Textvergleich, Schreibvariantensuche und Archivprüfung testen. Bestehende Regeldefinitionen verwenden zunächst **Bisherige Erkennung**. Unter Stammdaten können neue Arten und Erläuterungen ergänzt werden.
+6. Die lokale KI bleibt ohne bisherige Aktivierung ausgeschaltet. Bei Nutzung Adresse und Modell einrichten, Verbindung testen und manuelle sowie gegebenenfalls Hintergrundvorschläge prüfen. Einrichtung, Zeitgrenzen, Denkmodus und Diagnose: [Ollama](OLLAMA.md).
+7. Eine neue SQL-Sicherung erstellen und in einer getrennten Installation einschließlich Nummern und Historie rücksichern. Die Sicherung trägt 4.4.0. Der manuelle Parameter `Version` bleibt bei Bestandsupdates unverändert; bei Bedarf als Instanzkennzeichnung bewusst anpassen.
+
+Neue Schreibvorgänge verwenden JSON-Schema 4. Bestehende JSON-Dateien werden durch das SQL-Update nicht verändert; die Archivprüfung kann die neue Nummernliste ergänzen. Schema 1 bis 3 bleiben lesbar. Eine Rückkehr zu älterer Software nach dem Schreiben erfordert den zusammengehörigen Sicherungsstand.
+
+Neuinstallationen benötigen diese Updates nicht: `schema.sql` und `seed.sql` enthalten den vollständigen Stand. Nach Rücksicherung einer älteren unterstützten Sicherung werden Nummern automatisch migriert; fehlende KI-Parameter können mit den oben genannten Skripten ergänzt werden, ohne vorhandene Werte zu ersetzen.
+
 ## Aktualisierung von 4.2.0 auf 4.3.0
 
 Vor dem Update mit dem bisherigen Stand eine vollständige Sicherung erstellen. Alle Anwendungsdienste stoppen, [update_document_history.sql](../sql/update_document_history.sql) in der richtigen Datenbank ausführen und Web, Backend und Worker gemeinsam aktualisieren. Bei Neuinstallation ist die Tabelle in `schema.sql` enthalten. Bereits geöffnete Formulare neu öffnen.
@@ -22,16 +47,16 @@ Auch die neu ergänzte **OCR-Text einlesen**-Aktion in der Klassifizierung und d
 
 Bei einer Installation ohne `eablage-worker` in der eingesetzten Compose-Datei im folgenden Stoppbefehl nur die vorhandenen Dienste `eablage-web` und `eablage-backend` nennen.
 
-Im regulären Compose-Verzeichnis:
+Bei einer Installation mit separater Datenbank:
 
 ```bash
 sudo docker compose stop eablage-web eablage-backend eablage-worker
 ```
 
-Bei einer isolierten Instanz für jeden Befehl die zur Installation gehörenden Optionen verwenden:
+Bei einer Instanz mit integrierter Datenbank für jeden Befehl die zur Installation gehörenden Optionen verwenden. `eablage` ist nur der Beispiel-Projektname: Für bestehende Instanzen immer den bei ihrer Einrichtung verwendeten Namen beibehalten (zum Beispiel `eablage-fresh`), damit weiterhin dasselbe Datenbank-Volume angesprochen wird:
 
 ```bash
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh stop eablage-web eablage-backend eablage-worker
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage stop eablage-web eablage-backend eablage-worker
 ```
 
 ## Aktualisierung von 4.1.0 auf 4.2.0
@@ -98,7 +123,7 @@ Wenn Windows die Ausführung des geprüften Skripts verhindert, kann für die la
 
 ## Gemeinsam bauen und starten
 
-Regulärer Compose-Betrieb, im Projektverzeichnis:
+Installation mit separater Datenbank, im Projektverzeichnis:
 
 ```bash
 sudo docker compose config --quiet
@@ -107,23 +132,27 @@ sudo docker compose up -d --force-recreate eablage-web eablage-backend eablage-w
 sudo docker compose ps -a
 ```
 
-Isolierte Instanz:
+Instanz mit integrierter Datenbank:
 
 ```bash
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh config --quiet
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh build eablage-web eablage-backend eablage-worker
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh up -d --force-recreate eablage-web eablage-backend eablage-worker
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage-fresh ps -a
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage config --quiet
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage build eablage-web eablage-backend eablage-worker
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage up -d --force-recreate eablage-web eablage-backend eablage-worker
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage ps -a
 ```
 
 Ein bloßer Containerneustart übernimmt geänderten Code nicht. Der Webdienst heißt `eablage-web`, der Backenddienst `eablage-backend` und der Hintergrunddienst `eablage-worker`; `web` ist kein Service-Name dieser Compose-Dateien.
 
 ## Nachkontrolle
 
-Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.3.0`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
+Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.4.0`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
 
 Für Wartung PHP- und Backend-Datenbankidentität, Metadaten-Mount und UID/GID kontrollieren. Ein gemischter Web-/Backend-/Workerstand soll nicht zum Schreiben verwendet werden. JSON-Reparaturen werden ausschließlich ausdrücklich gestartet.
 
 ## Rücknahme
 
 Nach Schreibvorgängen genügt der Wechsel auf alte Images möglicherweise nicht: Datenbank und Begleitdateien können bereits anders strukturiert sein. Den zusammengehörigen Vor-Update-Stand aus Code/Images, Konfiguration, Datenbank, PDFs und Metadaten wiederherstellen. DDL-Migrationen lassen sich nicht als Gesamtvorgang zurückrollen. Die Rücknahme zunächst in der getrennten Instanz prüfen.
+
+### Fehlender DokID-Index im Altbestand
+
+Das Nummern-Update ergänzt vor dem Anlegen der Fremdschlüssel den eindeutigen Index `uq_dokumente_dokid` auf `dokumente.DokID`. Ein vorhandener Primärschlüssel nur auf `ID` genügt dafür nicht. Bei doppelten DokIDs stoppt das Update; es löscht oder nummeriert keine Dokumente um. In diesem Fall zuerst die betreffenden Datensätze prüfen, nicht den Fehler überspringen. Nach einem früheren Abbruch bei `CREATE TABLE dokument_nummer` kann das korrigierte vollständige Update erneut ausgeführt werden; die bereits angelegte Tabelle `nummernart` bleibt erhalten.

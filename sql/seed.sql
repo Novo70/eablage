@@ -1,5 +1,5 @@
 -- e_ablage initial data
--- Target: eAblage 4.3.0 (gemeinsame Web-/Backend-/Worker-Version)
+-- Target: eAblage 4.4.0 (gemeinsame Web-/Backend-/Worker-Version)
 -- Import after schema.sql
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -133,7 +133,25 @@ INSERT INTO `parameter` (`param_key`, `param_value`, `beschreibung`, `gruppierun
 ('pfadMetadaten_linux', 'PFAD_METADATEIEN', 'Pfad für Metadateien', 'Pfad', NULL, 'ja'),
 ('schwUebereinst', '55', 'Schwellenwert für Textübereinstimmung in % bei Textvergleich', 'TextVergleich', NULL, 'ja'),
 ('txtLaengeVergl', '2000', 'Maximale Länge des zu vergleichenden Textes', 'TextVergleich', NULL, 'ja'),
-('Version', '4.3.0', 'Manuelle Versions- oder Umgebungskennzeichnung; keine automatische Aktualisierung', 'System', NULL, 'ja'),
+('Version', '4.4.0', 'Manuelle Versions- oder Umgebungskennzeichnung; keine automatische Aktualisierung', 'System', NULL, 'ja'),
 ('PDFTextMode', 'layout', 'Layoutoption für PDFToText (Webanwendung)', 'TextEinlesen', NULL, 'ja');
 
+-- Optional local AI. Idempotent; existing values are retained.
+INSERT INTO `parameter` (`param_key`, `param_value`, `beschreibung`, `gruppierung`, `rang`, `anzeige`) VALUES
+('ollamaAktiv', 'nein', 'Lokale KI-Vorschläge in der Klassifizierung aktivieren (ja/nein)', 'Lokale KI', '10', 'ja'),
+('ollamaURL', '', 'Ollama-Adresse mit privater LAN-IP, z. B. http://192.168.1.100:11434', 'Lokale KI', '20', 'ja'),
+('ollamaModell', 'qwen3.5:9b', 'Exakter lokaler Modellname aus ollama list; keine Cloud-Modelle', 'Lokale KI', '30', 'ja'),
+('ollamaAnweisung', 'Ordne Kategorien und Dokumententypen nach dem Inhalt und Zweck des Dokuments zu. Nutze ihre Namen und Erläuterungen als fachliche Definitionen und Abgrenzungen. Ausdrückliche Ausschlüsse in den Erläuterungen haben Vorrang vor thematischer Ähnlichkeit oder einzelnen Stichwörtern. Wähle keine Kategorie, deren Erläuterung diese Dokumentart ausschließt. Wenn keine zulässige Zuordnung erkennbar ist, lasse sie leer.
+Bereits ausgefüllte Formularwerte sind vorläufige Vorschläge und können falsch sein. Prüfe die Zuordnung unabhängig davon; übernimm sie nicht ungeprüft.
+Partner ist der Absender. Formuliere einen kurzen, sachlichen Betreff.
+Verwende das Dokumentdatum, kein Geburts-, Fälligkeits- oder Leistungsdatum. Nummer ist die Dokumentnummer.
+Tags sind höchstens fünf konkrete deutsche Stichworte, durch Komma getrennt. Sie beschreiben zusätzliche Inhalte, die weder in deinen übrigen Vorschlägen noch in den aktuellen Formularangaben enthalten sind. Vermeide Wiederholungen, sinngleiche Begriffe und allgemeine Wörter wie Dokument oder Schreiben. Ohne zusätzliche Inhalte bleiben Tags leer.', 'Fachliche KI-Anweisung (bis 4000 Zeichen); leer verwendet Standardvorgaben', 'Lokale KI', '40', 'ja'),
+('ollamaDenkmodus', 'nein', 'Denkmodus für die lokale KI (ja/nein); kann die Zuordnung verbessern und länger dauern', 'Lokale KI', '50', 'ja'),
+('ollamaHintergrund', 'aus', 'KI-Vorschläge im Worker vorbereiten: aus, fehlende oder alle', 'Lokale KI', '60', 'ja'),
+('ollamaTextAnfang', '9000', 'Zeichen vom Dokumentanfang; mindestens 1, zusammen mit Ende höchstens 12000', 'Lokale KI', '70', 'ja'),
+('ollamaTextEnde', '3000', 'Zeichen vom Dokumentende; 0 lässt das Ende weg, zusammen mit Anfang höchstens 12000', 'Lokale KI', '80', 'ja'),
+('ollamaDiagnoseAnzeigen', 'nein', 'KI-Anfrage zur Fehlersuche im Klassifizierungsmenü anzeigen (ja/nein)', 'Entwicklerwerkzeuge', '10', 'ja')
+ON DUPLICATE KEY UPDATE param_key = VALUES(param_key);
+
 COMMIT;
+
