@@ -1,5 +1,14 @@
 # Changelog
 
+## Noch nicht veröffentlicht – Oberfläche und CSS
+
+- Direkte Desktop-Navigation für Suche, Ablage und Eingang; Verwaltungsmenü und hervorgehobener aktueller Bereich. Das mobile Menü enthält weiterhin alle Ziele und lässt sich auch mit Escape schließen.
+- Stammdatenformular zunächst eingeklappt, bei Eingabefehlern geöffnet; mehr Abstand vor der Erläuterung und größere mobile Aktionsflächen.
+- Eingangsdateien werden in der Klassifizierung über das Drei-Punkte-Menü verworfen; Speichern und Abbrechen bleiben am Formularende. Bestätigung und Prüfung der Datei bleiben erhalten.
+- Fehlende Desktop-Spaltenbreite der Einstellungen und mobile Überläufe korrigiert; Trefferüberschriften linksbündig, lange Inhalte umbrechbar und Pagination nur bei mehreren Ergebnisseiten.
+- Gemeinsame Variablen für Seitenbreite, Navigationshöhe, Abstände und Statusfarben. Stammdaten- und PDF-Styles aus den PHP-Vorlagen zentralisiert; Formular/PDF-Anordnung beibehalten.
+- Wiederholbare Browserprüfungen mit Beispieldaten und optionalen Screenshot-Vergleichen. Keine neue Laufzeitabhängigkeit und kein SQL-Update.
+
 ## 4.4.0 – Lokale KI und mehrere Nummern pro Dokument – 26.10.2026
 
 ### Klassifizierung und lokale KI

@@ -24,6 +24,8 @@ Docker-Basisimages und Betriebssystempakete sind trotz fixierter Python-Pakete b
 
 Befehle aus dem Repository-Hauptverzeichnis ausführen, sofern nicht anders angegeben. Eine getrennte Entwicklungsumgebung mit den erforderlichen Abhängigkeiten verwenden.
 
+Für CSS, Navigationskomponenten und visuelle Vergleiche gelten ergänzend die [Hinweise zur Oberfläche](OBERFLAECHE.md).
+
 | Prüfung | Befehl | Voraussetzung |
 | --- | --- | --- |
 | Backend-Unit-/API-Tests | `PYTHONPATH=backend python -m pytest backend/tests -q` | Backend-Abhängigkeiten, `pytest` und `httpx2` |

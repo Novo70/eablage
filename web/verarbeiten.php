@@ -266,8 +266,8 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
         <div class="col-md-6 ea-classification-column">
             <div class="panel panel-primary ea-classification-panel">
                 <div class="panel-heading ea-classification-heading">
-                    <span>✍️ Dokument klassifizieren</span>
-                    <?php if ($job || $regelVorbereitungMoeglich || $ollamaAvailable): ?>
+                    <h1 class="ea-panel-title">✍️ Dokument klassifizieren</h1>
+                    <?php /* Weitere Aktionen enthalten immer auch das Verwerfen der Eingangsdatei. */ ?>
                         <details class="ea-more-actions" id="classification-more-actions">
                             <summary aria-label="Weitere Aktionen" title="Weitere Aktionen">⋮</summary>
                             <div class="ea-more-actions-list">
@@ -284,9 +284,9 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
                                 <?php if ($regelVorbereitungMoeglich): ?>
                                     <button type="submit" form="classification-document-form" name="after_save" value="prepare_rule">🧩 Speichern und Regel vorbereiten</button>
                                 <?php endif; ?>
+                                <button type="submit" form="discard-inbox-file-form" class="ea-action-danger">🗑️ Eingangsdatei verwerfen</button>
                             </div>
                         </details>
-                    <?php endif; ?>
                 </div>
                 <div class="panel-body">
                     <?php if ($ollamaAvailable): ?>
@@ -364,7 +364,6 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
 
                         <div class="ea-form-actions ea-classification-actions ea-document-actions">
                             <a href="eingang.php" class="btn btn-default" data-draft-cancel>Abbrechen</a>
-                            <button type="submit" form="discard-inbox-file-form" class="btn btn-danger">🗑️ Verwerfen</button>
                             <button type="submit" class="btn btn-primary">💾 Speichern</button>
                         </div>
                     </form>
@@ -387,7 +386,7 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
 
         <div class="col-md-6 ea-classification-column">
             <div class="panel panel-primary ea-pdf-panel">
-                <div class="panel-heading" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div class="panel-heading">
                     <span>📄 Dokument: <?=h($datei)?></span>
                     <div class="btn-group btn-group-xs" role="group" aria-label="Dokumentansicht">
                         <button type="button" class="btn btn-default active" id="viewPdfButton" onclick="eablageSetDocumentView('pdf')">PDF</button>
@@ -399,22 +398,22 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
                     <div class="ea-mobile-pdf-overlay">
                         <a href="pdf.php?file=<?=rawurlencode($datei)?>" target="_blank" rel="noopener" class="btn btn-primary">PDF im Vollbild öffnen</a>
                     </div>
-                    <iframe src="pdf.php?file=<?=rawurlencode($datei)?>" style="border:none;"></iframe>
+                    <iframe src="pdf.php?file=<?=rawurlencode($datei)?>" title="PDF-Dokumentvorschau"></iframe>
                 </div>
 
-                <div class="panel-body" id="textDocumentView" style="display:none;height:100%;overflow:auto;padding:0;">
-                    <pre style="margin:0;padding:15px;border:0;border-radius:0;background:#f7f7f7;white-space:pre-wrap;word-wrap:break-word;min-height:100%;"><?=h($dokumentText)?></pre>
+                <div class="panel-body" id="textDocumentView" hidden>
+                    <pre><?=h($dokumentText)?></pre>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container" style="margin-top:20px;margin-bottom:20px;">
-    <details id="classification-recognition-details" <?=$erkennungsDetailsOffen ? 'open' : ''?> style="border:1px solid #ddd;border-radius:4px;background:#fff;">
-        <summary style="cursor:pointer;padding:12px 15px;font-weight:600;background:#f7f7f7;">🔎 Erkennungsdetails</summary>
+<div class="container ea-recognition-container">
+    <details id="classification-recognition-details" <?=$erkennungsDetailsOffen ? 'open' : ''?> class="ea-detail-panel">
+        <summary>🔎 Erkennungsdetails</summary>
 
-        <div style="padding:15px;">
+        <div>
             <?php if (!$pdfTextResult['ok']): ?>
                 <div class="alert alert-warning">
                     ⚠️ PDF-Text konnte nicht eingelesen werden: <?=h($pdfTextResult['error'])?>
@@ -515,8 +514,8 @@ function eablageSetDocumentView(view)
 
     var showText = view === 'text';
 
-    pdf.style.display = showText ? 'none' : '';
-    text.style.display = showText ? '' : 'none';
+    pdf.hidden = showText;
+    text.hidden = !showText;
     pdfButton.classList.toggle('active', !showText);
     textButton.classList.toggle('active', showText);
 }

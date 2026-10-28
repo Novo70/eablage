@@ -6,7 +6,8 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--ea-workspace-gap);
     align-items: stretch;
-    height: calc(100vh - 110px);
+    height: calc(100vh - var(--ea-page-top) - var(--ea-space-6));
+    height: calc(100dvh - var(--ea-page-top) - var(--ea-space-6));
     min-height: 0;
 }
 .ea-explorer-layout > .panel {
@@ -59,15 +60,6 @@
 .ea-explorer-crumb:hover { background: var(--ea-gray-200); color: var(--ea-blue-900); }
 .ea-explorer-item[aria-current] { background: var(--ea-blue-100); box-shadow: inset 3px 0 var(--ea-blue-700); }
 .ea-explorer button:focus-visible, .ea-explorer a:focus-visible, .ea-explorer input:focus-visible { outline: 2px solid var(--ea-blue-700); outline-offset: 2px; }
-.ea-explorer button.ea-explorer-item:focus,
-.ea-explorer button.ea-explorer-item:focus-visible {
-    outline: none !important;
-    outline-offset: 0 !important;
-}
-.ea-explorer button.ea-explorer-item:focus:not([aria-current]),
-.ea-explorer button.ea-explorer-item:focus-visible:not([aria-current]) {
-    box-shadow: none !important;
-}
 .ea-explorer-items > li:not(.ea-explorer-document-row) { border-bottom: 1px solid var(--ea-gray-200); }
 .ea-explorer-item { width: 100%; display: block; padding: 11px 9px; overflow-wrap: anywhere; }
 .ea-explorer-document {
@@ -114,7 +106,7 @@
 .ea-explorer-preview-heading .btn { white-space: nowrap; }
 .ea-explorer-empty-preview { margin: 0; padding: 12px; color: var(--ea-gray-700); }
 .ea-preview-title-mobile { display: none; }
-@media (max-width: 760px) {
+@media (max-width: 899px) {
     .ea-explorer-layout {
         display: flex;
         flex-direction: column;

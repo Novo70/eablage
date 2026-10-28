@@ -47,6 +47,7 @@ Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale B
 | Dokumentfelder und vollständiger JSON-Formatvertrag | [Dokumentmodell und JSON](METADATEN_JSON.md) |
 | Komponenten, Schreibhoheit, API und wichtige Dateien | [Technische Referenz](TECHNIK.md) |
 | Entwicklung, Abhängigkeiten und wiederholbare Prüfungen | [Entwicklung und Tests](ENTWICKLUNG.md) |
+| CSS-Struktur, Layoutregeln und visuelle Prüfungen | [Oberfläche](OBERFLAECHE.md) |
 | Architekturentscheidungen | [Architekturleitlinien](ARCHITEKTUR.md) |
 
 Für Änderungen zwischen Projektständen dienen das [gemeinsame Changelog](../changelog.txt) und das [Backend-Changelog](../backend/changelog.txt). Diese Historien ersetzen keine aktuelle Bedienungsanleitung.

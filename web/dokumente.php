@@ -181,14 +181,16 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
                         </div>
                     </details>
                     <div class="panel panel-primary ea-documents-panel">
-                        <div class="panel-heading">Dokumente</div>
+                        <div class="panel-heading"><h1 class="ea-panel-title">Dokumente</h1></div>
                         <div class="panel-body">
                             <div class="search-summary"><strong><?= h($totalRows) ?></strong> Treffer gefunden<?php if ($totalRows > 0): ?> — angezeigt werden <?= h($firstHit) ?> bis <?= h($lastHit) ?> — Seite <?= h($page) ?> von <?= h($totalPages) ?><?php endif; ?> <?php if ($volltextsuche): ?><span class="label label-info">Volltextsuche aktiv</span><?php endif; ?></div>
                             <?php if ($totalRows === 0): ?><div class="alert alert-warning">Keine Dokumente gefunden. Bitte Suchkriterien ändern.</div><?php else: ?>
+                                <?php if ($totalPages > 1): ?>
                                 <div class="pagination-wrapper">
                                     <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page - 1])) ?>">&laquo; Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button><?php endif; ?> <?php if ($page < $totalPages): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page + 1])) ?>">Nächste &raquo;</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button><?php endif; ?></div>
                                     <div class="ea-pagination-info">Seite <?= h($page) ?> von <?= h($totalPages) ?></div>
                                 </div>
+                                <?php endif; ?>
                                 <table class="table table-striped table-hover ea-results-table">
                                     <thead>
                                         <tr>
@@ -213,10 +215,12 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
+                                <?php if ($totalPages > 1): ?>
                                 <div class="pagination-wrapper">
                                     <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page - 1])) ?>">&laquo; Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button><?php endif; ?> <?php if ($page < $totalPages): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page + 1])) ?>">Nächste &raquo;</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button><?php endif; ?></div>
                                     <div class="ea-pagination-info">Seite <?= h($page) ?> von <?= h($totalPages) ?></div>
                                 </div>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -227,7 +231,7 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
     <script>
         (function() {
             var filter = document.querySelector('.ea-filter-panel');
-            if (filter && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+            if (filter && window.matchMedia && window.matchMedia('(max-width: 899px)').matches) {
                 filter.removeAttribute('open');
             }
         }());

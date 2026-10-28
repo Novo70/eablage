@@ -367,21 +367,21 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
             </div>
             <div class="col-md-6 ea-classification-column">
                 <div class="panel panel-primary ea-pdf-panel">
-                    <div class="panel-heading" style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span>📄 Dokument <?= h($storedDocument['DokID']) ?></span>
+                    <div class="panel-heading"><span>📄 Dokument <?= h($storedDocument['DokID']) ?></span>
                         <div class="btn-group btn-group-xs" role="group" aria-label="Dokumentansicht"><button type="button" class="btn btn-default active" id="viewPdfButton" onclick="eablageSetDocumentView('pdf')">PDF</button><button type="button" class="btn btn-default" id="viewTextButton" onclick="eablageSetDocumentView('text')">Text</button></div>
                     </div>
                     <div class="panel-body ea-pdf-body" id="pdfDocumentView">
-                        <div class="ea-mobile-pdf-overlay"><a href="<?= h($pdfLink) ?>" target="_blank" rel="noopener" class="btn btn-primary">PDF im Vollbild öffnen</a></div><iframe src="<?= h($pdfLink) ?>" style="border:none;"></iframe>
+                        <div class="ea-mobile-pdf-overlay"><a href="<?= h($pdfLink) ?>" target="_blank" rel="noopener" class="btn btn-primary">PDF im Vollbild öffnen</a></div><iframe src="<?= h($pdfLink) ?>" title="PDF-Dokumentvorschau"></iframe>
                     </div>
-                    <div class="panel-body" id="textDocumentView" style="display:none;height:100%;overflow:auto;padding:0;">
-                        <pre style="margin:0;padding:15px;border:0;border-radius:0;background:#f7f7f7;white-space:pre-wrap;word-wrap:break-word;min-height:100%;"><?= h($displayDocumentText) ?></pre>
+                    <div class="panel-body" id="textDocumentView" hidden>
+                        <pre><?= h($displayDocumentText) ?></pre>
                     </div>
                 </div>
             </div>
         </div>
-        <details style="margin:20px 0;border:1px solid #ddd;border-radius:4px;background:#fff;">
-            <summary style="cursor:pointer;padding:12px 15px;font-weight:600;background:#f7f7f7;">ℹ️ Technische Informationen</summary>
-            <div style="padding:15px;">
+        <details class="ea-detail-panel">
+            <summary>ℹ️ Technische Informationen</summary>
+            <div>
                 <p><strong>DokID:</strong> <?= h($storedDocument['DokID'] ?? '') ?></p>
                 <p><strong>Archiviert:</strong> <?= h($storedDocument['Archivierungsdatum'] ?? '') ?></p>
                 <p><strong>Zuletzt geändert:</strong> <?= h($storedDocument['Aenderungsdatum'] ?? '–') ?></p>
@@ -411,8 +411,8 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
             var pdfButton = document.getElementById('viewPdfButton');
             var textButton = document.getElementById('viewTextButton');
             var showText = view === 'text';
-            pdf.style.display = showText ? 'none' : '';
-            text.style.display = showText ? '' : 'none';
+            pdf.hidden = showText;
+            text.hidden = !showText;
             pdfButton.classList.toggle('active', !showText);
             textButton.classList.toggle('active', showText);
         }

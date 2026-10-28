@@ -93,34 +93,7 @@ try {
     <title>e_ablage – Stammdaten</title>
     <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
     <link rel="icon" href="ea_icon4.png">
-    <style>
-        .ea-master-heading { margin:0; font:inherit; }
-        .ea-master-section { margin-top:24px; }
-        .ea-master-section + .ea-master-section { padding-top:24px; border-top:1px solid var(--ea-gray-300); }
-        .ea-master-section h2 { margin:0 0 16px; font-size:1.05rem; color:var(--ea-blue-900); }
-        .ea-master-create-number-fields { display:grid; grid-template-columns:minmax(0,1fr) 7rem; gap:16px; align-items:start; }
-        .ea-master-create-number-fields .form-control { min-width:0; }
-        .ea-master-table td { vertical-align:middle; }
-        .ea-master-edit { margin:0; }
-        .ea-master-sort-button { border:0; padding:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-align:left; }
-        .ea-master-sort-button:hover { text-decoration:underline; }
-        .ea-master-sort-button:focus-visible { outline:2px solid var(--ea-blue-700); outline-offset:4px; }
-        .ea-master-edit .form-control { min-width:0; }
-        .ea-master-table td.ea-master-sort { width:7rem; min-width:7rem; vertical-align:top; }
-        .ea-master-explanation { margin-top:6px; }
-        .ea-master-explanation summary { cursor:pointer; font-size:.9em; color:var(--ea-blue-900); }
-        .ea-master-explanation textarea { margin-top:5px; resize:vertical; }
-        .ea-master-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
-        .ea-master-actions form { margin:0; }
-        .ea-master-actions .btn { margin:0; white-space:nowrap; }
-        .ea-master-status-form { display:inline; margin:0; padding:0; }
-        .ea-master-status { border:0; background:transparent; padding:2px 4px; cursor:pointer; font:inherit; white-space:nowrap; }
-        .ea-master-status:not(:disabled):hover, .ea-master-status:not(:disabled):focus { text-decoration:underline; }
-        .ea-master-status:disabled { opacity:.55; filter:grayscale(1); cursor:not-allowed; }
-        @media (min-width:900px) {
-            .ea-master-edit { min-width:280px; }
-        }
-    </style>
+
 </head>
 <body>
 <?php require 'navbar.php'; ?>
@@ -141,8 +114,8 @@ try {
                 <a href="stammdaten.php?kind=document_types" <?=$kind === 'document_types' ? 'aria-current="page"' : ''?>>Dokumententypen</a>
                 <a href="stammdaten.php?kind=number_types" <?=$kind === 'number_types' ? 'aria-current="page"' : ''?>>Nummernarten</a>
             </nav>
-            <section class="ea-master-section" aria-labelledby="master-create-heading">
-                <h2 id="master-create-heading">Neuen Eintrag anlegen</h2>
+            <details class="ea-master-section ea-master-create" id="master-create" <?= $error !== '' && ($action ?? '') === 'create' ? 'open' : '' ?>>
+                <summary id="master-create-heading">Neuen Eintrag anlegen</summary>
                     <form method="POST" action="stammdaten.php">
                         <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                         <input type="hidden" name="kind" value="<?=h($kind)?>">
@@ -154,13 +127,13 @@ try {
                             </div>
                             <?php if ($kind==='number_types'): ?><div><label for="new-sort-order">Sortierung</label><input type="number" id="new-sort-order" name="sort_order" class="form-control" min="0" max="9999" value="10"></div><?php endif; ?>
                         </div>
-                        <label for="new-explanation">Erläuterung (optional, bis 1000 Zeichen)</label>
+                        <label class="ea-master-new-explanation" for="new-explanation">Erläuterung (optional, bis 1000 Zeichen)</label>
                         <textarea class="form-control" id="new-explanation" name="explanation" maxlength="1000" rows="3"><?=h($newExplanation)?></textarea>
                         <p>Definition, typische Inhalte und Abgrenzungen dokumentieren die Ablagesystematik und unterstützen die lokale KI.</p>
                         <p>Neue Einträge sind aktiv.</p>
                         <button class="btn btn-primary" type="submit">Anlegen</button>
                     </form>
-            </section>
+            </details>
             <section class="ea-master-section" aria-labelledby="master-list-heading">
                 <h2 id="master-list-heading"><?=h($title)?></h2>
                     <p>Umbenennen gilt auch für bestehende Dokumente. Deaktivierte Einträge bleiben recherchierbar und vorhandene Zuordnungen bleiben erhalten.</p>
@@ -190,7 +163,7 @@ try {
                                 </form>
                             </td>
                             <?php if ($kind==='number_types'): ?>
-                            <td class="ea-master-sort"><input type="number" name="sort_order" form="master-edit-<?=bin2hex((string)$item['id'])?>" class="form-control" min="0" max="9999" aria-label="Sortierung: <?=h($item['name'])?>" value="<?=h($item['sort_order']??10)?>"></td>
+                            <td class="ea-master-sort" data-label="Sortierung"><input type="number" name="sort_order" form="master-edit-<?=bin2hex((string)$item['id'])?>" class="form-control" min="0" max="9999" aria-label="Sortierung: <?=h($item['name'])?>" value="<?=h($item['sort_order']??10)?>"></td>
                             <?php endif; ?>
                             <td><?=h($item['documents'])?> Dokumente
                                 <?php if ($item['rules']): ?>

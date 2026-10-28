@@ -70,6 +70,7 @@ test('number types: name precedes sort column and sort order saves with the row'
     assert.ok(nameBox.x+nameBox.width <= sortBox.x);
     assert.ok(Math.abs(sortBox.y-nameBox.y)<2);
     assert.ok(explanationBox.y >= nameBox.y+nameBox.height);
+    await page.locator('#master-create > summary').click();
     const newName=await page.locator('#new-name').boundingBox(), newSort=await page.locator('#new-sort-order').boundingBox();
     assert.ok(Math.abs(newName.y-newSort.y)<2);
     await sort.fill('25');

@@ -4,6 +4,8 @@ eAblage verarbeitet PDF-Dokumente im Browser: vom Eingang über die automatische
 
 Für Installation und Administration führt die [Dokumentationsübersicht](README.md) zu den zuständigen Anleitungen. Dieses Handbuch beschreibt den täglichen Arbeitsablauf.
 
+Am Desktop sind **Suche**, **Ablage** und **Eingang** direkt in der Kopfleiste erreichbar. Unter **Verwaltung** stehen Stammdaten, Regeln, Papierkorb, Export und Einstellungen. Auf kleinen Bildschirmen enthält das Menü oben rechts alle Bereiche. Der aktuelle Bereich ist hervorgehoben.
+
 ## Empfohlener Arbeitsablauf
 
 1. PDF in den Eingang kopieren, dorthin scannen oder über die Oberfläche hochladen.
@@ -42,7 +44,7 @@ Reine Bildscans werden bei Bedarf lokal per OCR erkannt. Der Inbox-Worker bereit
 
 ### Dokument verwerfen
 
-Eine PDF, die nicht archiviert werden soll, kann im Eingang oder auf der Verarbeiten-Seite mit **Verwerfen** entfernt werden. Vor dem Löschen wird geprüft, ob sich die Datei seit dem Öffnen der Seite geändert hat. Für bereits archivierte Dokumente gilt der [Papierkorb](PAPIERKORB.md).
+Eine PDF, die nicht archiviert werden soll, kann im Eingang mit **Verwerfen** entfernt werden. In der Klassifizierung befindet sich **Eingangsdatei verwerfen** im Drei-Punkte-Menü oben im Formular. Nach Bestätigung wird die Eingangsdatei endgültig gelöscht; sie gelangt nicht in den Papierkorb. Vor dem Löschen wird geprüft, ob sich die Datei seit dem Öffnen der Seite geändert hat. Für bereits archivierte Dokumente gilt der [Papierkorb](PAPIERKORB.md).
 
 ### Dokument öffnen
 
