@@ -1,6 +1,6 @@
 # eAblage Dokumentation
 
-Diese Dokumentation beschreibt eAblage 4.4.0 mit optionaler lokaler KI und mehreren Nummern pro Dokument. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
+Diese Dokumentation beschreibt eAblage 4.5.0 mit Vorgangsverknüpfungen, Dokumentansicht, einheitlichen Arbeitsfenstern, optionaler lokaler KI und mehreren Nummern pro Dokument. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
 
 Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale Beispiele.
 
@@ -26,6 +26,7 @@ Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale B
 | Dokumente verwerfen, Papierkorb und Wiederherstellen | [Papierkorb](PAPIERKORB.md) |
 | Ergänzungsregeln, Klassifikationsregeln und Extraktion | [AutoKat-Regeln](AUTOKAT.md) |
 | Nummernarten, Erkennung und Nummernsuche | [Nummern](NUMMERN.md) |
+| Zusammengehörige Dokumente mehrfach zuordnen und wiederfinden | [Vorgänge](VORGAENGE.md) |
 | Kategorien und Dokumententypen | [Stammdaten](STAMMDATEN.md) |
 | Virtuelle Ordner, Filter und PDF-Auswahl | [Ablage-Explorer](EXPLORER.md) |
 | Einzel- und Gesamtexport, Dateinamen und Verzeichnisebenen | [Export](EXPORT.md) |
@@ -47,6 +48,7 @@ Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale B
 | Dokumentfelder und vollständiger JSON-Formatvertrag | [Dokumentmodell und JSON](METADATEN_JSON.md) |
 | Komponenten, Schreibhoheit, API und wichtige Dateien | [Technische Referenz](TECHNIK.md) |
 | Entwicklung, Abhängigkeiten und wiederholbare Prüfungen | [Entwicklung und Tests](ENTWICKLUNG.md) |
+| CSS-Struktur, Layoutregeln und visuelle Prüfungen | [Oberfläche](OBERFLAECHE.md) |
 | Architekturentscheidungen | [Architekturleitlinien](ARCHITEKTUR.md) |
 
 Für Änderungen zwischen Projektständen dienen das [gemeinsame Changelog](../changelog.txt) und das [Backend-Changelog](../backend/changelog.txt). Diese Historien ersetzen keine aktuelle Bedienungsanleitung.

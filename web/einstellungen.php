@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 // einstellungen.php - Konfigurationszentrale für eAblage
 // - Zeigt nur Parameter mit anzeige=ja nach Gruppierung an
 // - Alle Kategorien sind beim Laden standardmäßig eingeklappt
@@ -164,7 +165,7 @@ foreach ($alleParameter as $p) {
     <?php endif; ?>
 
     <div class="panel panel-primary ea-settings-panel">
-        <div class="panel-heading">⚙️ Einstellungen</div>
+        <div class="panel-heading"><?=eablage_icon('settings')?>Einstellungen</div>
         <div class="panel-body">
             <div class="ea-settings-toolbar">
                 <div>
@@ -172,8 +173,8 @@ foreach ($alleParameter as $p) {
                     <div class="ea-settings-hint">Konfiguration der Web-Anwendung und der angebundenen Dienste.</div>
                 </div>
                 <div class="ea-settings-toolbar__actions">
-                    <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(true)">📂 Alle aufklappen</button>
-                    <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(false)">📁 Alle zuklappen</button>
+                    <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(true)"><?=eablage_icon('expand')?>Alle aufklappen</button>
+                    <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(false)"><?=eablage_icon('collapse')?>Alle zuklappen</button>
                 </div>
             </div>
 
@@ -183,7 +184,7 @@ foreach ($alleParameter as $p) {
                 <?php foreach ($gruppierteParameter as $gruppenName => $parameterListe): ?>
                     <details class="ea-group-details">
                         <summary class="ea-group-summary">
-                            <span>📁 <?=h($gruppenName)?></span>
+                            <span><?=h($gruppenName)?></span>
                             <span class="ea-settings-count"><?=count($parameterListe)?> Parameter</span>
                         </summary>
 
@@ -273,10 +274,10 @@ foreach ($alleParameter as $p) {
                 <?php endforeach; ?>
 
                 <div class="ea-sticky-bar">
-                    <div class="ea-settings-version">Version 4.4.0 / 26.10.2026</div>
+                    <div class="ea-settings-version">Version 4.5.0 / 31.10.2026</div>
                     <div class="ea-settings-save-actions ea-form-actions">
                         <a href="<?=h($returnUrl)?>" class="btn btn-default" id="settings-exit"><?=($meldung !== '' && $meldungTyp === 'success') ? 'Zurück' : 'Abbrechen'?></a>
-                        <button type="submit" class="btn btn-primary">💾 Speichern</button>
+                        <button type="submit" class="btn btn-primary"><?=eablage_icon('save')?>Speichern</button>
                     </div>
                 </div>
             </form>

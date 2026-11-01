@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'nummern_funktionen.php';
@@ -296,8 +297,8 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
 
     <div class="panel panel-primary">
         <div class="panel-heading ea-autokat-heading">
-            <span>🧩 Klassifizierungsregeln</span>
-            <a href="autokat_regel_bearbeiten.php" class="btn btn-default ea-heading-btn">➕ Neue Regel</a>
+            <span><?=eablage_icon('rules')?>Klassifizierungsregeln</span>
+            <a href="autokat_regel_bearbeiten.php" class="btn btn-default ea-heading-btn"><?=eablage_icon('plus')?>Neue Regel</a>
         </div>
         <div class="panel-body">
             <form method="get" class="ea-autokat-toolbar">
@@ -329,7 +330,7 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                         <option value="ohne" <?=$filterNutzung === 'ohne' ? 'selected' : ''?>>Ohne Treffer</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-default">🔍 Filtern</button>
+                <button type="submit" class="btn btn-default"><?=eablage_icon('search')?>Filtern</button>
                 <a href="autokat_regeln.php" class="btn btn-link">Zurücksetzen</a>
             </form>
 
@@ -403,7 +404,7 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                                     class="ea-rule-edit"
                                     title="Regel bearbeiten"
                                     aria-label="Regel <?=h($regel['RegelID'])?> bearbeiten"
-                                >✏️</a>
+                                ><?=eablage_icon('edit')?></a>
                                 <?php if (trim((string)$regel['Bezeichnung']) !== ''): ?>
                                     <div class="ea-rule-label"><?=h($regel['Bezeichnung'])?></div>
                                 <?php endif; ?>

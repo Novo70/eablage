@@ -1,5 +1,34 @@
 # Changelog
 
+## 4.5.0 – Vorgänge, Dokumentansicht und einheitliche Arbeitsfenster – 31.10.2026
+
+### Vorgänge und Dokumentansicht
+
+- Dokumente lassen sich mehreren Vorgängen zuordnen, beispielsweise einer Baumaßnahme und einer Steuererklärung. Zuordnung beim Klassifizieren, Bearbeiten und direkt im Vorgang; eigener Vorgangsfilter in der Suche.
+- Vorgangsübersicht und Detailansicht mit Dokumentliste links und PDF-Vorschau rechts. Das Löschen eines Vorgangs entfernt nur dessen Zuordnungen, keine Dokumente.
+- Treffer in der Suche öffnen eine reine Dokumentansicht mit Metadaten, Nummernarten, Vorgängen und gemeinsamer PDF-/Textvorschau. Bearbeiten und direktes PDF-Öffnen sind dort erreichbar; die zusätzlichen Stiftsymbole in der Trefferliste entfallen.
+- Rückkehr aus Bearbeitung und Vorgang zur Dokumentansicht und zurück zur Suche mit Suchbegriff, Filtern und Ergebnisseite.
+- Vorgänge und Zuordnungen sind Bestandteil der SQL-Sicherung und Dokumenthistorie. PDF-Dateien, JSON-Metadaten und Exportstruktur bleiben bei reinen Zuordnungsänderungen unverändert.
+
+### Oberfläche und Bedienung
+
+- Direkte Navigation für Suche, Ablage, Vorgänge und Eingang; ergänzendes Verwaltungsmenü. Einheitliche lokale SVG-Symbole ohne externe Icon-Bibliothek.
+- Dokumentansicht, Klassifizierung und Bearbeitung verwenden am Desktop gleich hohe Fenster. Inhalte scrollen intern, Titel und untere Aktionen bleiben sichtbar. Meldungen teilen sich den verfügbaren Platz mit den Arbeitsfenstern und lassen sich schließen.
+- Erkennungsdetails einschließlich KI-Diagnose und technische Informationen stehen eingeklappt im linken Inhaltsbereich. Relevante Erkennungsfehler öffnen die Details weiterhin automatisch.
+- Mobil und bei geringer Fensterhöhe bleibt normales Seitenscrollen erhalten. Mobile Überläufe und die Spaltenbreite der Einstellungen sind korrigiert.
+- Rücksprünge aus Regeln, Vorgängen und Historie erhalten wieder die ausgewählte PDF-/Textansicht sowie die internen Scrollpositionen von Formular und Dokumenttext.
+- Seltene und destruktive Aktionen stehen im Drei-Punkte-Menü; Bestätigungen bleiben erhalten. Buttons bewegen sich beim Überfahren nicht mehr, Vorschau-Buttons folgen der Gestaltung der Titelaktionen.
+- Stammdatenanlage zunächst eingeklappt; größere mobile Bedienelemente. Trefferüberschriften linksbündig, lange Inhalte umbrechbar und Pagination nur bei mehreren Ergebnisseiten.
+- Vorgangsdokumente ohne zusätzlichen Zwischenrahmen; Explorer fokussiert beim Listenaufbau nicht mehr versehentlich den letzten Ordner.
+
+### Betrieb und Aktualisierung
+
+- Oberfläche, Backend-Health, Neuinstallationsvorgaben und neue SQL-Sicherungen verwenden Version 4.5.0. Unterstützte Sicherungen von 4.1.0 bis 4.5.0 bleiben rücksicherbar.
+- Mobile Betreff-Links in der Trefferliste bieten mindestens 44 px hohe Tippflächen.
+- Apache verweigert HTTP-Abrufe von SQL-, Konfigurations- und Build-Dateien (`.sql`, `.conf`, `.ini`, `Dockerfile`, `.dockerignore`) im Webroot; lokale Zugriffe für die Rücksicherung bleiben möglich. Das Web-Image muss neu gebaut werden.
+- **Datenbankupdate von 4.4.0 erforderlich:** nach Sicherung und Schreibpause `sql/update_document_links.sql` ausführen. Neuinstallationen verwenden Schema und Seed dieses Releases. Web, Backend und Worker gemeinsam neu bauen. Vollständiger Ablauf: [docs/UPDATE.md](docs/UPDATE.md#aktualisierung-von-440-auf-450).
+- Suchtest mit vollständigen Vorgangsabhängigkeiten; erweiterte Browserprüfungen für Navigation, Meldungen, interne Scrollbereiche, feste Aktionen und sichere Rücksprünge. Keine zusätzliche Produktionsbibliothek.
+
 ## 4.4.0 – Lokale KI und mehrere Nummern pro Dokument – 26.10.2026
 
 ### Klassifizierung und lokale KI

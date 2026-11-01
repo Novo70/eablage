@@ -1,8 +1,10 @@
 # eAblage
 
-eAblage klassifiziert, archiviert und recherchiert PDF-Dokumente im Browser. Apache/PHP und FastAPI laufen in getrennten Containern und nutzen dieselbe MariaDB. Datenbank und PDF-Archiv sind der maßgebliche Bestand; JSON-Begleitdateien machen die Metadaten unabhängig lesbar.
+eAblage klassifiziert, archiviert und recherchiert PDF-Dokumente im Browser. Dokumente können mit OCR erkannt werden, die Anbindung einer lokalen KI ermöglicht es, Klassifizierungsvorschläge zu generieren.
 
-Diese Dokumentation beschreibt eAblage in der Version 4.4.0.
+Apache/PHP und FastAPI laufen in getrennten Containern und nutzen dieselbe MariaDB. Datenbank und PDF-Archiv sind der maßgebliche Bestand; JSON-Begleitdateien machen die Metadaten unabhängig lesbar.
+
+Diese Dokumentation beschreibt eAblage in der Version 4.5.0.
 
 ## Funktionen
 
@@ -11,6 +13,8 @@ Diese Dokumentation beschreibt eAblage in der Version 4.4.0.
 - Mehrere Nummern pro Dokument mit Nummernarten, AutoKat-Ankern und Schreibvariantensuche.
 - Automatische Vorbereitung der Inbox im Hintergrund; manuelles Klassifizieren und Prüfen vor der Archivierung.
 - Archivierung mit JSON Schema 4, Originaldateiname und SHA-256-Referenz; Recherche und Metadatenbearbeitung.
+- Vorgänge mit mehrfachen Dokumentzuordnungen und eigener Suche.
+- Reine Dokumentansicht mit Metadaten links und PDF-/Textvorschau rechts; einheitliche Desktop-Arbeitsfenster.
 - Virtueller Ablage-Explorer mit Metadatenfilter und Original-PDF-Zugriff.
 - Einzel-/Gesamtexport mit generierten oder bekannten Originalnamen und bis zu fünf Verzeichnisebenen.
 - Ereignisprotokoll mit Dokumenthistorie, aufklappbaren Details und nachvollziehbaren Löschungen.
@@ -36,7 +40,7 @@ Beschreibungen der Installation, Bedienung, Betrieb und technische Referenz sind
 
 ## Geschichte
 
-Die Anwendung eAblage habe ich ursprünglich in 2017 als Microsoft Access-Anwendung erstellt. Über entsprechende VBA-Module konnten PDF-Dokumente in eine Eingangsverzeichnis ausgelesen und über ein Regelwerk klassifiziert werden. Die Anwendung war bewusst so ausgelegt, dass keine Abhängkgkeit von einem bestimmten Datenbanksystem entsteht. Zu jeder PDF-Datei wird zusätzlich eine Meta-Datei mit den erkannten und vergebenen Metadaten (incl. Originaldateiname) im definierten Datenverzeichnis erzeugt. So sind alle Informationen in lesbarer Form unabhängig von der Datenbank vorhanden und können mit vertretbarem Aufwand in ein anderes System migriert werden.
+Die Anwendung eAblage habe ich ursprünglich in 2017 als Microsoft Access-Anwendung erstellt. Über entsprechende VBA-Module konnten PDF-Dokumente in eine Eingangsverzeichnis ausgelesen und über ein Regelwerk klassifiziert werden. Die Anwendung war bewusst so ausgelegt, dass keine Abhängkgkeit von einem bestimmten Datenbanksystem entsteht. Zu jeder PDF-Datei wird zusätzlich eine Meta-Datei mit den erkannten und vergebenen Metadaten (incl. Originaldateiname) im definierten Datenverzeichnis erzeugt. So bleiben die dokumentbezogenen Metadaten in lesbarer Form unabhängig von der Datenbank verfügbar. Vorgänge, Dokumentzuordnungen und die Ereignishistorie werden dagegen ausschließlich mit der SQL-Datenbank gesichert.
 
 Die Datenhaltung wurde aus Access-Tabellen später in eine MariaDB ausgelagert und ab 2019 über ein kleines Web-Frontend der flexible und mobile Zugriff ermöglicht. Trotz der Verlagerung der Daten aus dem proprietären Access-Format habe ich die Erzeugung der Meta-Dateien beibehalten.
 

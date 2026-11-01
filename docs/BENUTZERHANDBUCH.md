@@ -4,6 +4,8 @@ eAblage verarbeitet PDF-Dokumente im Browser: vom Eingang über die automatische
 
 Für Installation und Administration führt die [Dokumentationsübersicht](README.md) zu den zuständigen Anleitungen. Dieses Handbuch beschreibt den täglichen Arbeitsablauf.
 
+Am Desktop sind **Suche**, **Ablage**, **Vorgänge** und **Eingang** direkt in der Kopfleiste erreichbar. Unter **Verwaltung** stehen Stammdaten, Regeln, Papierkorb, Export und Einstellungen. Auf kleinen Bildschirmen enthält das Menü oben rechts alle Bereiche. Der aktuelle Bereich ist hervorgehoben.
+
 ## Empfohlener Arbeitsablauf
 
 1. PDF in den Eingang kopieren, dorthin scannen oder über die Oberfläche hochladen.
@@ -42,7 +44,7 @@ Reine Bildscans werden bei Bedarf lokal per OCR erkannt. Der Inbox-Worker bereit
 
 ### Dokument verwerfen
 
-Eine PDF, die nicht archiviert werden soll, kann im Eingang oder auf der Verarbeiten-Seite mit **Verwerfen** entfernt werden. Vor dem Löschen wird geprüft, ob sich die Datei seit dem Öffnen der Seite geändert hat. Für bereits archivierte Dokumente gilt der [Papierkorb](PAPIERKORB.md).
+Eine PDF, die nicht archiviert werden soll, kann im Eingang mit **Verwerfen** entfernt werden. In der Klassifizierung befindet sich **Eingangsdatei verwerfen** im Drei-Punkte-Menü oben im Formular. Nach Bestätigung wird die Eingangsdatei endgültig gelöscht; sie gelangt nicht in den Papierkorb. Vor dem Löschen wird geprüft, ob sich die Datei seit dem Öffnen der Seite geändert hat. Für bereits archivierte Dokumente gilt der [Papierkorb](PAPIERKORB.md).
 
 ### Dokument öffnen
 
@@ -142,19 +144,21 @@ In den **Nummern** werden zusätzlich unterschiedliche Schreibweisen gefunden: L
 
 Ergebnisse sind nach Dokumentdatum absteigend geordnet; eine Seite enthält bis zu 50 Treffer. Die Liste zeigt Datum, Kategorie, Dokumenttyp, Partner, Betreff und gegebenenfalls Nummer. Suchbegriffe werden in Partner und Betreff hervorgehoben.
 
-- Betreff beziehungsweise PDF-Symbol anklicken: PDF in einem neuen Tab öffnen.
-- Stiftsymbol anklicken: Metadaten bearbeiten.
+- Betreff beziehungsweise Dokumentsymbol anklicken: Dokumentansicht mit Metadaten links und PDF-/Textvorschau rechts öffnen.
+- In der Dokumentansicht **Bearbeiten** wählen, um Metadaten zu ändern, oder **PDF öffnen**, um das PDF in einem neuen Tab zu öffnen. **Zurück zur Suche** erhält Suchbegriff, Filter und Ergebnisseite.
 - Seitensteuerung verwenden: weitere Treffer anzeigen.
 
 Auf kleinen Bildschirmen ist der Suchfilter platzsparend eingeklappt.
 
+Die Dokumentansicht zeigt Partner, Betreff, Dokumentdatum, beide Kategorien, Dokumententyp, sämtliche Nummern mit Nummernart, Stichwörter und verknüpfte Vorgänge als lesbare Werte. Vorgänge sind direkt aufrufbar. **Technische Angaben** enthält Dokument-ID, Originaldateiname, Archivierungs- und Änderungsdatum, Aufbewahrungsdauer, Prüfsumme und Erkennungsinformation. Am Desktop sind beide Fenster gleich hoch; die Metadaten scrollen innerhalb des linken Fensters, während Titel und untere Aktionen sichtbar bleiben. Bei geringer Fensterhöhe und mobil scrollt die gesamte Seite. Mobil steht die Vorschau unter den Metadaten; das PDF kann im Vollbild geöffnet werden. Das Ansehen ändert weder Metadaten noch Dokumenttext oder Änderungsdatum.
+
 ## Archivierte Dokumente bearbeiten
 
-Aus der Suche oder dem [Ablage-Explorer](EXPLORER.md) die Bearbeitung öffnen. Änderbar sind Datum, Kategorien, Dokumenttyp, Partner, Betreff, Nummer, Tags und Dokumenttext. DokID, Archivpfad, Originaldateiname und Prüfsumme sind geschützt.
+Aus der Dokumentansicht über **Bearbeiten** oder direkt aus dem [Ablage-Explorer](EXPLORER.md) die Bearbeitung öffnen. Änderbar sind Datum, Kategorien, Dokumenttyp, Partner, Betreff, Nummer, Tags und Dokumenttext. DokID, Archivpfad, Originaldateiname und Prüfsumme sind geschützt.
 
 **Speichern** übernimmt eine tatsächliche Änderung in Datenbank und JSON-Metadatei und setzt das Änderungsdatum aus der Datenbankuhr. Unverändertes Speichern setzt kein neues Änderungsdatum und erzeugt keine automatische Formatmigration. Die Archiv-PDF bleibt unverändert.
 
-Nach erfolgreichem Speichern bleibt die Bearbeitung mit Erfolgsmeldung geöffnet. **Zurück** führt zur vorherigen Suche mit Filtern, zum Explorer oder zur ursprünglichen Klassifizierung eines Vergleichsdokuments. Beim Rückweg in den Explorer wird der aktuelle Bestand geladen; eine geänderte Zuordnung kann das Dokument in einen anderen virtuellen Ordner verschieben.
+Nach erfolgreichem Speichern bleibt die Bearbeitung mit Erfolgsmeldung geöffnet. **Zurück** führt zur Dokumentansicht mit unverändertem Suchkontext, zum Explorer oder zur ursprünglichen Klassifizierung eines Vergleichsdokuments. Beim Rückweg in den Explorer wird der aktuelle Bestand geladen; eine geänderte Zuordnung kann das Dokument in einen anderen virtuellen Ordner verschieben.
 
 Wurde das Dokument seit dem Öffnen des Formulars bereits geändert, beispielsweise in einem anderen Browserfenster, werden veraltete Eingaben nicht gespeichert. Die eigenen Eingaben bleiben im Formular sichtbar. Benötigte Werte vor dem erneuten Öffnen sichern und anschließend mit dem aktuellen Dokumentstand abgleichen. Auch **Neu klassifizieren** und das erneute Texteinlesen übernehmen keinen veralteten Formularstand. Nach einem Update müssen bereits zuvor geöffnete Bearbeitungsformulare gegebenenfalls neu geöffnet werden.
 
@@ -162,7 +166,7 @@ Wurde das Dokument seit dem Öffnen des Formulars bereits geändert, beispielswe
 
 **Neu Klassifizieren** berechnet Vorschläge für das bestehende Dokument. **Text neu einlesen** extrahiert den Text erneut aus der archivierten PDF und erhält bereits geänderte Formularwerte. Beide Aktionen speichern noch nichts dauerhaft. Erst **Speichern** übernimmt die Änderungen. **Exportieren** lädt die archivierte PDF mit dem Namen des Einzelexportprofils herunter.
 
-Zusatzfunktionen stehen im Drei-Punkte-Menü des Bearbeitungsfensters. **Speichern**, **In den Papierkorb** und **Zurück** beziehungsweise **Abbrechen** stehen gemeinsam am Formularende.
+Zusatzfunktionen stehen im Drei-Punkte-Menü des Bearbeitungsfensters. **In den Papierkorb** steht dort als letzter, rot gekennzeichneter Eintrag mit Bestätigungsabfrage. **Speichern** und **Zurück** beziehungsweise **Abbrechen** stehen am Formularende.
 
 ## Dokumenthistorie
 
@@ -204,3 +208,13 @@ Bei aktivierter **KI im Hintergrund** bereitet der Worker Vorschläge bereits vo
 
 
 Die Verwaltung der Nummernarten und das Verhalten von AutoKat, KI und Suche beschreiben die [Nummernhinweise](NUMMERN.md).
+
+## Vorgänge
+
+Zusammengehörige Dokumente lassen sich unabhängig von der Archivierung zu Vorgängen zusammenstellen. Ein Dokument kann mehreren Vorgängen angehören. Verwaltung, Zuordnung und Suche: [Vorgänge und Dokumentenverknüpfungen](VORGAENGE.md).
+
+Die gemeinsame Vorschau beim Ansehen, Klassifizieren und Bearbeiten trägt den Titel **PDF-Vorschau** und bietet den Wechsel zwischen PDF und Dokumenttext. Der Originaldateiname steht beim Klassifizieren vollständig in den aufklappbaren **Erkennungsdetails**, beim Bearbeiten zusammen mit der technischen Dokument-ID unter **Technische Informationen**. Lange Dateinamen werden dort umgebrochen.
+
+### Desktop-Arbeitsfenster
+
+Beim Klassifizieren und Bearbeiten sind Formular und Vorschau ab 900 px Breite und 600 px Fensterhöhe gleich hoch. Meldungen oberhalb und Arbeitsfenster teilen sich den verfügbaren Platz. Meldungsboxen lassen sich rechts über **×** schließen und geben ihren Platz wieder frei. Das Ausblenden gilt nur für die aktuelle Seite und behebt keine zugrunde liegenden Fehler. Nur die Formularfelder scrollen; Titelzeile und untere Aktionen bleiben sichtbar. Sehr lange Meldungen lassen die Seite wachsen, damit die Arbeitsfenster mindestens 360 px hoch bleiben. Die Menüs in der Titelzeile gehören nicht zum Scrollbereich. Erkennungsdetails beziehungsweise technische Informationen stehen eingeklappt am Ende des linken Scrollbereichs vor der festen Aktionsleiste. Bei relevanten Erkennungsfehlern öffnen sich die Erkennungsdetails weiterhin automatisch. Auf kleineren Bildschirmen und bei geringer Fensterhöhe scrollt weiterhin die gesamte Seite.

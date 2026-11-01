@@ -8,7 +8,7 @@
     const maxAge = 24 * 60 * 60 * 1000;
     const names = new Set(['Datum', 'Partner', 'Betreff', 'Doktyp', 'Kategorie',
         'Kategorie2', 'Nummer', 'numbers_json', 'Tags', 'dokument_text', 'erkennungs_info',
-        'document_revision', 'reclassification_info', 'pending_document_text']);
+        'vorgaenge_json', 'document_revision', 'reclassification_info', 'pending_document_text']);
     const controls = () => Array.from(form.elements).filter(el => names.has(el.name));
     const identity = () => {
         const url = new URL(location.href);
@@ -48,7 +48,7 @@
                     el.add(new Option(entry.label + ' (bitte prüfen)', entry.value));
                 }
                 el.value = entry.value;
-                if (el.name === 'numbers_json') el.dispatchEvent(new Event('change', {bubbles: true}));
+                if (['numbers_json', 'vorgaenge_json'].includes(el.name)) el.dispatchEvent(new Event('change', {bubbles: true}));
             }
             if (!editing) form.dataset.classificationDraftRestored = 'true';
             if (editing) {
@@ -64,7 +64,14 @@
                 if (typeof saved.details[index] === 'boolean') el.open = saved.details[index];
             });
             clearCurrent();
-            requestAnimationFrame(() => window.scrollTo(0, saved.scrollY));
+            requestAnimationFrame(() => {
+                window.scrollTo(0, saved.scrollY);
+                for (const [key, selector] of [['form', '.ea-form-scroll'], ['text', '#textDocumentView pre']]) {
+                    const element = document.querySelector(selector);
+                    const top = saved.scroll?.[key];
+                    if (element && Number.isFinite(top) && top >= 0) element.scrollTop = top;
+                }
+            });
         } catch (_) {
             window.alert('Die zwischengespeicherten Eingaben konnten nicht wiederhergestellt werden. Bitte den Eingabestand prüfen.');
         }
@@ -81,7 +88,7 @@
     restore();
     // Also consume the snapshot when the browser restores this page from its cache.
     window.addEventListener('pageshow', event => { if (event.persisted) restore(); });
-    document.querySelectorAll('a[data-draft-link]').forEach(link => {
+    function bindDraftLink(link) {
         link.addEventListener('click', event => {
             if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
             event.preventDefault();
@@ -89,7 +96,11 @@
                 const token = Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, '0')).join('');
                 const saved = {
                     identity: identity(), time: Date.now(), scrollY: window.scrollY,
-                    textView: document.getElementById('textDocumentView')?.style.display !== 'none',
+                    textView: document.getElementById('textDocumentView')?.hidden === false,
+                    scroll: {
+                        form: document.querySelector('.ea-form-scroll')?.scrollTop || 0,
+                        text: document.querySelector('#textDocumentView pre')?.scrollTop || 0
+                    },
                     details: Array.from(document.querySelectorAll('details'), el => el.open),
                     fields: controls().map((el, index) => ({
                         index, name: el.name, value: el.value,
@@ -112,7 +123,9 @@
                 window.alert('Die Eingaben konnten nicht zwischengespeichert werden. Der Bildschirm bleibt geöffnet; es wurde nichts gespeichert.');
             }
         });
-    });
+    }
+    window.eablageBindDraftLink = bindDraftLink;
+    document.querySelectorAll('a[data-draft-link]').forEach(bindDraftLink);
     document.querySelectorAll('[data-draft-cancel]').forEach(link => link.addEventListener('click', clearCurrent));
     // Snapshots are consumed on return, so a later save/failure cannot resurrect them.
 })();

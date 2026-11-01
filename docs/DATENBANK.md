@@ -11,6 +11,11 @@ eAblage nutzt MariaDB mit InnoDB und `utf8mb4`. Die Archivtabelle heißt fest `d
 | `doktyp` | Dokumententyp-ID, Bezeichnung, optionale Erläuterung, Aktivstatus |
 | `ereignisprotokoll` | Dauerhafte Dokumentereignisse mit Zeitpunkt, Quelle und strukturierten Details |
 | `autokat` | Regelidentität, Version, Rang, Such-/Ergebnisfelder und Statistik |
+| `nummernart` | Arten, Rang und Erläuterungen für Dokumentnummern |
+| `dokument_nummer` | Mehrere Nummern je Dokument mit normalisiertem Suchwert |
+| `autokat_nummer` | Nummernarten und Erkennungsregeln je AutoKat-Regelversion |
+| `vorgang` | Vorgangsbezeichnung, Beschreibung und Zeitstempel |
+| `dokument_vorgang` | Mehrfachzuordnung zwischen Dokumenten und Vorgängen |
 | `parameter` | Schlüssel/Wert, Beschreibung, Gruppe, Rang und Sichtbarkeit |
 | `ki_worker_status` | Laufzeitrückmeldung des KI-Workers, aktueller Auftrag und Fehlerpause; kein Bestandteil des Archivbackups |
 | `ki_vorschlaege` | Reproduzierbare Hintergrund-KI-Vorschläge mit PDF-Prüfsumme, Revision und Kontext; kein Bestandteil des Archivbackups |
@@ -94,8 +99,8 @@ PHP, Backend und Worker müssen auf dieselbe Datenbank zeigen. Die mit den Insta
 
 Bei einer gezielten Rechtevergabe müssen die tatsächlich verwendeten Vorgänge abgedeckt sein:
 
-- PHP: SELECT auf allen neun Tabellen; Schreiben von Dokumenten, Regeln, Parametern und Trefferstatistik; UPDATE/DELETE auf `verarbeitungsauftraege` für Abschluss, Verwerfen und Rücksicherung sowie DELETE auf `ki_vorschlaege` und `ki_worker_status` bei Rücksicherung. Tabellenstrukturen für Sicherung lesen. Für die Initialrücksicherung zusätzlich CREATE und DROP sowie INSERT auf den wiederhergestellten Tabellen.
-- Backend: SELECT auf allen neun Tabellen; INSERT/UPDATE/DELETE auf Kategorien und Dokumenttypen; INSERT/UPDATE auf `verarbeitungsauftraege` sowie SELECT/INSERT/UPDATE/DELETE auf `ki_vorschlaege`; Sperr- und Transaktionszugriffe für die zugehörigen Vorgänge.
+- PHP: lesender Zugriff auf den Anwendungsbestand; Schreiben von Vorgängen und Dokumentzuordnungen; Schreiben von Dokumenten, Regeln, Parametern und Trefferstatistik; UPDATE/DELETE auf `verarbeitungsauftraege` für Abschluss, Verwerfen und Rücksicherung sowie DELETE auf `ki_vorschlaege` und `ki_worker_status` bei Rücksicherung. Tabellenstrukturen für Sicherung lesen. Für die Initialrücksicherung zusätzlich CREATE und DROP sowie INSERT auf den wiederhergestellten Tabellen.
+- Backend: lesender Zugriff auf Dokumente, Stammdaten, Regeln, Parameter und die zugehörigen Laufzeittabellen; INSERT/UPDATE/DELETE auf Kategorien und Dokumenttypen; INSERT/UPDATE auf `verarbeitungsauftraege` sowie SELECT/INSERT/UPDATE/DELETE auf `ki_vorschlaege`; Sperr- und Transaktionszugriffe für die zugehörigen Vorgänge.
 - Worker: SELECT auf Dokumenten, Regeln, Parametern und Stammdaten sowie SELECT/INSERT/UPDATE auf `verarbeitungsauftraege` und SELECT/INSERT/UPDATE/DELETE auf `ki_vorschlaege` sowie SELECT/INSERT/UPDATE auf `ki_worker_status`.
 - Schemaadministration: ALTER und je Skript die oben genannten zusätzlichen Rechte.
 
@@ -140,3 +145,9 @@ Die integrierte Rücksicherung erweitert VARCHAR-basierte Parameterdefinitionen 
 Die Tabellen `nummernart`, `dokument_nummer` und `autokat_nummer` ergänzen das Datenmodell. Pro Dokument/Regel und Nummernart gilt eine eindeutige Zuordnung. Details zur fachlichen Schreibhoheit, zur Kompatibilitätsspalte `dokumente.Nummer`, zum Suchwert und zur einmaligen Migration stehen in [Nummern](NUMMERN.md#datenhaltung-und-migration). Neue Metadaten verwenden JSON-Schema 4; die Formate 1 bis 3 bleiben lesbar.
 
 Der vollständige Updatepfad von 4.3.0 auf 4.4.0 einschließlich KI-Parametern, Hintergrundtabellen und Nummernmigration steht unter [Aktualisierung](UPDATE.md#aktualisierung-von-430-auf-440).
+
+## Vorgänge und Zuordnungen
+
+`vorgang` enthält Bezeichnung, optionale Beschreibung und Zeitstempel. `dokument_vorgang` bildet die Mehrfachzuordnung mit dem Primärschlüssel `(DokumentID,VorgangID)` ab. `DokumentID` verweist auf die fachliche `dokumente.DokID`; beide Fremdschlüssel löschen beim Entfernen ihres Elternsatzes nur die Zuordnungen. Die Dokumente werden durch das Löschen eines Vorgangs nicht verändert.
+
+Bestandsupdate: nach Sicherung und Schreibpause `sql/update_document_links.sql` ausführen. Neuinstallation: in `schema.sql` enthalten. Vollständige Bedienungs- und Speichergrenzen: [Vorgänge](VORGAENGE.md).

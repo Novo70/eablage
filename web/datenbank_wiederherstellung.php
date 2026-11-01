@@ -2,7 +2,7 @@
 // Initialbefüllung aus einer unterstützten eAblage-Sicherung.
 // Die Archivprüfung bleibt ein eigenständiger Vorgang.
 
-const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0', '4.4.0'];
+const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0'];
 const EABLAGE_RESTORE_TABLES = ['autokat', 'doktyp', 'dokumente', 'kategorie', 'parameter'];
 
 function eablage_restore_empty(PDO $db): bool
@@ -91,11 +91,14 @@ function eablage_restore_validate(string $path): array
     if ((str_starts_with((string)$format, '-- Ereignisprotokoll:') || str_starts_with((string)$format, '-- Dokumentprotokoll:')) && !$hasHistory) {
         throw new RuntimeException('Nicht unterstützte Protokollversion in der Sicherung.');
     }
+    $hasCases=false;
+    foreach (eablage_restore_statements($path) as $sql) if (str_starts_with($sql,'CREATE TABLE `vorgang` (')) $hasCases=true;
     $hasNumbers=false;
     foreach (eablage_restore_statements($path) as $sql) if (str_starts_with($sql,'CREATE TABLE `nummernart` (')) $hasNumbers=true;
     $expectedTables = EABLAGE_RESTORE_TABLES;
     if ($hasNumbers) $expectedTables=array_merge($expectedTables,['nummernart','dokument_nummer','autokat_nummer']);
     if ($hasHistory) $expectedTables[] = $historyTable;
+    if ($hasCases) $expectedTables=array_merge($expectedTables,['vorgang','dokument_vorgang']);
     $supportedHeaders = array_map(
         static fn(string $version): string => '-- e_ablage MariaDB-Datensicherung; Version: ' . $version . "\n",
         EABLAGE_RESTORE_VERSIONS
@@ -124,6 +127,8 @@ function eablage_restore_validate(string $path): array
             $required = match ($table) {
                 'dokumente' => ['DokID', 'Originaldateiname', 'DateiSHA256', 'Aenderungsdatum', 'GeloeschtAm'],
                 'doktyp', 'kategorie' => ['Aktiv'],
+                'vorgang' => ['ID','Bezeichnung','Beschreibung','ErstelltAm','GeaendertAm'],
+                'dokument_vorgang' => ['DokumentID','VorgangID'],
                 'nummernart' => ['id','Bezeichnung','Erlaeuterung','Aktiv'],
                 'dokument_nummer' => ['DokumentID','NummernartID','Wert','Suchwert'],
                 'autokat_nummer' => ['AutoKatID','NummernartID','Startanker','Endmodus'],
@@ -144,7 +149,7 @@ function eablage_restore_validate(string $path): array
     if ($phase !== 2 || $count < 3 || count($created) !== count($expectedTables) || count($dropped) !== count($expectedTables)) {
         throw new RuntimeException('Sicherungsdatei enthält keinen vollständigen eAblage-Tabellenbestand.');
     }
-    return ['tables' => count($created), 'statements' => $count, 'history' => $hasHistory, 'legacy_history' => $legacyHistory, 'numbers'=>$hasNumbers];
+    return ['tables' => count($created), 'statements' => $count, 'history' => $hasHistory, 'legacy_history' => $legacyHistory, 'numbers'=>$hasNumbers, 'cases'=>$hasCases];
 }
 
 /** Used only after validating the complete dump. Preserve all stored values. */
@@ -190,12 +195,18 @@ function eablage_restore_database_unlocked(PDO $db, string $path): array
         try { foreach (['autokat_nummer','dokument_nummer','nummernart'] as $table) $db->exec('DROP TABLE IF EXISTS `'.$table.'`'); }
         finally { $db->exec('SET FOREIGN_KEY_CHECKS=1'); }
     }
+    $db->exec('SET FOREIGN_KEY_CHECKS=0');
+    try { foreach (['dokument_vorgang','vorgang'] as $table) $db->exec('DROP TABLE IF EXISTS `'.$table.'`'); }
+    finally { $db->exec('SET FOREIGN_KEY_CHECKS=1'); }
     // Ein abgebrochener DDL-Import kann nicht mit ROLLBACK zurückgenommen werden.
     foreach (eablage_restore_statements($path) as $sql) {
         $db->exec(eablage_restore_parameter_statement(eablage_restore_master_statement(eablage_restore_history_statement($sql, $summary['legacy_history']))));
     }
     if (!$summary['numbers']) {
         foreach (eablage_restore_statements(__DIR__.'/nummern_schema.sql') as $sql) $db->exec($sql);
+    }
+    if (!$summary['cases']) {
+        foreach (eablage_restore_statements(__DIR__.'/vorgaenge_schema.sql') as $sql) $db->exec($sql);
     }
     $summary['documents'] = (int)$db->query('SELECT COUNT(*) FROM dokumente')->fetchColumn();
     unlink($marker);

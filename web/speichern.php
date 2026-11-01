@@ -2,6 +2,7 @@
 
 require_once 'konfiguration.php';
 require_once 'nummern_funktionen.php';
+require_once 'vorgaenge_funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
 require_once 'stammdaten_funktionen.php';
@@ -123,6 +124,7 @@ try {
         throw new RuntimeException('Die Eingangsdatei wurde seit der Erkennung geändert. Bitte erneut klassifizieren.');
     }
     $db->beginTransaction();
+    $vorgaenge = eablage_vorgaenge_pruefen($db, $_POST['vorgaenge_json'] ?? '[]');
     $numbers = eablage_nummern_pruefen($db, $_POST['numbers_json'] ?? '[]');
     $nummer = ($numbers[0]['value'] ?? '');
     $inboxJobId = (int)($_POST['inbox_job_id'] ?? 0);
@@ -190,6 +192,7 @@ try {
     $stmt->bindValue(':dateisha256', $dateiSHA256);
     $stmt->execute();
     eablage_nummern_speichern($db,(int)$neueDokID,$numbers);
+    eablage_vorgaenge_speichern($db,(int)$neueDokID,$vorgaenge);
 
     // Exclusive creation prevents overwriting orphaned/existing archive files.
     // Keep the inbox PDF intact until the database transaction has committed.

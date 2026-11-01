@@ -4,7 +4,9 @@ Diese Seite beschreibt aktuelle Prüfverfahren, keine früheren Freigabeprotokol
 
 ## Arbeitsmodell
 
-`develop` enthält die Weiterentwicklung, `main` den freigegebenen Stand. Web, Backend und Worker gemeinsam ändern, versionieren und prüfen. Für schreibende Vorgänge die eindeutige fachliche Verantwortung gemäß [Architektur](ARCHITEKTUR.md) erhalten. Zugangsdaten und Dokumentdaten nicht ins Repository aufnehmen.
+Dieses Repository enthält die veröffentlichten eAblage-Versionen. Änderungen in einem eigenen Feature-Branch auf Basis von `main` vorbereiten und Pull Requests gegen `main` richten.
+
+`main` enthält den freigegebenen Stand. Web, Backend und Worker gemeinsam ändern, versionieren und prüfen. Für schreibende Vorgänge die eindeutige fachliche Verantwortung gemäß [Architektur](ARCHITEKTUR.md) erhalten. Zugangsdaten und Dokumentdaten nicht ins Repository aufnehmen.
 
 Markdown ist die maßgebliche Dokumentation. Verhalten in der zuständigen Fachseite ändern und den Einstieg unter [docs/README.md](README.md) aktuell halten. Andere Seiten sollen auf die ausführliche Erklärung verweisen. Historische Ergebnisse gehören nicht als vermeintlich aktuelle Freigabe in die Anleitungen.
 
@@ -24,6 +26,8 @@ Docker-Basisimages und Betriebssystempakete sind trotz fixierter Python-Pakete b
 
 Befehle aus dem Repository-Hauptverzeichnis ausführen, sofern nicht anders angegeben. Eine getrennte Entwicklungsumgebung mit den erforderlichen Abhängigkeiten verwenden.
 
+Für CSS, Navigationskomponenten und visuelle Vergleiche gelten ergänzend die [Hinweise zur Oberfläche](OBERFLAECHE.md).
+
 | Prüfung | Befehl | Voraussetzung |
 | --- | --- | --- |
 | Backend-Unit-/API-Tests | `PYTHONPATH=backend python -m pytest backend/tests -q` | Backend-Abhängigkeiten, `pytest` und `httpx2` |
@@ -37,12 +41,17 @@ Befehle aus dem Repository-Hauptverzeichnis ausführen, sofern nicht anders ange
 | Explorer im Browser | `node --test tests/explorer_browser.test.cjs` | Playwright und Chromium |
 | Nummern- und Regel-Editor | `node --test tests/document_numbers.test.cjs tests/number_rules.test.cjs` | Node und `jsdom` |
 | Nummern-/Stammdaten-/KI-Oberfläche | `node --test tests/document_numbers_browser.test.cjs tests/master_data_browser.test.cjs tests/ollama_browser.test.cjs` | PHP CLI, Playwright und Chromium |
+| Gemeinsame PDF-/Textvorschau | `node --test tests/document_preview.test.cjs` | PHP CLI, Node und `jsdom` |
+| Vorgangs-Editor | `node --test tests/document_links.test.cjs tests/document_links_preview.test.cjs` | Node und `jsdom` |
+| Vorgangstabellen, Zuordnungen und Rücksicherung | `EABLAGE_TEST_DB_PORT=13316 php tests/document_links.php` | Wegwerf-MariaDB, PHP mit PDO-MySQL |
+| Vorgänge über echte Webformulare, Archivierung und veraltete Eingaben | `EABLAGE_TEST_DB_PORT=13316 python tests/document_links_integration.py` | Wegwerf-MariaDB, PHP mit PDO-MySQL, mysql-connector-python |
 | Nummernmigration | `EABLAGE_TEST_DB_PORT=13316 python -m unittest discover -s tests -p document_numbers_migration.py -v` | Wegwerf-MariaDB |
 | Nummern speichern und rücksichern | `EABLAGE_TEST_DB_PORT=13316 python tests/document_numbers_integration.py` | Wegwerf-MariaDB, PHP mit PDO-MySQL |
 | PHP-Helfer | `php tests/php_helpers.php` | PHP CLI |
 | Archiv-PDF-Pfadbegrenzung | `php tests/archiv_pdf_helpers.php` | PHP CLI |
 | Dokumentprotokoll und Rollback | `php tests/document_history.php` | PHP CLI |
 | Restore-Vorprüfung | `php tests/restore_preflight.php` | PHP CLI |
+| Webroot-Sperrmuster | `php tests/webroot_rules.php` | PHP CLI; tatsächliche HTTP-403 zusätzlich im gebauten Apache-Container prüfen |
 | PHP-/JSON-API-Verbindung | `python tests/metadata_php_integration.py -v` | Backend-Abhängigkeiten, `httpx2`, PHP CLI |
 | Inbox und Worker | `PHP_BIN=php EABLAGE_TEST_DB_PORT=13316 python tests/inbox_integration.py -v` | Wegwerf-MariaDB, PHP mit PDO-MySQL, Poppler, reportlab und Backend-Testabhängigkeiten |
 | OCR | `python tests/ocr_integration.py -v` | Poppler, Tesseract mit deu+eng, Pillow, reportlab und Backend-Abhängigkeiten |
@@ -85,7 +94,7 @@ Mit gesicherten, entbehrlichen Testdaten prüfen:
 15. **Inbox:** Worker-Vorbereitung und sofortige manuelle Klassifizierung prüfen. Unveränderte fertige PDFs werden im laufenden Worker nicht neu gelesen; eine geleerte Auftragstabelle und geänderte PDFs werden erkannt. Lesefehler, Wiederholung und inzwischen deaktivierte Vorschlagswerte prüfen.
 16. **Formularkonflikte:** Dokument in zwei Fenstern öffnen. Nach Speicherung im ersten darf das zweite dessen Änderungen weder beim Speichern noch über Hilfsaktionen überschreiben.
 17. **Regelvorbereitung:** Ohne Regeltreffer und bei reinen E-Regeln „Speichern und Regel vorbereiten“ im Drei-Punkte-Menü prüfen; manuell vervollständigte Werte müssen im inaktiven K-Regelentwurf stehen. Bei einer erkannten K-Regel bleibt die Aktion ausgeblendet.
-18. **Versionsstand und Rücksicherung:** Oberfläche und `/health` melden 4.4.0. Neue SQL-Sicherungen tragen 4.4.0; gültige 4.1.0-, 4.2.0-, 4.3.0- und 4.4.0-Dumps sind importierbar, ungültige Schemata und nicht unterstützte Kennungen werden vor Änderungen abgewiesen.
+18. **Versionsstand und Rücksicherung:** Oberfläche und `/health` melden 4.5.0. Neue SQL-Sicherungen tragen 4.5.0 und enthalten auch Vorgänge/Zuordnungen; gültige 4.1.0-, 4.2.0-, 4.3.0-, 4.4.0- und 4.5.0-Dumps sind importierbar, ungültige Schemata und nicht unterstützte Kennungen werden vor Änderungen abgewiesen.
 19. **Dokumenthistorie:** [Funktionsprüfung](DOKUMENTHISTORIE.md#funktionsprüfung) einschließlich Ereignis-Rollback und neuer/alter Rücksicherungen durchführen. PHP-Prüfungen: `php tests/document_history.php` und `php tests/restore_preflight.php`; MariaDB-Ende-zu-Ende-Prüfung mit dem vorhandenen `tests/archive_integration.py` in einer Wegwerfinstanz.
 20. **Historienrücksprung:** Aus der Bearbeitung die Historie öffnen, filtern und blättern; **Zurück** erhält ungespeicherte Metadaten, neu eingelesenen Text und das ursprüngliche Rücksprungziel. Der Ausgangsstand wird nicht stillschweigend gespeichert.
 21. **Ausdrückliche OCR:** In Klassifizierung und Bearbeitung eine PDF mit fehlerhafter vorhandener Textschicht vollständig neu erkennen. In der Klassifizierung Bestätigung, Ersetzung ungespeicherter Eingaben, neue Vorschläge und erneuerten Inbox-Cache prüfen; ein normaler Folgeaufruf muss das neue Ergebnis verwenden. Bei belegter Dateisperre nach Abschluss ausdrücklich erneut starten. In der Bearbeitung bleiben andere Formularwerte erhalten und neuer Text wird erst beim Speichern übernommen. Originalbytes und Prüfsumme bleiben unverändert.
@@ -139,15 +148,19 @@ KI-Textauswahl: Backendprüfungen decken Default-/konfigurierte Grenzen, Anfang 
 
 `backend/tests/test_ollama_fallback.py` prüft einen einzelnen sequenziellen Rückfall nach Tokenlimit, das Ausbleiben eines dritten Versuchs, unveränderten Prompt/Schema/Formularkontext, veraltete Dokumente, erhaltene Diagnose je Versuch und Verbindungsfehler. Ein lokaler HTTP-Test simuliert die Nutzzeitüberschreitung mit bestätigtem Ende innerhalb des Nachlaufs. Ein harter Timeout ohne Endbestätigung darf keinen zweiten Auftrag erzeugen. Hintergrundtests prüfen dauerhafte Fehlerkennzeichnung, Erhalt vorübergehender Wiederholungen und erneute Verarbeitung nach Kontextänderungen. Status- und Browsertests prüfen Warteschlangenpositionen, Rückfallhinweise, Diagnose und Ende des Pollings bei endgültigen Fehlern. Die MariaDB-Integrationssuite enthält eine Prüfung der gespeicherten Endfehler über mehrere Workeraufrufe.
 
-Vor Freigabe mit realem Ollama prüfen: Denkversuch am Tokenlimit, erfolgreicher/gescheiterter Rückfall, Zeitüberschreitung, Nichterreichbarkeit und manuelle Korrektur während der Wartezeit. Der Branch basiert auf `develop` und enthält keine Änderungen der fachlichen Prompts aus der unabhängigen Klassifizierungsvariante. Webimage einschließlich Apache-Konfiguration neu bauen; Backend und Worker gemeinsam aktualisieren. Kein SQL-Update erforderlich.
+Vor Freigabe mit realem Ollama prüfen: Denkversuch am Tokenlimit, erfolgreicher/gescheiterter Rückfall, Zeitüberschreitung, Nichterreichbarkeit und manuelle Korrektur während der Wartezeit. Webimage einschließlich Apache-Konfiguration neu bauen; Backend und Worker gemeinsam aktualisieren. Für diese KI-Funktion ist keine eigene Migration erforderlich; der vollständige Release-Updatepfad steht in [UPDATE.md](UPDATE.md).
 
 ## Gespeicherte KI-Durchlaufhistorie prüfen
 
 `ollama_history.py` begrenzt die gespeicherten Versuche auf zwei und übernimmt ausschließlich boolesche Angaben, feste Status-/Abschlusswerte und begrenzte nichtnegative Ganzzahlen. `test_ollama_history.py` prüft Altbestand ohne Historie, leere Vorabfehler, Erstversuch-/Fallbackfehler, Erfolg und die Entfernung beliebiger Text-/Requestdaten. Fallback- und Cachetests prüfen unterschiedliche Timeoutmeldungen sowie Erhalt der Historie bei Erfolg und Fehler ohne weitere Modellanfrage beim Lesen. Status-/Browsertests prüfen Verlauf in Eingang und Klassifizierung, sichere Textdarstellung, erhaltenen Aufklappzustand beim Polling und Altbestand ohne erfundene Angaben.
 
-Der neue Commit ergänzt den bestehenden Fallback-Branch. Kein SQL-Update; Historie im vorhandenen Cache-JSON. Manuelle Request-Diagnosen bleiben flüchtig. Bestehende Fehler ohne Metadaten lassen sich nicht nachträglich rekonstruieren und werden durch das Update nicht automatisch erneut verarbeitet. Vor Freigabe Erstversuch-Timeout, Fallback-Timeout und erfolgreichen Rückfall am realen Ollama-PC vergleichen.
+Die Durchlaufhistorie liegt im vorhandenen Cache-JSON und benötigt keine eigene Migration. Manuelle Request-Diagnosen bleiben flüchtig. Bestehende Fehler ohne Metadaten lassen sich nicht nachträglich rekonstruieren und werden durch das Update nicht automatisch erneut verarbeitet. Vor Freigabe Erstversuch-Timeout, Fallback-Timeout und erfolgreichen Rückfall am realen Ollama-PC vergleichen.
 
 ## KI-Analyse unter Erkennungsdetails
 
 Browsertests prüfen, dass Eingangseinträge nur kurze KI-Statuslabels anzeigen und keine Verlauf-/Fehlerdetails enthalten. In der Klassifizierung müssen Verlauf, Warnungen und ausführliche Fehler unter `classification-recognition-details` liegen und bei geschlossenem Bereich unsichtbar bleiben, auch bei deaktivierter Wartungsdiagnose. Fehler am manuellen Aufruf bleiben kurz; der Verweis öffnet die Erkennungsdetails ohne neue Anfrage oder Änderung der Eingaben. Der Wartungsaufruf öffnet ebenfalls diesen Bereich; Kopierfunktion und sichere Textdarstellung bleiben erhalten. Die Datenhaltung, Worker-Wiederholungsregeln und Modellanfragen werden durch diese Anzeigeänderung nicht angepasst.
 
+
+## Dokumentansicht
+
+`ansehen.php` lädt archivierte, nicht gelöschte Dokumente ausschließlich lesend und verwendet `dokumentvorschau.php` für die PDF-/Textvorschau. `dokument_navigation.php` enthält die gemeinsame Rücksprungprüfung von Ansicht und Bearbeitung. Die Suche übergibt ihren vollständigen Kontext als Rücksprungziel; die Bearbeitung kehrt zur Ansicht zurück. `php tests/document_view.php` prüft mit synthetischen PDO-Daten die tatsächliche Seite, Statuscodes, Escaping, Nummern, Vorgangslinks und Rücksprünge; schreibende SQL-Anweisungen sind im Test untersagt. `tests/ui_layout_browser.test.cjs` prüft die Darstellung in drei Breiten und die Bedienung der Vorschau. Der Suchintegrationstest erwartet jetzt Links auf die Dokumentansicht.

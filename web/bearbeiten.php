@@ -1,10 +1,14 @@
 <?php
+require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
+require_once __DIR__ . '/dokumentvorschau.php';
 require_once 'nummern_funktionen.php';
+require_once 'vorgaenge_funktionen.php';
 require_once 'metadaten_funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/dokument_navigation.php';
 require_once 'protokoll_funktionen.php';
 
 $db = $db_config;
@@ -14,19 +18,6 @@ function h($value): string
     return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-function valid_return_url(?string $url): string
-{
-    $url = trim((string)$url);
-    if ($url === '' || preg_match('/[\x00-\x1f\x7f]/', $url) || str_contains($url, chr(92))) return 'dokumente.php';
-    $parts = parse_url($url);
-    if (
-        $parts === false || isset($parts['scheme']) || isset($parts['host'])
-        || isset($parts['user']) || isset($parts['pass']) || isset($parts['port'])
-    ) return 'dokumente.php';
-    $path = (string)($parts['path'] ?? '');
-    if (!in_array($path, ['dokumente.php', 'verarbeiten.php', 'bearbeiten.php', 'explorer.php'], true)) return 'dokumente.php';
-    return $path . (isset($parts['query']) ? '?' . $parts['query'] : '');
-}
 function valid_date(string $value): bool
 {
     $date = DateTime::createFromFormat('Y-m-d', $value);
@@ -88,6 +79,7 @@ if (!$document) {
     die('Das angeforderte Dokument wurde nicht gefunden.');
 }
 $document['numbers'] = eablage_nummern_laden($db,(int)$dokId);
+$document['vorgaenge'] = eablage_vorgaenge_laden($db, (int)$dokId);
 $storedDocument = $document;
 // Retain the original form revision across helper actions and failed saves.
 $documentRevision = $_SERVER['REQUEST_METHOD'] === 'POST'
@@ -132,6 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
         try { $document['numbers'] = eablage_nummern_pruefen($db,$_POST['numbers_json'],$storedDocument['numbers']); }
         catch (Throwable $e) { $error=$e->getMessage(); }
     }
+    try { $document['vorgaenge'] = eablage_vorgaenge_pruefen($db, $_POST['vorgaenge_json'] ?? json_encode($storedDocument['vorgaenge'])); }
+    catch (Throwable $e) { $error = $e->getMessage(); }
     $reclassificationInfo = trim((string)($_POST['reclassification_info'] ?? ''));
 
     if (!hash_equals(document_revision($storedDocument), $documentRevision)) {
@@ -192,6 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
         $updated['Partner'] = $partner;
         $updated['Betreff'] = $betreff;
         $updated['numbers'] = $document['numbers'];
+        $updated['vorgaenge'] = $document['vorgaenge'];
         $updated['Nummer'] = $nummer;
         $updated['Tags'] = $tags;
         if ($pendingDocumentText !== '') $updated['Doktext'] = $pendingDocumentText;
@@ -205,7 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
                     break;
                 }
             }
-            if (!$hasChanges) {
+            $linksChanged = $updated['vorgaenge'] !== $storedDocument['vorgaenge'];
+            if (!$hasChanges && !$linksChanged) {
                 header('Location: bearbeiten.php?dokid=' . rawurlencode((string)$dokId) . '&saved=1&return=' . rawurlencode($returnUrl));
                 exit;
             }
@@ -221,8 +217,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
                 $currentAssignments = $currentStmt->fetch(PDO::FETCH_ASSOC);
                 if (!$currentAssignments) throw new RuntimeException('Dokument nicht mehr vorhanden.');
                 $currentAssignments['numbers'] = eablage_nummern_laden($db,(int)$dokId);
+                $currentAssignments['vorgaenge'] = eablage_vorgaenge_laden($db,(int)$dokId);
                 if (!hash_equals(document_revision(array_intersect_key($currentAssignments, $storedDocument)), $documentRevision)) {
                     throw new UnexpectedValueException('Das Dokument wurde zwischenzeitlich geändert. Bitte die eigenen Eingaben sichern und das Dokument neu öffnen.');
+                }
+                $updated['vorgaenge'] = eablage_vorgaenge_pruefen($db, $_POST['vorgaenge_json'] ?? json_encode($storedDocument['vorgaenge']));
+                eablage_vorgaenge_speichern($db, (int)$dokId, $updated['vorgaenge']);
+                if (!$hasChanges) {
+                    $db->commit();
+                    header('Location: bearbeiten.php?dokid=' . rawurlencode((string)$dokId) . '&saved=1&return=' . rawurlencode($returnUrl));
+                    exit;
                 }
                 $updated['numbers'] = eablage_nummern_pruefen($db,$_POST['numbers_json'] ?? '[]',$currentAssignments['numbers']);
                 $nummer = ($updated['numbers'][0]['value'] ?? '');
@@ -311,49 +315,69 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
 
 <body>
     <?php include 'navbar.php'; ?><div class="container">
+        <div class="ea-workspace-shell">
+        <div class="ea-workspace-notices">
         <?php if ($saved): ?><?= eablage_render_message('success', 'Die Änderungen wurden gespeichert.') ?><?php endif; ?>
         <?php if ($error !== ''): ?><?= eablage_render_message('danger', $error) ?><?php endif; ?>
         <?php if ($textReloaded): ?><?= eablage_render_message('info', ($action === 'ocr_text' ? 'Der Dokumenttext wurde seitenweise mit OCR eingelesen. ' : 'Der Dokumenttext wurde erneut aus der archivierten PDF eingelesen. ') . ($textChanged ? 'Der neue Text weicht vom gespeicherten Text ab und wird erst mit „Speichern“ übernommen.' : 'Der neu gelesene Text entspricht dem bereits gespeicherten Text.')) ?><?php endif; ?>
         <?php if ($reclassified): ?><?= eablage_render_message('info', 'Die Klassifizierung wurde erneut ausgeführt. Die angezeigten Werte sind nur Vorschläge und noch nicht gespeichert.' . ($reclassificationInfo !== '' && $reclassificationInfo !== 'Manuell' ? ' Erkennung: ' . $reclassificationInfo : '')) ?><?php endif; ?>
+        </div>
         <div class="row ea-classification-row">
             <div class="col-md-6 ea-classification-column">
                 <div class="panel panel-primary ea-classification-panel">
                     <div class="panel-heading ea-edit-heading">
-                        <span>✏️ Dokumentdaten bearbeiten</span>
+                        <span><?=eablage_icon('edit')?>Dokumentdaten bearbeiten</span>
                         <details class="ea-more-actions" id="edit-more-actions">
                             <summary aria-label="Weitere Aktionen" title="Weitere Aktionen">⋮</summary>
                             <div class="ea-more-actions-list">
-                                <button type="submit" form="edit-document-form" name="action" value="reclassify" formnovalidate>🔄 Neu klassifizieren</button>
-                                <button type="submit" form="edit-document-form" name="action" value="reload_text" formnovalidate>📄 Text neu einlesen</button>
-                                <button type="submit" form="edit-document-form" name="action" value="ocr_text" formnovalidate>🔎 OCR-Text einlesen</button>
-                                <a href="export.php?dokid=<?= rawurlencode((string)$storedDocument['DokID']) ?>">⬇️ Exportieren</a>
+                                <button type="submit" form="edit-document-form" name="action" value="reclassify" formnovalidate><?=eablage_icon('refresh')?>Neu klassifizieren</button>
+                                <button type="submit" form="edit-document-form" name="action" value="reload_text" formnovalidate><?=eablage_icon('document')?>Text neu einlesen</button>
+                                <button type="submit" form="edit-document-form" name="action" value="ocr_text" formnovalidate><?=eablage_icon('scan')?>OCR-Text einlesen</button>
+                                <a href="export.php?dokid=<?= rawurlencode((string)$storedDocument['DokID']) ?>"><?=eablage_icon('download')?>Exportieren</a>
+                                <button type="submit" form="trash-document-form" class="ea-action-danger"><?=eablage_icon('trash')?>In den Papierkorb</button>
                             </div>
                         </details>
                     </div>
                     <div class="panel-body">
                         <form action="bearbeiten.php" method="POST" id="edit-document-form" data-document-draft>
-                            <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
-                            <input type="hidden" name="document_revision" value="<?=h($documentRevision)?>">
-                            <input type="hidden" name="dokid" value="<?= h($storedDocument['DokID']) ?>"><input type="hidden" name="return" value="<?= h($returnUrl) ?>"><input type="hidden" name="reclassification_info" value="<?= h($reclassificationInfo) ?>"><input type="hidden" name="pending_document_text" value="<?= h($pendingDocumentText) ?>">
-                            <div class="form-group"><label for="Datum">Dokumenten-Datum<?= changed_marker($reclassificationChanged, 'Datum') ?></label><input type="date" id="Datum" name="Datum" class="form-control" value="<?= h($document['Datum']) ?>" required></div>
-                            <div class="form-group"><label for="Partner">Partner / Absender<?= changed_marker($reclassificationChanged, 'Partner') ?></label><input type="text" id="Partner" name="Partner" class="form-control" value="<?= h($document['Partner']) ?>"></div>
-                            <div class="form-group"><label for="Betreff">Betreff<?= changed_marker($reclassificationChanged, 'Betreff') ?></label><input type="text" id="Betreff" name="Betreff" class="form-control" value="<?= h($document['Betreff']) ?>"></div>
-                            <div class="form-group"><label for="Doktyp">Dokumententyp<?= changed_marker($reclassificationChanged, 'doktyp_id') ?></label><select class="form-control" id="Doktyp" name="Doktyp"><?php foreach ($dokumenttypen as $id => $bez): ?><option value="<?= h($id) ?>" <?= (string)$id === (string)$document['doktyp_id'] ? 'selected' : '' ?>><?= h($bez) ?></option><?php endforeach; ?></select></div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group"><label for="Kategorie">Kategorie<?= changed_marker($reclassificationChanged, 'kategorie_id') ?></label><select class="form-control" id="Kategorie" name="Kategorie"><?php foreach ($kategorien as $id => $bez): ?><option value="<?= h($id) ?>" <?= (string)$id === (string)$document['kategorie_id'] ? 'selected' : '' ?>><?= h($bez) ?></option><?php endforeach; ?></select></div>
+                            <div class="ea-form-scroll">
+                                <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
+                                <input type="hidden" name="document_revision" value="<?=h($documentRevision)?>">
+                                <input type="hidden" name="dokid" value="<?= h($storedDocument['DokID']) ?>"><input type="hidden" name="return" value="<?= h($returnUrl) ?>"><input type="hidden" name="reclassification_info" value="<?= h($reclassificationInfo) ?>"><input type="hidden" name="pending_document_text" value="<?= h($pendingDocumentText) ?>">
+                                <div class="form-group"><label for="Datum">Dokumenten-Datum<?= changed_marker($reclassificationChanged, 'Datum') ?></label><input type="date" id="Datum" name="Datum" class="form-control" value="<?= h($document['Datum']) ?>" required></div>
+                                <div class="form-group"><label for="Partner">Partner / Absender<?= changed_marker($reclassificationChanged, 'Partner') ?></label><input type="text" id="Partner" name="Partner" class="form-control" value="<?= h($document['Partner']) ?>"></div>
+                                <div class="form-group"><label for="Betreff">Betreff<?= changed_marker($reclassificationChanged, 'Betreff') ?></label><input type="text" id="Betreff" name="Betreff" class="form-control" value="<?= h($document['Betreff']) ?>"></div>
+                                <div class="form-group"><label for="Doktyp">Dokumententyp<?= changed_marker($reclassificationChanged, 'doktyp_id') ?></label><select class="form-control" id="Doktyp" name="Doktyp"><?php foreach ($dokumenttypen as $id => $bez): ?><option value="<?= h($id) ?>" <?= (string)$id === (string)$document['doktyp_id'] ? 'selected' : '' ?>><?= h($bez) ?></option><?php endforeach; ?></select></div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group"><label for="Kategorie">Kategorie<?= changed_marker($reclassificationChanged, 'kategorie_id') ?></label><select class="form-control" id="Kategorie" name="Kategorie"><?php foreach ($kategorien as $id => $bez): ?><option value="<?= h($id) ?>" <?= (string)$id === (string)$document['kategorie_id'] ? 'selected' : '' ?>><?= h($bez) ?></option><?php endforeach; ?></select></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group"><label for="Kategorie2">Kategorie 2<?= changed_marker($reclassificationChanged, 'kategorie2_id') ?></label><select class="form-control" id="Kategorie2" name="Kategorie2"><?php foreach ($kategorien2 as $id => $bez): ?><option value="<?= h($id) ?>" <?= (string)$id === (string)$document['kategorie2_id'] ? 'selected' : '' ?>><?= h($bez) ?></option><?php endforeach; ?></select></div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group"><label for="Kategorie2">Kategorie 2<?= changed_marker($reclassificationChanged, 'kategorie2_id') ?></label><select class="form-control" id="Kategorie2" name="Kategorie2"><?php foreach ($kategorien2 as $id => $bez): ?><option value="<?= h($id) ?>" <?= (string)$id === (string)$document['kategorie2_id'] ? 'selected' : '' ?>><?= h($bez) ?></option><?php endforeach; ?></select></div>
-                                </div>
+                                <?php eablage_nummern_editor($db,$document['numbers']); ?>
+                                <?php eablage_vorgaenge_editor($db,$document['vorgaenge']); ?>
+                                <div class="form-group"><label for="Tags">Stichworte / Tags<?= changed_marker($reclassificationChanged, 'Tags') ?></label><input type="text" id="Tags" name="Tags" class="form-control" value="<?= h($document['Tags']) ?>"></div>
+                                <details class="ea-detail-panel">
+                                    <summary><?=eablage_icon('info')?>Technische Informationen</summary>
+                                    <div>
+                                        <p><strong>DokID:</strong> <?= h($storedDocument['DokID'] ?? '') ?></p>
+                                        <p><strong>Archiviert:</strong> <?= h($storedDocument['Archivierungsdatum'] ?? '') ?></p>
+                                        <p><strong>Zuletzt geändert:</strong> <?= h($storedDocument['Aenderungsdatum'] ?? '–') ?></p>
+                                        <p style="overflow-wrap:anywhere;"><strong>Originaldateiname:</strong> <?= h($storedDocument['Originaldateiname'] ?? '–') ?></p>
+                                        <p style="overflow-wrap:anywhere;"><strong>PDF SHA-256:</strong> <?= h($storedDocument['DateiSHA256'] ?? '–') ?></p>
+                                        <p><strong>Bisheriges Info-Feld (Altbestand):</strong> <?= h($storedDocument['Info'] ?? '') ?></p>
+                                        <p><strong>Dokumenttext:</strong> <?= number_format(strlen((string)($storedDocument['Doktext'] ?? '')), 0, ',', '.') ?> Byte gespeichert<?php if ($pendingDocumentText !== ''): ?> / <?= number_format(strlen($pendingDocumentText), 0, ',', '.') ?> Byte neu eingelesen<?php endif; ?></p>
+                                        <p style="margin-bottom:0;"><strong>Datei:</strong> <?= h($filename) ?></p>
+                                        <p><a href="protokoll.php?<?= h(http_build_query(['dokid' => (int)$dokId, 'return' => 'bearbeiten.php?' . http_build_query(['dokid' => (int)$dokId, 'return' => $returnUrl])])) ?>" data-draft-link>Dokumenthistorie öffnen</a></p>
+                                    </div>
+                                </details>
                             </div>
-                            <?php eablage_nummern_editor($db,$document['numbers']); ?>
-                            <div class="form-group"><label for="Tags">Stichworte / Tags<?= changed_marker($reclassificationChanged, 'Tags') ?></label><input type="text" id="Tags" name="Tags" class="form-control" value="<?= h($document['Tags']) ?>"></div>
-                            <div class="ea-edit-actions">
+                            <div class="ea-edit-actions ea-form-footer">
                                 <div class="ea-form-actions ea-document-actions">
                                     <a href="<?= h($returnUrl) ?>" class="btn btn-default" id="edit-document-exit"><?= $saved ? 'Zurück' : 'Abbrechen' ?></a>
-                                    <button type="submit" form="trash-document-form" class="btn btn-danger">🗑️ In den Papierkorb</button>
-                                    <button type="submit" name="action" value="save" class="btn btn-primary">💾 Speichern</button>
+                                    <button type="submit" name="action" value="save" class="btn btn-primary"><?=eablage_icon('save')?>Speichern</button>
                                 </div>
                             </div>
                         </form>
@@ -366,33 +390,11 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
                 </div>
             </div>
             <div class="col-md-6 ea-classification-column">
-                <div class="panel panel-primary ea-pdf-panel">
-                    <div class="panel-heading" style="display:flex;align-items:center;justify-content:space-between;gap:10px;"><span>📄 Dokument <?= h($storedDocument['DokID']) ?></span>
-                        <div class="btn-group btn-group-xs" role="group" aria-label="Dokumentansicht"><button type="button" class="btn btn-default active" id="viewPdfButton" onclick="eablageSetDocumentView('pdf')">PDF</button><button type="button" class="btn btn-default" id="viewTextButton" onclick="eablageSetDocumentView('text')">Text</button></div>
-                    </div>
-                    <div class="panel-body ea-pdf-body" id="pdfDocumentView">
-                        <div class="ea-mobile-pdf-overlay"><a href="<?= h($pdfLink) ?>" target="_blank" rel="noopener" class="btn btn-primary">PDF im Vollbild öffnen</a></div><iframe src="<?= h($pdfLink) ?>" style="border:none;"></iframe>
-                    </div>
-                    <div class="panel-body" id="textDocumentView" style="display:none;height:100%;overflow:auto;padding:0;">
-                        <pre style="margin:0;padding:15px;border:0;border-radius:0;background:#f7f7f7;white-space:pre-wrap;word-wrap:break-word;min-height:100%;"><?= h($displayDocumentText) ?></pre>
-                    </div>
-                </div>
+                <?php eablage_dokumentvorschau($pdfLink, $displayDocumentText); ?>
             </div>
         </div>
-        <details style="margin:20px 0;border:1px solid #ddd;border-radius:4px;background:#fff;">
-            <summary style="cursor:pointer;padding:12px 15px;font-weight:600;background:#f7f7f7;">ℹ️ Technische Informationen</summary>
-            <div style="padding:15px;">
-                <p><strong>DokID:</strong> <?= h($storedDocument['DokID'] ?? '') ?></p>
-                <p><strong>Archiviert:</strong> <?= h($storedDocument['Archivierungsdatum'] ?? '') ?></p>
-                <p><strong>Zuletzt geändert:</strong> <?= h($storedDocument['Aenderungsdatum'] ?? '–') ?></p>
-                <p><strong>Originaldateiname:</strong> <?= h($storedDocument['Originaldateiname'] ?? '–') ?></p>
-                <p style="overflow-wrap:anywhere;"><strong>PDF SHA-256:</strong> <?= h($storedDocument['DateiSHA256'] ?? '–') ?></p>
-                <p><a href="protokoll.php?<?= h(http_build_query(['dokid' => (int)$dokId, 'return' => 'bearbeiten.php?' . http_build_query(['dokid' => (int)$dokId, 'return' => $returnUrl])])) ?>" data-draft-link>Dokumenthistorie öffnen</a></p>
-                <p><strong>Bisheriges Info-Feld (Altbestand):</strong> <?= h($storedDocument['Info'] ?? '') ?></p>
-                <p><strong>Dokumenttext:</strong> <?= number_format(strlen((string)($storedDocument['Doktext'] ?? '')), 0, ',', '.') ?> Byte gespeichert<?php if ($pendingDocumentText !== ''): ?> / <?= number_format(strlen($pendingDocumentText), 0, ',', '.') ?> Byte neu eingelesen<?php endif; ?></p>
-                <p style="margin-bottom:0;"><strong>Datei:</strong> <?= h($filename) ?></p>
-            </div>
-        </details>
+        </div>
+
     </div>
     <script>
         <?php if ($saved): ?>
@@ -405,18 +407,6 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
             });
         <?php endif; ?>
 
-        function eablageSetDocumentView(view) {
-            var pdf = document.getElementById('pdfDocumentView');
-            var text = document.getElementById('textDocumentView');
-            var pdfButton = document.getElementById('viewPdfButton');
-            var textButton = document.getElementById('viewTextButton');
-            var showText = view === 'text';
-            pdf.style.display = showText ? 'none' : '';
-            text.style.display = showText ? '' : 'none';
-            pdfButton.classList.toggle('active', !showText);
-            textButton.classList.toggle('active', showText);
-        }
-
         var moreActions = document.getElementById('edit-more-actions');
         document.addEventListener('click', function(event) {
             if (!moreActions.contains(event.target)) moreActions.open = false;
@@ -428,7 +418,8 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
             }
         });
     </script>
-    <script src="classification_draft.js"></script>
+    <script src="classification_draft.js?v=<?=filemtime(__DIR__ . '/classification_draft.js')?>"></script>
+<script src="meldungen.js?v=<?=filemtime(__DIR__ . '/meldungen.js')?>" defer></script>
 </body>
 
 </html>

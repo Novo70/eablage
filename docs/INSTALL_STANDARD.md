@@ -4,7 +4,7 @@ Diese Anleitung beschreibt die einmalige Installation von eAblage auf einem UGRE
 
 Die Variante eignet sich sowohl für den Produktivbetrieb als auch für eine Testinstanz. Alternativ steht die vereinfachte [Installation mit integrierter Datenbank](INSTALL_FRESH.md) zur Verfügung. Bei mehreren Instanzen gelten die Hinweise unter [Mehrere Instanzen betreiben](KONFIGURATION.md#mehrere-instanzen-betreiben).
 
-**Dokumentationsstand:** eAblage 4.4.0. Für die Installation einen vollständigen, zusammengehörigen Projektstand verwenden und dessen Commit dokumentieren. Für den regulären Produktivbetrieb einen freigegebenen Stand wählen; `develop` zunächst getrennt testen. Die Beispiele setzen ein NAS mit Docker und Docker Compose, SSH-Zugang sowie ausreichend Speicherplatz voraus. Alle Befehle werden per SSH **auf dem NAS** ausgeführt. Alle Pfade, Instanznamen und Passwörter sind neutrale Beispiele und müssen bei abweichender Installation einheitlich angepasst werden.
+**Dokumentationsstand:** eAblage 4.5.0. Für die Installation einen vollständigen, zusammengehörigen Projektstand verwenden und dessen Commit dokumentieren. Für den regulären Produktivbetrieb einen freigegebenen Stand wählen; `develop` zunächst getrennt testen. Die Beispiele setzen ein NAS mit Docker und Docker Compose, SSH-Zugang sowie ausreichend Speicherplatz voraus. Alle Befehle werden per SSH **auf dem NAS** ausgeführt. Alle Pfade, Instanznamen und Passwörter sind neutrale Beispiele und müssen bei abweichender Installation einheitlich angepasst werden.
 
 ## Überblick und Beispielpfade
 

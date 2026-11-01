@@ -19,6 +19,9 @@ RUN a2enmod rewrite
 RUN echo 'Timeout 340' > /etc/apache2/conf-available/eablage-timeouts.conf \
     && a2enconf eablage-timeouts
 
+COPY apache-security.conf /etc/apache2/conf-available/eablage-security.conf
+RUN a2enconf eablage-security
+
 COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 COPY . /var/www/html/

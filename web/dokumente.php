@@ -1,7 +1,9 @@
 <?php
+require_once __DIR__ . '/icons.php';
 // Modernisierte Ergebnisliste für e_ablage:web
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
+require_once 'vorgaenge_funktionen.php';
 $db = $db_config;
 
 function h($value): string
@@ -49,6 +51,8 @@ $datumbis = request_value('Datumbis');
 $kategorie = request_value('Kategorie', '0');
 $dokumenttyp = request_value('Dokumententyp', '0');
 $nummer = request_value('Nummer', '0');
+$vorgang = request_value('Vorgang', '0');
+$vorgaenge = $db->query('SELECT ID,Bezeichnung FROM vorgang ORDER BY Bezeichnung,ID')->fetchAll(PDO::FETCH_KEY_PAIR);
 $page = max(1, (int)request_value('page', '1'));
 $perPage = 50;
 $offset = ($page - 1) * $perPage;
@@ -56,6 +60,10 @@ $terms = preg_split('/\s+/u', $suchbegriff, -1, PREG_SPLIT_NO_EMPTY) ?: [];
 $where = ['dokumente.GeloeschtAm IS NULL'];
 $types = '';
 $params = [];
+if ($vorgang !== '0' && $vorgang !== '') {
+    $where[] = 'EXISTS (SELECT 1 FROM dokument_vorgang dv WHERE dv.DokumentID=dokumente.DokID AND dv.VorgangID=?)';
+    $types .= 'i'; $params[] = (int)$vorgang;
+}
 if ($dokumenttyp !== '' && $dokumenttyp !== '0') {
     $where[] = 'dokumente.doktyp_id = ?';
     $types .= 'i';
@@ -129,7 +137,8 @@ try {
 }
 $firstHit = $totalRows === 0 ? 0 : $offset + 1;
 $lastHit = min($offset + $perPage, $totalRows);
-$returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '');
+$returnQuery = build_query([]);
+$returnUrl = 'dokumente.php' . ($returnQuery !== '' ? '?' . $returnQuery : '');
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -151,9 +160,10 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
             <div class="row">
                 <div class="col-md-12">
                     <details class="panel panel-default ea-filter-panel" open>
-                        <summary class="panel-heading ea-filter-summary">🔍 Suche verfeinern</summary>
+                        <summary class="panel-heading ea-filter-summary"><?=eablage_icon('search')?>Suche verfeinern</summary>
                         <div class="panel-body ea-filter-body">
                             <form method="GET" action="dokumente.php" accept-charset="UTF-8"><input type="hidden" name="page" value="1">
+                                <div class="form-group"><label for="Vorgang">Vorgang</label><select class="form-control" name="Vorgang" id="Vorgang"><option value="0">Alle Vorgänge / ohne Zuordnung</option><?php foreach ($vorgaenge as $id=>$name): ?><option value="<?=h($id)?>" <?=selected_value($vorgang,(string)$id)?>><?=h($name)?></option><?php endforeach; ?></select><?php if (isset($vorgaenge[$vorgang])): ?><a href="vorgaenge.php?id=<?=h($vorgang)?>">Vorgang öffnen</a><?php endif; ?></div>
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="form-group"><label for="Suchbegriff">Suchbegriff</label><input class="form-control" id="Suchbegriff" name="Suchbegriff" type="text" value="<?= h($suchbegriff) ?>"></div>
@@ -181,14 +191,16 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
                         </div>
                     </details>
                     <div class="panel panel-primary ea-documents-panel">
-                        <div class="panel-heading">Dokumente</div>
+                        <div class="panel-heading"><h1 class="ea-panel-title"><?=eablage_icon('search')?>Dokumente</h1></div>
                         <div class="panel-body">
                             <div class="search-summary"><strong><?= h($totalRows) ?></strong> Treffer gefunden<?php if ($totalRows > 0): ?> — angezeigt werden <?= h($firstHit) ?> bis <?= h($lastHit) ?> — Seite <?= h($page) ?> von <?= h($totalPages) ?><?php endif; ?> <?php if ($volltextsuche): ?><span class="label label-info">Volltextsuche aktiv</span><?php endif; ?></div>
                             <?php if ($totalRows === 0): ?><div class="alert alert-warning">Keine Dokumente gefunden. Bitte Suchkriterien ändern.</div><?php else: ?>
+                                <?php if ($totalPages > 1): ?>
                                 <div class="pagination-wrapper">
                                     <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page - 1])) ?>">&laquo; Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button><?php endif; ?> <?php if ($page < $totalPages): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page + 1])) ?>">Nächste &raquo;</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button><?php endif; ?></div>
                                     <div class="ea-pagination-info">Seite <?= h($page) ?> von <?= h($totalPages) ?></div>
                                 </div>
+                                <?php endif; ?>
                                 <table class="table table-striped table-hover ea-results-table">
                                     <thead>
                                         <tr>
@@ -200,23 +212,24 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
                                     </thead>
                                     <tbody>
                                         <?php foreach ($documents as $row):
-                                                                                                                                                        $link = 'archiv_pdf.php?dokid=' . rawurlencode((string)$row['DokID']);
-                                                                                                                                                        $editLink = 'bearbeiten.php?dokid=' . rawurlencode((string)$row['DokID']) . '&return=' . rawurlencode($returnUrl); ?>
+                                            $link = 'ansehen.php?dokid=' . rawurlencode((string)$row['DokID']) . '&return=' . rawurlencode($returnUrl); ?>
                                             <tr>
                                                 <td class="ea-result-datecell">
                                                     <div class="ea-result-meta-row"><span class="ea-result-date"><?= h($row['Datum'] ?? '') ?></span><span class="ea-result-meta"><span class="ea-badge ea-badge-category"><?= h($row['katBez'] ?? '') ?></span><span class="ea-badge ea-badge-type"><?= h($row['doktypBez'] ?? '') ?></span></span></div>
                                                 </td>
                                                 <td class="ea-partner"><?= highlight_text($row['Partner'] ?? '', $terms) ?></td>
-                                                <td class="ea-subject"><a href="<?= h($link) ?>" target="_blank" rel="noopener" class="ea-document-link"><span class="ea-pdf-icon" aria-hidden="true">📄</span><span class="ea-subject-text"><?= highlight_text($row['Betreff'] ?? '', $terms) ?></span></a> <a href="<?= h($editLink) ?>" class="ea-edit-link" title="Dokument bearbeiten" aria-label="Dokument <?= h($row['DokID']) ?> bearbeiten">✏️</a></td>
+                                                <td class="ea-subject"><a href="<?= h($link) ?>" class="ea-document-link"><span class="ea-pdf-icon" aria-hidden="true"><?=eablage_icon('document')?></span><span class="ea-subject-text"><?= highlight_text(trim((string)($row['Betreff'] ?? '')) !== '' ? $row['Betreff'] : 'Dokument ' . $row['DokID'], $terms) ?></span></a></td>
                                                 <td class="ea-number"><?= highlight_text($row['Nummer'] ?? '', $terms) ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
+                                <?php if ($totalPages > 1): ?>
                                 <div class="pagination-wrapper">
                                     <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page - 1])) ?>">&laquo; Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button><?php endif; ?> <?php if ($page < $totalPages): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page + 1])) ?>">Nächste &raquo;</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button><?php endif; ?></div>
                                     <div class="ea-pagination-info">Seite <?= h($page) ?> von <?= h($totalPages) ?></div>
                                 </div>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -227,7 +240,7 @@ $returnUrl = 'dokumente.php' . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVE
     <script>
         (function() {
             var filter = document.querySelector('.ea-filter-panel');
-            if (filter && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+            if (filter && window.matchMedia && window.matchMedia('(max-width: 899px)').matches) {
                 filter.removeAttribute('open');
             }
         }());
