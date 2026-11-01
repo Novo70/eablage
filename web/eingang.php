@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 
 require_once 'konfiguration.php';
 require_once 'meldungen.php';
@@ -160,7 +161,7 @@ if (is_dir($scanOrdner)) {
     <div class="row ea-workspace-row">
         <div class="col-md-6 ea-workspace-column">
             <div class="panel panel-primary">
-                <div class="panel-heading">📂 Eingang (<?=count($gefundeneDateien)?> neue Dokumente)</div>
+                <div class="panel-heading"><?=eablage_icon('inbox')?>Eingang (<?=count($gefundeneDateien)?> neue Dokumente)</div>
                 <div class="panel-body">
                     <?php $kiWorkerNotice = !empty($kiWorker['enabled']) && (empty($kiWorker['fresh']) || in_array($kiWorker['state'] ?? '', ['pausiert','deaktiviert'], true)); ?>
                     <p id="ki-worker-status" class="text-muted" role="status" <?=!$kiWorkerNotice ? 'hidden' : ''?>><?=h($kiWorkerNotice ? ($kiWorker['message'] ?? '') : '')?></p>
@@ -171,7 +172,7 @@ if (is_dir($scanOrdner)) {
                             <?php foreach ($gefundeneDateien as $datei): ?>
                                 <li class="ea-inbox-entry">
                                     <div class="ea-inbox-file">
-                                        <span class="ea-pdf-icon" aria-hidden="true">📄</span>
+                                        <span class="ea-pdf-icon" aria-hidden="true"><?=eablage_icon('document')?></span>
                                         <div class="ea-inbox-filename"><?=h($datei)?><br><small class="text-muted" data-inbox-status="<?=h($datei)?>"><?=h($jobLabels[$inboxJobs[$datei]['status'] ?? 'wartend'] ?? 'Wartet auf Erkennung')?></small>
                                             <?php $ki = $inboxJobs[$datei]['ki'] ?? null; ?>
                                             <div data-inbox-ai-block <?=!$ki ? 'hidden' : ''?>>
@@ -185,7 +186,7 @@ if (is_dir($scanOrdner)) {
                                                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                                                 <input type="hidden" name="file" value="<?=h($datei)?>">
                                                 <input type="hidden" name="sha256" value="<?=h(hash_file('sha256', $inboxPath))?>">
-                                                <button type="submit" class="btn btn-danger">Verwerfen</button>
+                                                <button type="submit" class="btn btn-danger"><?=eablage_icon('trash')?>Verwerfen</button>
                                             </form>
                                         <?php endif; ?>
                                         <a class="btn btn-default" href="verarbeiten.php?file=<?=urlencode($datei)?>">Klassifizieren</a>
@@ -200,7 +201,7 @@ if (is_dir($scanOrdner)) {
 
         <div class="col-md-6 ea-workspace-column">
             <div class="panel panel-primary">
-                <div class="panel-heading">📤 Dokument hochladen</div>
+                <div class="panel-heading"><?=eablage_icon('upload')?>Dokument hochladen</div>
                 <div class="panel-body">
                     <form action="eingang.php?action=upload" method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
@@ -218,7 +219,7 @@ if (is_dir($scanOrdner)) {
                             <p class="ea-upload-dropzone__status" id="pdf_drop_status" role="status" aria-live="polite"></p>
                         </div>
                         <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">
-                            🚀 Datei in den Eingang hochladen
+                            <?=eablage_icon('upload')?>Datei in den Eingang hochladen
                         </button>
                     </form>
                 </div>

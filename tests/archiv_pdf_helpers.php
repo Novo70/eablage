@@ -17,13 +17,10 @@ try {
     foreach ([0, -1, 41, 43] as $id) {
         check(eablage_archiv_pdf_pfad($archive, $id) === null, 'Unsafe/missing target accepted');
     }
-    // Check the actual edit-return validator without including the editing page.
-    $source = file_get_contents(__DIR__ . '/../web/bearbeiten.php');
-    $start = strpos($source, 'function valid_return_url(');
-    $end = strpos($source, 'function valid_date(', $start);
-    eval(substr($source, $start, $end - $start));
+    require __DIR__ . '/../web/dokument_navigation.php';
     $return = 'explorer.php?dokid=17&folder=%5B%22Haus%22%5D';
     check(valid_return_url($return) === $return, 'Explorer return lost');
+    check(valid_return_url('ansehen.php?dokid=42&return=dokumente.php%3Fpage%3D2') === 'ansehen.php?dokid=42&return=dokumente.php%3Fpage%3D2', 'Document view return lost');
     foreach (['https://example.com', '//example.com/explorer.php', '../explorer.php', "explorer.php\r\nX-Test: bad"] as $url) {
         check(valid_return_url($url) === 'dokumente.php', 'Unsafe return accepted');
     }

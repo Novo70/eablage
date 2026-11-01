@@ -19,6 +19,8 @@ try {
     $db->exec('CREATE TABLE kategorie (id INT PRIMARY KEY, katBez TEXT)');
     $db->exec('CREATE TABLE doktyp (id INT PRIMARY KEY, doktypBez TEXT)');
     $db->exec('CREATE TABLE dokument_nummer (DokumentID INT, Wert VARCHAR(255), Suchwert VARCHAR(255))');
+    $db->exec(file_get_contents(__DIR__ . '/../sql/update_document_links.sql'));
+    $db->exec("INSERT INTO vorgang (ID, Bezeichnung, Beschreibung) VALUES (1, 'Versicherung – Gebäude', '')");
     $insertNumber=$db->prepare('INSERT INTO dokument_nummer VALUES (?,?,?)');
     $insert = $db->prepare('INSERT INTO dokumente VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $fixtures = [
@@ -36,7 +38,11 @@ try {
     foreach ($fixtures as $row) { $insert->execute($row); if ($row[4]!==null) $insertNumber->execute([$row[0],$row[4],strtoupper(preg_replace('/[^a-zA-Z0-9]/','',$row[4]))]); }
     $insertNumber->execute([1,'AB12345','AB12345']);
     $insertNumber->execute([4,'VER98765','VER98765']);
+    $db->exec('INSERT INTO dokument_vorgang (DokumentID, VorgangID) VALUES (1, 1), (4, 1)');
     copy(__DIR__ . '/../web/dokumente.php', "$directory/dokumente.php");
+    copy(__DIR__ . '/../web/icons.php', "$directory/icons.php");
+    copy(__DIR__ . '/../web/vorgaenge_funktionen.php', "$directory/vorgaenge_funktionen.php");
+    copy(__DIR__ . '/../web/protokoll_funktionen.php', "$directory/protokoll_funktionen.php");
     file_put_contents("$directory/app.css", '');
     file_put_contents("$directory/navbar.php", '');
     file_put_contents("$directory/funktionen.php", '<?php
@@ -58,7 +64,7 @@ try {
         $errors = stream_get_contents($pipes[2]);
         fclose($pipes[1]); fclose($pipes[2]);
         if (proc_close($process) !== 0 || $errors !== '') throw new RuntimeException($errors);
-        preg_match_all('/href="archiv_pdf\.php\?dokid=(\d+)"/', $html, $matches);
+        preg_match_all('/href="ansehen\.php\?dokid=(\d+)&amp;return=[^"]*"/', $html, $matches);
         $actual = array_map('intval', $matches[1]);
         sort($actual); sort($expected);
         if ($actual !== $expected) throw new RuntimeException($query . ': ' . json_encode($actual));
@@ -69,6 +75,8 @@ try {
     };
     $search('VER-987/65', [4]);
     $search('AB-123/45', [1, 2, 3, 4, 10]);
+    $search('AB-123/45', [1, 4], ['Vorgang' => '1']);
+    $search('AB-123/45', [], ['Vorgang' => '999']);
     $search('AB12345', [1, 2, 3, 5, 10]);
     $search('ab12345', [1, 2, 3, 5, 10]);
     $search('AB-123/45', [1, 2, 3, 4, 6, 10], ['Volltextsuche' => '1']);

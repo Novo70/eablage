@@ -29,8 +29,8 @@ async function open(items, query = '', viewport = {width: 1440, height: 1000}) {
     await page.route('http://explorer.test/**', async route => {
         const pathname = new URL(route.request().url()).pathname;
         if (pathname === '/app/explorer.php') return route.fulfill({contentType: 'text/html', body: markup});
-        if (['explorer.js', 'explorer.css', 'app.css'].includes(path.basename(pathname))) {
-            return route.fulfill({contentType: pathname.endsWith('.js') ? 'text/javascript' : 'text/css',
+        if (['explorer.js', 'explorer.css', 'app.css', 'icons.svg'].includes(path.basename(pathname))) {
+            return route.fulfill({contentType: pathname.endsWith('.js') ? 'text/javascript' : pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css',
                 body: fs.readFileSync(path.join(web, path.basename(pathname)), 'utf8')});
         }
         return route.fulfill({status: 404, contentType: 'text/plain', body: 'Test: Original-PDF fehlt.'});
@@ -110,6 +110,22 @@ test('mobile layout avoids horizontal overflow and allows keyboard selection', a
     } finally { await page.close(); }
 });
 
+test('folders receive no automatic focus or extra frame while document selection remains visible', async () => {
+    const {page} = await open([item(1, ['A']), item(2, ['B'])]);
+    try {
+        assert.equal(await page.locator('#explorer-items').evaluate(list=>list.contains(document.activeElement)), false);
+        const folder=page.locator('#explorer-items button').first();
+        await folder.focus();
+        assert.equal(await folder.evaluate(el=>getComputedStyle(el).outlineStyle), 'none');
+        await folder.click();
+        const documentButton=page.locator('[data-dokid="1"]');
+        await documentButton.click();
+        assert.equal(await documentButton.getAttribute('aria-current'), 'true');
+        assert.match(await documentButton.evaluate(el=>getComputedStyle(el).boxShadow), /inset/);
+        assert.equal(await documentButton.evaluate(el=>getComputedStyle(el).outlineStyle), 'none');
+    } finally { await page.close(); }
+});
+
 test('two equal desktop panels and compact header', async () => {
     const {page} = await open([item(1, [])]);
     try {
@@ -164,6 +180,9 @@ test('folder count is inline and preview actions are in the heading without dupl
     ]);
     try {
         const work = page.locator('#explorer-items button').filter({hasText: 'Arbeit und Beruf'});
+        const heading = page.locator('.ea-explorer-preview > .panel-heading');
+        const initialHeadingHeight = (await heading.boundingBox()).height;
+        assert.ok(initialHeadingHeight < 60, 'preview keeps its compact title bar');
         assert.match(await work.textContent(), /Arbeit und Beruf \(2 Dokumente\)/);
         assert.equal(await work.locator('small').count(), 0);
         assert.match(await page.locator('#explorer-items button').filter({hasText: 'Einzeln'}).textContent(), /\(1 Dokument\)/);
@@ -171,7 +190,8 @@ test('folder count is inline and preview actions are in the heading without dupl
         await page.locator('[data-dokid="1"]').click();
         assert.equal(await page.locator('#explorer-selection').isVisible(), false);
         assert.equal(await page.locator('.ea-explorer-preview > .panel-body').getByText('Erstes Dokument.pdf').count(), 0);
-        const heading = page.locator('.ea-explorer-preview > .panel-heading');
+        assert.equal((await heading.boundingBox()).height, initialHeadingHeight, 'showing preview actions does not enlarge the title bar');
+        assert.equal((await heading.locator('#explorer-open').boundingBox()).height, 34);
         assert.equal(await heading.locator('#explorer-open').isVisible(), true);
         assert.equal(await heading.locator('#explorer-edit').isVisible(), true);
         assert.equal(await heading.locator('#explorer-open').getAttribute('href'), 'archiv_pdf.php?dokid=1');

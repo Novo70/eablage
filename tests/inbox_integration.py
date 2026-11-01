@@ -212,7 +212,7 @@ class InboxIntegration(unittest.TestCase):
                 (self.base/'meta').mkdir(exist_ok=True)
                 config="<?php "
                 config+=f"define('MYSQL_DATENBANK','{self.name}'); define('DB_TABELLE_ARCHIV','dokumente'); define('DOKID_STARTWERT',10000); $config=[]; "
-                config+="$db_config=new PDO("+json.dumps(f"mysql:host=127.0.0.1;port={self.db_args['port']};dbname={self.name};charset=utf8mb4")+",'root','',[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]); "
+                config+="$db_config=new PDO("+json.dumps(f"mysql:host=127.0.0.1;port={self.db_args['port']};dbname={self.name};charset=utf8mb4")+",'root',getenv('EABLAGE_TEST_DB_PASSWORD') ?: '',[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]); "
                 for key,folder in [('PFAD_INBOX','inbox'),('PFAD_ARCHIV','archive'),('PFAD_META','meta')]:
                     config+=f"define('{key}',"+json.dumps(str(self.base/folder)+'/')+"); "
                 config+=f"putenv('BACKEND_URL=http://127.0.0.1:{server.server_port}');"

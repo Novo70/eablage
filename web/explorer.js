@@ -162,7 +162,16 @@
                 let item;
                 if (entry.node) {
                     const countLabel = entry.node.count === 1 ? '1 Dokument' : entry.node.count + ' Dokumente';
-                    item = button('📁 ' + entry.node.name + ' (' + countLabel + ')', 'ea-explorer-item', () => navigate(entry.node, null));
+                    item = button(entry.node.name + ' (' + countLabel + ')', 'ea-explorer-item', () => navigate(entry.node, null));
+                    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    icon.setAttribute('class', 'ea-icon');
+                    icon.setAttribute('viewBox', '0 0 24 24');
+                    icon.setAttribute('aria-hidden', 'true');
+                    icon.setAttribute('focusable', 'false');
+                    const shape = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                    shape.setAttribute('href', 'icons.svg#folder');
+                    icon.append(shape);
+                    item.prepend(icon);
                 } else {
                     const doc = entry.doc;
                     li.className = 'ea-explorer-document-row';
@@ -190,7 +199,7 @@ item.append(titleLine);
                 }
                 li.append(item);
                 get('items').append(li);
-                if (entry.doc?.dok_id === focusId) item.focus({preventScroll: true});
+                if (focusId !== undefined && entry.doc?.dok_id === focusId) item.focus({preventScroll: true});
             }
             get('pagination').hidden = pageCount <= 1;
             get('page').textContent = (page + 1) + ' / ' + pageCount;

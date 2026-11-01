@@ -160,12 +160,12 @@ try:
         # Exercise the real POST parsing in bearbeiten.php via PHP's HTTP server.
         web=base/'web'; web.mkdir()
         for file in (ROOT/'web').iterdir():
-            if file.suffix in ('.php', '.js', '.sql'): shutil.copy2(file,web/file.name)
+            if file.suffix in ('.php', '.js', '.sql', '.svg'): shutil.copy2(file,web/file.name)
         shutil.copy2(base/'konfiguration.php',web/'konfiguration.php')
         shutil.copy2(ROOT/'web/app.css',web/'app.css')
         with socket.socket() as listener:
             listener.bind(('127.0.0.1',0)); http_port=listener.getsockname()[1]
-        server=subprocess.Popen([php,'-S',f'127.0.0.1:{http_port}','-t',str(web)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        server=subprocess.Popen([php,'-d','session.save_path='+str(base),'-S',f'127.0.0.1:{http_port}','-t',str(web)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         try:
             for _ in range(50):
                 with socket.socket() as probe:
@@ -180,7 +180,15 @@ try:
                 assert response.read() == (base/f'archiv/{documents[0][0]}dok.pdf').read_bytes()
             with opener.open(f'http://127.0.0.1:{http_port}/dokumente.php') as response:
                 search_html = response.read().decode()
-                assert 'archiv_pdf.php?dokid=' in search_html and 'Fatal error' not in search_html
+                assert 'ansehen.php?dokid=' in search_html and 'ea-edit-link' not in search_html and 'Fatal error' not in search_html
+            cursor.execute('SELECT * FROM dokumente ORDER BY DokID'); before_view=cursor.fetchall()
+            view_path='/ansehen.php?'+urllib.parse.urlencode({'dokid':documents[0][0],'return':'dokumente.php?Suchbegriff=Rechnung&page=2'})
+            with opener.open(f'http://127.0.0.1:{http_port}'+view_path) as response:
+                view_html=response.read().decode()
+                assert response.status==200 and 'Technische Angaben' in view_html and 'archiv_pdf.php?dokid=' in view_html
+                assert 'name="document_revision"' not in view_html and 'Fatal error' not in view_html
+                assert 'Suchbegriff=Rechnung' in view_html
+            cursor.execute('SELECT * FROM dokumente ORDER BY DokID'); assert cursor.fetchall()==before_view
             print('PDF display and search without Dateipfad: PASS')
             data=urllib.parse.urlencode({'aktion_token':token,'document_revision':initial_revision,'dokid':documents[0][0],'action':'reload_text','Datum':'2026-09-13','Partner':'Ungespeicherter Partner','Betreff':'Neuer Betreff','reclassification_info':'AutoKat:R0001'}).encode()
             request=urllib.request.Request(f'http://127.0.0.1:{http_port}/bearbeiten.php',data=data)
@@ -286,11 +294,11 @@ try:
         cursor.execute('SELECT COUNT(*) FROM ereignisprotokoll')
         event_count=cursor.fetchone()[0]
         auxiliary_count = 0
-        for table in ('parameter', 'nummernart', 'dokument_nummer', 'autokat_nummer', 'autokat', 'kategorie', 'doktyp'):
+        for table in ('parameter', 'nummernart', 'dokument_nummer', 'autokat_nummer', 'autokat', 'kategorie', 'doktyp', 'vorgang', 'dokument_vorgang'):
             cursor.execute(f'SELECT COUNT(*) FROM `{table}`')
             auxiliary_count += cursor.fetchone()[0]
-        assert backup['tables']==9 and backup['rows']==2+event_count+auxiliary_count,backup
-        assert Path(backup['path']).read_text().startswith('-- e_ablage MariaDB-Datensicherung; Version: 4.4.0\n')
+        assert backup['tables']==11 and backup['rows']==2+event_count+auxiliary_count,backup
+        assert Path(backup['path']).read_text().startswith('-- e_ablage MariaDB-Datensicherung; Version: 4.5.0\n')
         # Let PDO execute the generated SQL, preserving quoted strings/semicolons.
         restore_runner=base/'restore.php'
         restore_runner.write_text("<?php require 'konfiguration.php'; $db_config->exec('USE " + restore + "'); $db_config->exec(file_get_contents(" + json.dumps(backup['path']) + '));')
@@ -309,12 +317,19 @@ try:
                                 + "eablage_papierkorb_aendern($db_config,$id,'trash');"
                                 + "eablage_papierkorb_endgueltig($db_config,$id,PFAD_ARCHIV,PFAD_META);")
         removed_id = documents[0][0]
+        cursor.execute("INSERT INTO vorgang (Bezeichnung,Beschreibung) VALUES ('Papierkorb-Test','')")
+        case_id=cursor.lastrowid
+        cursor.execute('INSERT INTO dokument_vorgang (DokumentID,VorgangID) VALUES (%s,%s)',(removed_id,case_id))
         cursor.execute('SELECT Datum, Partner, Betreff, Originaldateiname FROM dokumente WHERE DokID=%s', (removed_id,))
         deleted_document = cursor.fetchone()
         subprocess.run([php,str(trash_runner),str(removed_id)],cwd=base,capture_output=True,text=True,check=True)
         assert not (base/f'archiv/{removed_id}dok.pdf').exists()
         assert not (base/f'meta/{removed_id}meta.json').exists()
         assert all(row[0] != removed_id for row in rows())
+        cursor.execute('SELECT COUNT(*) FROM dokument_vorgang WHERE DokumentID=%s',(removed_id,))
+        assert cursor.fetchone()[0]==0
+        cursor.execute('SELECT COUNT(*) FROM vorgang WHERE ID=%s',(case_id,))
+        assert cursor.fetchone()[0]==1
         cursor.execute('SELECT Ereignistyp FROM ereignisprotokoll WHERE DokID=%s ORDER BY ID DESC LIMIT 4', (removed_id,))
         assert [r[0] for r in cursor.fetchall()]==['endgueltig_geloescht','papierkorb','wiederhergestellt','papierkorb']
         cursor.execute("SELECT Details FROM ereignisprotokoll WHERE DokID=%s AND Ereignistyp='endgueltig_geloescht'", (removed_id,))

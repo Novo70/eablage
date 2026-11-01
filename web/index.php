@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 // Modernisierte Startseite für e_ablage:web
 // - Formular sendet per GET, damit Suchparameter in der Ergebnisliste/Pagination erhalten bleiben
 // - Werte werden vorbelegt, falls index.php mit Parametern aufgerufen wird
@@ -40,10 +41,7 @@ $dokumenttypen = eablage_lade_dokumenttypen($db_config);
     <title>e_ablage</title>
 
     <link href="app.css?v=<?= filemtime(__DIR__ . '/app.css') ?>" rel="stylesheet">
-    <style>
-        body { padding-top: 70px; }
-        .checkbox-inline-fix { display: flex; align-items: center; gap: 8px; }
-    </style>
+
 
     <link rel="shortcut icon" href="ea_icon4.png" type="image/png" />
     <link rel="icon" href="ea_icon4.png" type="image/png" />
@@ -56,7 +54,7 @@ $dokumenttypen = eablage_lade_dokumenttypen($db_config);
         <div class="row">
             <div class="col-md-6 col-md-offset-3">
                 <div class="panel panel-primary">
-                    <div class="panel-heading">🔍 Suche</div>
+                    <div class="panel-heading"><h1 class="ea-panel-title"><?=eablage_icon('search')?>Suche</h1></div>
                     <div class="panel-body">
                         <form method="GET" action="dokumente.php" accept-charset="UTF-8" id="eingabeformular">
                             <div class="form-group">
@@ -64,9 +62,9 @@ $dokumenttypen = eablage_lade_dokumenttypen($db_config);
                                 <input class="form-control" id="Suchbegriff" name="Suchbegriff" type="text" value="<?= h($suchbegriff) ?>">
                             </div>
 
-                            <div class="form-group checkbox-inline-fix">
+                            <div class="form-group ea-form-check">
                                 <input id="Volltextsuche" name="Volltextsuche" value="1" type="checkbox"<?= $volltextsuche ? ' checked' : '' ?>>
-                                <label for="Volltextsuche" style="margin-bottom:0;">Volltextsuche</label>
+                                <label for="Volltextsuche">Volltextsuche</label>
                             </div>
 
                             <div class="row">
@@ -108,7 +106,7 @@ $dokumenttypen = eablage_lade_dokumenttypen($db_config);
                             </div>
                             <div class="ea-form-actions">
                                <a class="btn btn-default" href="index.php">Zurücksetzen</a>
-                               <button class="btn btn-primary" type="submit">Suchen</button>
+                               <button class="btn btn-primary" type="submit"><?=eablage_icon('search')?>Suchen</button>
                             </div>
                         </form>
                     </div>

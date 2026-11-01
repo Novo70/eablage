@@ -1,6 +1,6 @@
 # Drittkomponenten und Lizenzen
 
-Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellprojekts 4.4.0. Die dokumentierte Paketinventur stammt aus dem Stand 4.2.0; die Erweiterungen bis 4.4.0 führen keine neuen Laufzeitabhängigkeiten ein. Ollama ist ein optionaler externer Dienst; Modell und Modelllizenz werden getrennt gewählt. Neu gebaute Images müssen weiterhin anhand ihrer tatsächlichen Pakete geprüft werden. Sie ersetzt **keine** vollständige Software Bill of Materials (SBOM) oder die Lizenzinventur eines gebauten Containerimages. Maßgeblich sind die jeweils tatsächlich installierten Versionen und die mitgelieferten Lizenztexte.
+Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellprojekts 4.5.0. Die dokumentierte Paketinventur stammt aus dem Stand 4.2.0; die Erweiterungen bis 4.5.0 führen keine neuen Laufzeitabhängigkeiten ein. Ollama ist ein optionaler externer Dienst; Modell und Modelllizenz werden getrennt gewählt. Neu gebaute Images müssen weiterhin anhand ihrer tatsächlichen Pakete geprüft werden. Sie ersetzt **keine** vollständige Software Bill of Materials (SBOM) oder die Lizenzinventur eines gebauten Containerimages. Maßgeblich sind die jeweils tatsächlich installierten Versionen und die mitgelieferten Lizenztexte.
 
 | Komponente | Verwendung | Lizenz / Hinweis |
 | --- | --- | --- |
@@ -35,7 +35,7 @@ Die Dockerfiles installieren zusätzlich Pakete des Basisbetriebssystems. Bei Ve
 
 Diese Übersicht erhebt keinen Anspruch auf verbindliche Rechtsberatung.
 
-## Vollständige Python-Paketliste für eAblage 4.4.0
+## Vollständige Python-Paketliste für eAblage 4.5.0
 
 Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches extrahiert und umfasst **sämtliche 15 festgeschriebenen Python-Pakete**, einschließlich transitiver Abhängigkeiten. Die Lizenzspalte nennt die übliche Projektlizenz, nicht eine unabhängig geprüfte Lizenzdatei jedes konkreten Wheels.
 

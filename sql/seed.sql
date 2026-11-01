@@ -1,5 +1,5 @@
 -- e_ablage initial data
--- Target: eAblage 4.4.0 (gemeinsame Web-/Backend-/Worker-Version)
+-- Target: eAblage 4.5.0 (gemeinsame Web-/Backend-/Worker-Version)
 -- Import after schema.sql
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -133,7 +133,7 @@ INSERT INTO `parameter` (`param_key`, `param_value`, `beschreibung`, `gruppierun
 ('pfadMetadaten_linux', 'PFAD_METADATEIEN', 'Pfad für Metadateien', 'Pfad', NULL, 'ja'),
 ('schwUebereinst', '55', 'Schwellenwert für Textübereinstimmung in % bei Textvergleich', 'TextVergleich', NULL, 'ja'),
 ('txtLaengeVergl', '2000', 'Maximale Länge des zu vergleichenden Textes', 'TextVergleich', NULL, 'ja'),
-('Version', '4.4.0', 'Manuelle Versions- oder Umgebungskennzeichnung; keine automatische Aktualisierung', 'System', NULL, 'ja'),
+('Version', '4.5.0', 'Manuelle Versions- oder Umgebungskennzeichnung; keine automatische Aktualisierung', 'System', NULL, 'ja'),
 ('PDFTextMode', 'layout', 'Layoutoption für PDFToText (Webanwendung)', 'TextEinlesen', NULL, 'ja');
 
 -- Optional local AI. Idempotent; existing values are retained.

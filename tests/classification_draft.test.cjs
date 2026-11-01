@@ -8,7 +8,9 @@ const code = fs.readFileSync(path.join(__dirname, '../web/classification_draft.j
 function screen(href, storage, target = 'autokat_regel_bearbeiten.php?regel=R0001', sha = '') {
     const events = {};
     const editing = new URL(href).pathname.endsWith('/bearbeiten.php');
-    const preview = {textContent: 'Gespeicherter Text'};
+    const preview = {textContent: 'Gespeicherter Text',scrollTop:0};
+    const formScroll = {scrollTop:0};
+    const textView = {hidden:true};
     const fields = [
         {name:'Partner',value:'Server-Vorbelegung',tagName:'INPUT'},
         {name:'Kategorie2',value:'3',tagName:'INPUT'},
@@ -28,18 +30,18 @@ function screen(href, storage, target = 'autokat_regel_bearbeiten.php?regel=R000
     const notices = [];
     const context = {
         document:{
-            querySelector:selector=>selector === '#textDocumentView pre' ? preview : ({elements:fields,dataset:{},hasAttribute:()=>editing}),
+            querySelector:selector=>selector === '#textDocumentView pre' ? preview : selector === '.ea-form-scroll' ? formScroll : ({elements:fields,dataset:{},hasAttribute:()=>editing}),
             querySelectorAll:selector=>selector === 'a[data-draft-link]' ? [link] : [],
-            getElementById:()=>({style:{display:'none'}})
+            getElementById:()=>textView
         },
         location,sessionStorage:storage, URL, Uint8Array,
         crypto:{getRandomValues:array=>array.fill(7)},
         history:{state:null,replaceState(_state,_title,url){location.href=url;}},
         requestAnimationFrame:fn=>fn(),
-        window:{scrollY:450,addEventListener(){},scrollTo(_x,y){this.restoredY=y;},alert:text=>notices.push(text)}
+        window:{scrollY:450,eablageSetDocumentView:view=>{textView.hidden=view!=='text';},addEventListener(){},scrollTo(_x,y){this.restoredY=y;},alert:text=>notices.push(text)}
     };
     vm.runInNewContext(code,context);
-    return {context,fields,events,location,notices,preview};
+    return {context,fields,events,location,notices,preview,formScroll,textView};
 }
 function storage() {
     const data = new Map();
@@ -143,3 +145,18 @@ test('history link after a POST restores a valid GET URL and original navigation
     assert.equal(returned.fields.find(el=>el.name==='document_revision').value,'original-revision');
     assert.equal(mem.data.size,0);
 });
+
+for (const page of ['verarbeiten.php?file=a.pdf','bearbeiten.php?dokid=42']) for (const showText of [false,true]) {
+    test(page+': round trip retains selected preview and internal scroll positions ('+showText+')',()=>{
+        const mem=storage();
+        const first=screen('http://nas/eablage_test/'+page,mem,'protokoll.php?dokid=42');
+        first.textView.hidden=!showText;first.formScroll.scrollTop=720;first.preview.scrollTop=110;
+        first.events.click({button:0,preventDefault(){}});
+        const back=new URL(first.location.destination).searchParams.get('return');
+        const returned=screen('http://nas/eablage_test/'+back,mem);
+        assert.equal(returned.textView.hidden,!showText);
+        assert.equal(returned.formScroll.scrollTop,720);
+        assert.equal(returned.preview.scrollTop,110);
+        assert.equal(returned.context.window.restoredY,450);
+    });
+}

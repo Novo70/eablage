@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'meldungen.php';
@@ -237,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <div class="panel panel-primary">
-        <div class="panel-heading">📦 Dokumenten-Gesamtexport</div>
+        <div class="panel-heading"><?=eablage_icon('export')?>Dokumenten-Gesamtexport</div>
         <div class="panel-body">
             <p>Die Parameter für den Gesamtexport können in den Einstellungen geändert werden. Dort kann das Exportverzeichnis unter "Pfad" sowie die Zusammensetzung des Dateinamens unter "Gesamtexport"
                 konfiguriert werden.</p>
@@ -254,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST" action="gesamtexport.php" onsubmit="return confirm('Gesamtexport jetzt starten? Bereits vorhandene Exportdateien mit gleichem Namen werden überschrieben.');">
                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                 <input type="hidden" name="action" value="export">
-                <button type="submit" class="btn btn-primary" <?=!$targetConfigured ? 'disabled' : ''?>>📦 Gesamtexport starten</button>
+                <button type="submit" class="btn btn-primary" <?=!$targetConfigured ? 'disabled' : ''?>><?=eablage_icon('export')?>Gesamtexport starten</button>
             </form>
         </div>
     </div>
@@ -279,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <div class="panel panel-primary">
-        <div class="panel-heading">💾 Backup der Datenbank</div>
+        <div class="panel-heading"><?=eablage_icon('database')?>Backup der Datenbank</div>
         <div class="panel-body">
             <p>Erstellt eine SQL-Sicherung der eAblage-Datenbank mit Tabellenstruktur und Daten. Die Sicherung wird im Zielverzeichnis gespeichert.</p>
 
@@ -297,7 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST" action="gesamtexport.php" onsubmit="return confirm('Datenbanksicherung jetzt erstellen?');">
                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                 <input type="hidden" name="action" value="backup">
-                <button type="submit" class="btn btn-primary" <?=!$backupConfigured ? 'disabled' : ''?>>💾 Datenbanksicherung erstellen</button>
+                <button type="submit" class="btn btn-primary" <?=!$backupConfigured ? 'disabled' : ''?>><?=eablage_icon('database')?>Datenbanksicherung erstellen</button>
             </form>
         </div>
     </div>
@@ -314,7 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
     <?php if ($restoreAvailable && $backupConfigured): ?>
         <div class="panel panel-primary" id="datenbank-wiederherstellen">
-            <div class="panel-heading">Datenbank aus Backup initialisieren</div>
+            <div class="panel-heading"><?=eablage_icon('database')?>Datenbank aus Backup initialisieren</div>
             <div class="panel-body">
                 <p>Nur bei leerer Tabelle <code>dokumente</code>. Vorhandene Stammdaten, Parameter und Dokumenthistorie werden durch den gesicherten Stand ersetzt. Eine ältere Sicherung ohne Historie leert die vorhandene Protokolltabelle. Nur unterstützte eAblage-Sicherungen aus Version 4.1.0 oder 4.2.0 einschließlich Papierkorb werden angenommen. Andere Sicherungen benötigen eine gesonderte Migration.</p>
                 <p>Die SQL-Sicherung enthält keine PDFs und Metadateien. Diese müssen zum gesicherten Stand passen und werden anschließend über die eigenständige Archivprüfung geprüft.</p>
@@ -331,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php endforeach; ?>
                         </select>
                         <p><label><input type="checkbox" name="restore_confirm" value="yes" required> Diese Datenbank jetzt mit der ausgewählten Sicherung befüllen.</label></p>
-                        <button type="submit" class="btn btn-warning">Datenbank initialisieren</button>
+                        <button type="submit" class="btn btn-warning"><?=eablage_icon('database')?>Datenbank initialisieren</button>
                     </form>
                 <?php endif; ?>
             </div>

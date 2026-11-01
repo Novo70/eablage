@@ -2,6 +2,7 @@
 
 const EABLAGE_EREIGNISSE = [
     'archiviert' => 'Archiviert',
+    'vorgaenge_geaendert' => 'Vorgangszuordnung geändert',
     'metadaten_geaendert' => 'Dokument bearbeitet',
     'papierkorb' => 'In den Papierkorb verschoben',
     'wiederhergestellt' => 'Aus dem Papierkorb wiederhergestellt',

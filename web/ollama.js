@@ -122,13 +122,22 @@
         diagnosticCopy.disabled = false;
         diagnosticDetails.hidden = false;
     }
+    function revealDetails(target) {
+        const scroll = target.closest('.ea-form-scroll');
+        if (scroll && getComputedStyle(scroll).overflowY === 'auto') {
+            scroll.scrollTop += target.getBoundingClientRect().top - scroll.getBoundingClientRect().top - parseFloat(getComputedStyle(scroll).paddingTop);
+        } else {
+            target.scrollIntoView({block: 'start'});
+        }
+    }
     if (diagnosticButton) {
         diagnosticButton.addEventListener('click', () => {
             if (menu) menu.open = false;
             if (recognitionDetails) recognitionDetails.open = true;
             diagnosticPanel.hidden = false;
             diagnosticButton.setAttribute('aria-expanded', 'true');
-            document.getElementById('ollama-diagnostic-close').focus();
+            revealDetails(diagnosticPanel);
+            document.getElementById('ollama-diagnostic-close').focus({preventScroll: true});
         });
         document.getElementById('ollama-diagnostic-close').addEventListener('click', () => {
             diagnosticPanel.hidden = true;
@@ -240,7 +249,7 @@
         link.textContent = 'Erkennungsdetails';
         link.addEventListener('click', event => {
             event.preventDefault(); recognitionDetails.open = true;
-            recognitionDetails.scrollIntoView({block: 'start'});
+            revealDetails(recognitionDetails);
             recognitionDetails.querySelector('summary')?.focus({preventScroll: true});
         });
         status.append(link);

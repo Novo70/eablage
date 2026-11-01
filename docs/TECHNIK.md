@@ -6,7 +6,7 @@ eAblage ist eine lokal betriebene Einbenutzer-Anwendung aus Apache/PHP, FastAPI 
 
 | Komponente | Aufgaben und Schreibhoheit |
 | --- | --- |
-| PHP im Webcontainer | Oberfläche, Upload, Archivierung/Bearbeitung, Regeln/Statistik, Parameter, PDF-Ausgabe, Exportkopien, SQL-Sicherung und Initialrücksicherung |
+| PHP im Webcontainer | Oberfläche, Upload, Archivierung/Bearbeitung, Vorgangsverwaltung und Dokumentzuordnungen, Regeln/Statistik, Parameter, PDF-Ausgabe, Exportkopien, SQL-Sicherung und Initialrücksicherung |
 | FastAPI im Backendcontainer | PDF-Textextraktion/OCR, Auftragsverwaltung, Datum/AutoKat/Textvergleich, Exportplanung, Stammdatenänderungen, JSON-Validierung/-Vorbereitung, Archivprüfung/-reparatur |
 | Python-Worker | Inbox prüfen und ungeprüfte Ergebnisse über denselben Verarbeitungscode erzeugen |
 | MariaDB | Dokumente, Aufträge, Regeln, Stammdaten und Parameter; InnoDB-Transaktionen und Sperren |
@@ -117,3 +117,7 @@ Ablauf, Zustände, Datenbanksperren und Wiederanlauf: [Stapelverarbeitung](STAPE
 Die optionale Ollama-Anbindung läuft über `web/ollama.php` und `backend/app/ollama_api.py`. Der Backend-Dienst lädt Konfiguration, Stammdaten und vorbereiteten Text selbst. Der Browser spricht ausschließlich die Webanwendung an. Grenzen und Einrichtung: [Ollama](OLLAMA.md).
 
 Die Hintergrund-KI läuft in einem separaten Thread des Inbox-Workers, mit eigenen Datenbankverbindungen und reproduzierbarem Cache `ki_vorschlaege`. Eine verbindungsgebundene Generierungssperre serialisiert Worker und manuellen Abruf pro Datenbank. Revisionsgebundene Schreiboperationen verändern weder OCR-Ergebnis noch archivierte Dokumente. [Ablauf](OLLAMA.md#ki-im-hintergrund).
+
+Vorgänge und Dokumentzuordnungen bilden einen vollständigen PHP-Vorgang. Die Tabellen `vorgang` und `dokument_vorgang` werden gemeinsam mit den übrigen dauerhaften Tabellen gesichert. Vorgangszuordnungen gehören nicht zum JSON-Metadatenformat oder zur Erkennung. [Details](VORGAENGE.md).
+
+`web/dokumentvorschau.php` und `web/dokumentvorschau.js` definieren die gemeinsame PDF-/Textvorschau für Klassifizieren und Bearbeiten. Die Seiten übergeben PDF-Adresse und Dokumenttext; Vorschautitel, Ansichtsschalter und mobile Vollbildaktion sind gemeinsam. Die per JavaScript wechselnden Vorschauen von Explorer und Vorgängen bleiben eigenständig.

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'nummern_funktionen.php';
@@ -279,7 +280,7 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
     <?php endif; ?>
 
     <div class="panel panel-primary">
-        <div class="panel-heading">✏️ <?= $neu ? 'Neue AutoKat-Regel' : 'AutoKat-Regel ' . h($regel['RegelID']) ?></div>
+        <div class="panel-heading"><?=eablage_icon('edit')?><?= $neu ? 'Neue AutoKat-Regel' : 'AutoKat-Regel ' . h($regel['RegelID']) ?></div>
         <div class="panel-body">
             <form method="post">
                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
@@ -360,7 +361,7 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
                 </div></div><script src="nummern_regeln.js"></script>
                 <div class="ea-form-actions">
                     <a href="<?= h($returnUrl) ?>" class="btn btn-default">Abbrechen</a>
-                    <button type="submit" class="btn btn-primary">💾 Speichern</button>
+                    <button type="submit" class="btn btn-primary"><?=eablage_icon('save')?>Speichern</button>
                 </div>
             </form>
         </div>

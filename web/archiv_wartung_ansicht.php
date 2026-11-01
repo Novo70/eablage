@@ -1,5 +1,6 @@
+<?php require_once __DIR__ . '/icons.php'; ?>
 <div class="panel panel-primary" id="archivpruefung">
-    <div class="panel-heading">Archivprüfung &amp; Metadatenreparatur</div>
+    <div class="panel-heading"><?=eablage_icon('check-document')?>Archivprüfung &amp; Metadatenreparatur</div>
     <div class="panel-body">
         <p>Prüft die Zuordnung von Datenbankeinträgen, PDFs und Metadateien sowie vorhandene SHA-256-Prüfsummen. Die Prüfung verändert keine Dateien oder Referenzwerte. Die Datenbank ist für Metadaten maßgeblich. Das Einlesen aller PDFs mit Prüfsumme kann Zeit benötigen.</p>
         <p>Reparaturen erzeugen JSON-Metadateien aus den Datenbankwerten.</p>

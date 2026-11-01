@@ -5,6 +5,8 @@ Kategorien ordnen Dokumente thematisch zu; Dokumententypen beschreiben ihre Art,
 ## Bedienung
 
 Im Menü **Stammdaten** über die Reiter **Kategorien** und **Dokumententypen** zwischen den Listen wechseln. Der weitere Reiter **Nummernarten** verwaltet Kunden-, Vertrags- und andere Nummernarten; [Details](NUMMERN.md). Alle Listen beginnen mit der Bezeichnung; technische IDs werden nicht angezeigt. Der aktive Reiter ist hervorgehoben und mit dem Inhaltsbereich verbunden. Die Reiter sind normale Seitenlinks und funktionieren auch ohne JavaScript.
+Über **Neuen Eintrag anlegen** das zunächst eingeklappte Formular öffnen. Die Liste bleibt dadurch direkt erreichbar. Nach einem Fehler beim Anlegen bleibt das Formular mit den eingegebenen Werten geöffnet.
+
 Neue Einträge werden aktiv angelegt. Die nächste numerische ID wird automatisch
 vergeben. Der aktuelle Bereich endet bei 999, passend zu den dreistelligen
 AutoKat-Zuordnungsfeldern. Bestehende IDs werden niemals geändert.

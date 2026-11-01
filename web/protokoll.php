@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'protokoll_funktionen.php';
 
@@ -121,7 +122,7 @@ function history_page(int $page): string
     <main class="container">
         <div class="panel panel-primary">
             <div class="panel-heading">
-                <div class="panel-title">📋 Ereignisprotokoll / Dokumenthistorie</div>
+                <div class="panel-title"><?=eablage_icon('clipboard')?>Ereignisprotokoll / Dokumenthistorie</div>
             </div>
             <div class="panel-body">
                 <p>Gespeicherte Dokumentereignisse, neueste zuerst. Frühere Info-Texte bleiben beim Dokument unter „Technische Informationen“ erhalten.</p>

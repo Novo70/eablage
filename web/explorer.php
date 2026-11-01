@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'meldungen.php';
@@ -45,7 +46,7 @@ try {
         <p id="explorer-notice" class="alert alert-info" role="status" hidden></p>
         <div class="ea-explorer-layout" id="explorer-layout" hidden>
             <section class="panel panel-primary ea-explorer-documents" aria-labelledby="explorer-list-heading">
-                <div class="panel-heading" id="explorer-list-heading">📂 Ablage-Explorer</div>
+                <div class="panel-heading" id="explorer-list-heading"><?=eablage_icon('folder')?>Ablage-Explorer</div>
                 <div class="panel-body">
                     <nav id="explorer-breadcrumb" aria-label="Aktueller Ordner"></nav>
                     <div class="ea-explorer-filter">
@@ -67,10 +68,10 @@ try {
             </section>
             <section class="panel panel-primary ea-explorer-preview" aria-labelledby="explorer-preview-heading">
                 <div class="panel-heading ea-explorer-preview-heading">
-                    <span id="explorer-preview-heading"><span class="ea-preview-title-desktop">PDF-Vorschau</span><span class="ea-preview-title-mobile">Dokument</span></span>
+                    <span id="explorer-preview-heading"><?=eablage_icon('document')?><span class="ea-preview-title-desktop">PDF-Vorschau</span><span class="ea-preview-title-mobile">Dokument</span></span>
                     <div class="ea-explorer-preview-actions" id="explorer-actions" hidden>
                         <a class="btn btn-default ea-heading-btn" id="explorer-open" target="_blank" rel="noopener">PDF öffnen</a>
-                        <a class="btn btn-default ea-heading-btn" id="explorer-edit">✏️ Metadaten bearbeiten</a>
+                        <a class="btn btn-default ea-heading-btn" id="explorer-edit"><?=eablage_icon('edit')?>Metadaten bearbeiten</a>
                     </div>
                 </div>
                 <div class="panel-body">

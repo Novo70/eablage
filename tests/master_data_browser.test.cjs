@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '..');
 async function setup(t, kind) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eablage-master-'));
     t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
-    for(const name of ['stammdaten.php','csrf.php','meldungen.php','status_toggle.php','master_data_sort.js']) fs.copyFileSync(path.join(root,'web',name),path.join(dir,name));
+    for(const name of ['stammdaten.php','icons.php','csrf.php','meldungen.php','status_toggle.php','master_data_sort.js']) fs.copyFileSync(path.join(root,'web',name),path.join(dir,name));
     fs.writeFileSync(path.join(dir,'konfiguration.php'),"<?php define('MYSQL_DATENBANK','testdb');");
     fs.writeFileSync(path.join(dir,'navbar.php'),'');
     fs.copyFileSync(path.join(root,'web/app.css'),path.join(dir,'app.css'));
@@ -28,7 +28,7 @@ function eablage_backend_request($method,$url,$payload,$timeout) {
     const browser = await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH,args:['--no-sandbox']});
     t.after(()=>browser.close());
     const page = await browser.newPage();
-    await page.route('http://eablage.test/**', route=>route.fulfill({contentType:'text/html',body:rendered.stdout}));
+    await page.route('http://eablage.test/**', route=>route.request().url().endsWith('/icons.svg') ? route.fulfill({contentType:'image/svg+xml',body:fs.readFileSync(path.join(root,'web/icons.svg'))}) : route.fulfill({contentType:'text/html',body:rendered.stdout}));
     await page.goto('http://eablage.test/stammdaten.php');
     await page.addStyleTag({content:fs.readFileSync(path.join(root,'web/app.css'),'utf8')});
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'web/status_toggle.js'),'utf8')});
@@ -70,6 +70,7 @@ test('number types: name precedes sort column and sort order saves with the row'
     assert.ok(nameBox.x+nameBox.width <= sortBox.x);
     assert.ok(Math.abs(sortBox.y-nameBox.y)<2);
     assert.ok(explanationBox.y >= nameBox.y+nameBox.height);
+    await page.locator('#master-create > summary').click();
     const newName=await page.locator('#new-name').boundingBox(), newSort=await page.locator('#new-sort-order').boundingBox();
     assert.ok(Math.abs(newName.y-newSort.y)<2);
     await sort.fill('25');

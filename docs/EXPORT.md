@@ -72,3 +72,7 @@ Die Einstellungen bieten Auswahllisten und prüfen erlaubte Werte beim Speichern
 ## Gemeinsame Struktur mit dem Explorer
 
 Gesamtexport und [Ablage-Explorer](EXPLORER.md) nutzen denselben vollständigen Plan aus `GET /export/plan`. Die Struktur muss nicht erst physisch exportiert werden. Der Explorer zeigt die Dokumentmetadaten statt des virtuellen Dateinamens und sortiert nach Datum und sichtbaren Feldern. Diese Anzeigesortierung verändert den Exportplan nicht.
+
+## Vorgangszuordnungen
+
+Der dateibasierte Export behält die bestehende Struktur bei. Vorgänge und ihre Mehrfachzuordnungen sind ausschließlich in der vollständigen SQL-Sicherung enthalten; sie werden nicht als zusätzliche Exportordner oder PDF-Kopien ausgegeben. [Vorgänge](VORGAENGE.md).

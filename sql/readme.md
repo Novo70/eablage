@@ -27,3 +27,5 @@ Eine kompatible Sicherung in eine vorbereitete leere Installation zurückspielen
 
 
 Für den zusammenhängenden Updatepfad von **4.3.0 auf 4.4.0** alle in [UPDATE.md](../docs/UPDATE.md#aktualisierung-von-430-auf-440) aufgeführten Skripte in der angegebenen Reihenfolge anwenden. Das umfasst KI-Parameter und Laufzeittabellen, Stammdaten-Erläuterungen und `update_document_numbers.sql`. Schema und Seed bleiben ausschließlich der Neuinstallation vorbehalten.
+
+- `update_document_links.sql`: Vorgänge und Dokumentzuordnungen für das Update von 4.4.0 auf 4.5.0; nach Sicherung und Schreibpause ausführen. [Details](../docs/VORGAENGE.md).

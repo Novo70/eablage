@@ -17,7 +17,7 @@ class OllamaSettingsTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for name in ['einstellungen.php', 'csrf.php', 'meldungen.php', 'app.css', 'ollama.js']:
+        for name in ['einstellungen.php', 'icons.php', 'csrf.php', 'meldungen.php', 'app.css', 'ollama.js']:
             shutil.copy(ROOT / 'web' / name, self.root / name)
         (self.root / 'navbar.php').write_text('')
         (self.root / 'konfiguration.php').write_text('''<?php
@@ -101,7 +101,7 @@ echo "\\nSTATE:" . json_encode(['value'=>$db->value,'thinking'=>$db->thinking,'d
         lookup_end = source.index(';', lookup_start) + 1
         template = source[lookup_start:lookup_end] + ' ?>' + source[menu_start:menu_end] + source[panel_start:panel_end]
         runner = self.root / 'diagnostic.php'
-        runner.write_text("<?php class TestQuery { function fetchColumn() { return json_decode($GLOBALS['argv'][1], true); } } class TestConfig { function query($sql) { return new TestQuery(); } } $db_config=new TestConfig(); $ollamaAvailable=true; " + template)
+        runner.write_text("<?php require __DIR__ . '/icons.php'; class TestQuery { function fetchColumn() { return json_decode($GLOBALS['argv'][1], true); } } class TestConfig { function query($sql) { return new TestQuery(); } } $db_config=new TestConfig(); $ollamaAvailable=true; " + template)
         for value, visible in [(False, False), ('nein', False), ('ja', True), ('invalid', False)]:
             result = subprocess.run([PHP, '-n', str(runner), json.dumps(value)], text=True, capture_output=True, timeout=5)
             self.assertEqual(result.returncode, 0, result.stderr)

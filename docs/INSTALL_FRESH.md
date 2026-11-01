@@ -1,6 +1,6 @@
 # Installation mit integrierter Datenbank
 
-Diese Anleitung beschreibt die vereinfachte Neuinstallation von eAblage 4.4.0 mit integrierter MariaDB. Weboberfläche, Backend, Worker und Datenbank werden gemeinsam mit `compose.fresh.yaml` eingerichtet. Die Variante eignet sich sowohl für den Produktivbetrieb als auch für eine Testinstanz. Eine separat betriebene MariaDB ist nicht erforderlich.
+Diese Anleitung beschreibt die vereinfachte Neuinstallation von eAblage 4.5.0 mit integrierter MariaDB. Weboberfläche, Backend, Worker und Datenbank werden gemeinsam mit `compose.fresh.yaml` eingerichtet. Die Variante eignet sich sowohl für den Produktivbetrieb als auch für eine Testinstanz. Eine separat betriebene MariaDB ist nicht erforderlich.
 
 Alternativ kann eAblage eine [separate Datenbank](INSTALL_STANDARD.md) verwenden. Der Einsatzzweck ist unabhängig von dieser Auswahl. Bei mehreren Instanzen müssen Projektname, Port, Datenbank und Datenverzeichnisse getrennt bleiben; siehe [Mehrere Instanzen betreiben](KONFIGURATION.md#mehrere-instanzen-betreiben).
 
