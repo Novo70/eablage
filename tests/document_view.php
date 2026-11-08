@@ -3,7 +3,8 @@
 $directory = sys_get_temp_dir() . '/eablage-view-' . bin2hex(random_bytes(6));
 mkdir($directory);
 try {
-    foreach (['ansehen.php', 'dokumentvorschau.php', 'dokument_navigation.php', 'nummern_funktionen.php', 'icons.php', 'navbar.php', 'app.css', 'dokumentvorschau.js'] as $file) {
+    foreach (['ansehen.php', 'dokumentvorschau.php', 'dokument_navigation.php', 'nummern_funktionen.php', 'icons.php', 'navbar.php', 'app.css', 'desktop.css', 'preview_layout.js', 'dokumentvorschau.js', 'pdfjs.js', 'pdfjs.css', 'pdfjs_loader.mjs', 'icons.svg', 'vendor/pdfjs/web/viewer.html'] as $file) {
+        if (!is_dir(dirname($directory . '/' . $file))) mkdir(dirname($directory . '/' . $file), 0777, true);
         copy(__DIR__ . '/../web/' . $file, $directory . '/' . $file);
     }
     $fixture = file_get_contents(__DIR__ . '/fixtures/ui_data.php');
@@ -43,7 +44,8 @@ try {
     $check(str_contains($html, '&lt;script&gt;alert(1)&lt;/script&gt;'),'Unescaped subject');
     $check(str_contains($html, 'Kundennummer') && str_contains($html, '0012345'),'Additional number missing');
     $check(str_contains($html, 'Heizung 2026'),'Linked case missing');
-    $check(!preg_match('/<(input|textarea|select|form)\b/i',$html),'Editing controls in read-only view');
+    preg_match('~<main\b[^>]*>.*?</main>~is', $html, $main);
+    $check(!preg_match('/<(input|textarea|select|form)\b/i', $main[0] ?? ''),'Editing controls in read-only view');
     $check(str_contains($html, 'href="'.htmlspecialchars($search,ENT_QUOTES,'UTF-8').'"'),'Search context lost');
     $view='ansehen.php?'.http_build_query(['dokid'=>1,'return'=>$search]);
     $edit='bearbeiten.php?'.http_build_query(['dokid'=>1,'return'=>$view]);
@@ -59,6 +61,9 @@ try {
     }
     echo "Document view: PASS\n";
 } finally {
-    foreach (glob($directory . '/*') as $file) unlink($file);
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($files as $file) {
+        if ($file->isDir()) rmdir($file->getPathname()); else unlink($file->getPathname());
+    }
     rmdir($directory);
 }

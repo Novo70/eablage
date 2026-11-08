@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/dokumentvorschau.php';
 require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'csrf.php';
@@ -104,22 +105,17 @@ try {
     error_log('eAblage Vorgänge laden: ' . $e->getMessage()); http_response_code(500);
     $error = 'Vorgänge konnten nicht geladen werden. Bitte prüfen, ob sql/update_document_links.sql ausgeführt wurde.';
 }
-$back = 'vorgaenge.php' . ($return !== '' ? '?return=' . rawurlencode($return) : '');
 $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencode($return) : '');
 ?>
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>eAblage – Vorgänge</title><link rel="icon" href="ea_icon4.png"><link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__.'/app.css')?>"><?php if ($item): ?><link rel="stylesheet" href="explorer.css?v=<?=filemtime(__DIR__.'/explorer.css')?>"><script src="vorgang_vorschau.js?v=<?=filemtime(__DIR__.'/vorgang_vorschau.js')?>" defer></script><?php endif; ?></head>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>eAblage – Vorgänge</title><link rel="icon" href="ea_icon4.png"><link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__.'/app.css')?>"><?php if ($item): ?><link rel="stylesheet" href="explorer.css?v=<?=filemtime(__DIR__.'/explorer.css')?>">
+    <?php eablage_dokumentvorschau_script(); ?>
+    <script src="vorgang_vorschau.js?v=<?=filemtime(__DIR__.'/vorgang_vorschau.js')?>" defer></script><?php endif; ?></head>
 <body><?php include 'navbar.php'; ?><main class="container ea-vorgaenge <?=$item ? 'ea-explorer' : ''?>">
     <?php if ($item): ?><div class="ea-explorer-layout" data-vorgang-workspace><?php endif; ?>
     <section class="panel panel-primary <?=$item ? 'ea-explorer-documents' : ''?>" aria-labelledby="vorgang-heading">
         <div class="panel-heading"><h1 class="ea-vorgang-title" id="vorgang-heading"><?=eablage_icon('link')?><?=$item ? 'Vorgang: ' . h($item['Bezeichnung']) : 'Vorgänge'?></h1></div>
         <div class="panel-body">
-    <?php if ($return !== '' || $id): ?>
-    <div class="ea-form-actions ea-vorgang-navigation">
-        <?php if ($return !== ''): ?><a class="btn btn-default" href="<?=h($return)?>">Zurück zum Dokument</a><?php endif; ?>
-        <?php if ($id): ?><a class="btn btn-default" href="<?=h($back)?>">Alle Vorgänge</a><?php endif; ?>
-    </div>
-    <?php endif; ?>
     <?php if ($error !== ''): ?><?=eablage_render_message('danger',$error)?><?php endif; ?>
     <?php if ($item): ?>
         <?php if ($item['Beschreibung'] !== ''): ?><p class="ea-vorgang-description"><?=h($item['Beschreibung'])?></p><?php endif; ?>
@@ -131,7 +127,7 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
             </form>
         </div></details>
         <section class="ea-vorgang-documents" aria-labelledby="vorgang-documents-heading"><div class="ea-vorgang-documents-heading"><h2 id="vorgang-documents-heading">Zugeordnete Dokumente (<?=$total?>)</h2>
-            <form method="post" id="vorgang-detach-form"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="document_id" id="vorgang-detach-document" value=""><input type="hidden" name="return" value="<?=h($return)?>"><button class="btn btn-default btn-sm" type="submit" name="action" value="detach" id="vorgang-detach" disabled title="Bitte zuerst ein Dokument auswählen.">Zuordnung entfernen</button></form>
+
         </div>
             <?php if ($trashCount): ?><p class="text-muted"><?=$trashCount?> weitere Dokumente befinden sich im Papierkorb. Ihre Zuordnungen bleiben bis zum endgültigen Löschen erhalten.</p><?php endif; ?>
             <?php if (!$documents): ?><p>Noch keine Dokumente zugeordnet.</p><?php endif; ?>
@@ -163,22 +159,21 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
         </div></section>
     <?php endif; ?>
         </div>
+        <?php if ($item || $return !== ''): ?>
+        <div class="ea-workspace-footer">
+            <?php if ($return !== ''): ?><a class="btn btn-default" href="<?=h($return)?>">Zurück zum Dokument</a><?php endif; ?>
+            <?php if ($item): ?>
+            <div id="vorgang-preview-actions" hidden><a class="btn btn-primary" id="vorgang-preview-edit"><?=eablage_icon('edit')?>Metadaten bearbeiten</a></div>
+            <form method="post" id="vorgang-detach-form"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="document_id" id="vorgang-detach-document" value=""><input type="hidden" name="return" value="<?=h($return)?>"><button class="btn btn-default btn-sm" type="submit" name="action" value="detach" id="vorgang-detach" disabled title="Bitte zuerst ein Dokument auswählen.">Zuordnung entfernen</button></form>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </section>
     <?php if ($item): ?>
-        <section class="panel panel-primary ea-explorer-preview" aria-labelledby="vorgang-preview-heading">
-            <div class="panel-heading ea-explorer-preview-heading">
-                <span id="vorgang-preview-heading"><?=eablage_icon('document')?><span class="ea-preview-title-desktop">PDF-Vorschau</span><span class="ea-preview-title-mobile">Dokument</span></span>
-                <div class="ea-explorer-preview-actions" id="vorgang-preview-actions" hidden>
-                    <a class="btn btn-default ea-heading-btn" id="vorgang-preview-open" target="_blank" rel="noopener">PDF öffnen</a>
-                    <a class="btn btn-default ea-heading-btn" id="vorgang-preview-edit"><?=eablage_icon('edit')?>Metadaten bearbeiten</a>
-                </div>
-            </div>
-            <div class="panel-body">
-                <p class="ea-explorer-empty-preview" id="vorgang-preview-empty">Bitte ein Dokument auswählen.</p>
-                <div class="ea-explorer-pdf" id="vorgang-preview-pdf"></div>
-            </div>
-        </section>
+        <?php eablage_dokumentvorschau('', '', ['pdf_id'=>'vorgang-preview-pdf', 'open_id'=>'vorgang-preview-open', 'empty_id'=>'vorgang-preview-empty', 'heading_id'=>'vorgang-preview-heading', 'class'=>'ea-explorer-preview']); ?>
     </div>
     <noscript><p class="alert alert-info">Für die PDF-Vorschau bitte JavaScript aktivieren. Die Dokumentlinks öffnen das PDF direkt.</p></noscript>
     <?php endif; ?>
 </main></body></html>
+
+

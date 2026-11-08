@@ -149,7 +149,7 @@ if (is_dir($scanOrdner)) {
 <body>
 <?php include 'navbar.php'; ?>
 
-<div class="container">
+<div class="container ea-inbox-workspace">
     <?php if ($flashMeldung !== null): ?>
         <?=eablage_render_flash($flashMeldung)?>
     <?php endif; ?>
@@ -160,7 +160,7 @@ if (is_dir($scanOrdner)) {
 
     <div class="row ea-workspace-row">
         <div class="col-md-6 ea-workspace-column">
-            <div class="panel panel-primary">
+            <div class="panel panel-primary ea-inbox-panel">
                 <div class="panel-heading"><?=eablage_icon('inbox')?>Eingang (<?=count($gefundeneDateien)?> neue Dokumente)</div>
                 <div class="panel-body">
                     <?php $kiWorkerNotice = !empty($kiWorker['enabled']) && (empty($kiWorker['fresh']) || in_array($kiWorker['state'] ?? '', ['pausiert','deaktiviert'], true)); ?>

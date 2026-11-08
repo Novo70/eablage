@@ -2,7 +2,7 @@
 // Initialbefüllung aus einer unterstützten eAblage-Sicherung.
 // Die Archivprüfung bleibt ein eigenständiger Vorgang.
 
-const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0'];
+const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0', '4.6.0'];
 const EABLAGE_RESTORE_TABLES = ['autokat', 'doktyp', 'dokumente', 'kategorie', 'parameter'];
 
 function eablage_restore_empty(PDO $db): bool

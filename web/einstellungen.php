@@ -8,7 +8,12 @@ require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
+require_once __DIR__ . '/pdfjs_update.php';
 $aktionToken = eablage_aktion_token();
+$pdfjsVersion = eablage_pdfjs_installed_version();
+$pdfjsCheck = $_SESSION['eablage_pdfjs_update'] ?? null;
+if (($pdfjsCheck['installed'] ?? null) !== $pdfjsVersion
+    || ($pdfjsCheck['eablage_installed'] ?? null) !== EABLAGE_WEB_VERSION) $pdfjsCheck = null;
 
 if (!isset($db) && isset($db_config)) {
     $db = $db_config;
@@ -166,19 +171,19 @@ foreach ($alleParameter as $p) {
 
     <div class="panel panel-primary ea-settings-panel">
         <div class="panel-heading"><?=eablage_icon('settings')?>Einstellungen</div>
-        <div class="panel-body">
-            <div class="ea-settings-toolbar">
-                <div>
-                    <strong>Parameter</strong>
-                    <div class="ea-settings-hint">Konfiguration der Web-Anwendung und der angebundenen Dienste.</div>
+        <form class="panel-body" method="POST" action="einstellungen.php" id="settings-form">
+            <div class="ea-settings-scroll">
+                <div class="ea-settings-toolbar">
+                    <div>
+                        <strong>Parameter</strong>
+                        <div class="ea-settings-hint">Konfiguration der Web-Anwendung und der angebundenen Dienste.</div>
+                    </div>
+                    <div class="ea-settings-toolbar__actions">
+                        <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(true)"><?=eablage_icon('expand')?>Alle aufklappen</button>
+                        <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(false)"><?=eablage_icon('collapse')?>Alle zuklappen</button>
+                    </div>
                 </div>
-                <div class="ea-settings-toolbar__actions">
-                    <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(true)"><?=eablage_icon('expand')?>Alle aufklappen</button>
-                    <button type="button" class="btn btn-default btn-sm" onclick="toggleAllGroups(false)"><?=eablage_icon('collapse')?>Alle zuklappen</button>
-                </div>
-            </div>
 
-            <form method="POST" action="einstellungen.php" id="settings-form">
                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                 <input type="hidden" name="return" value="<?=h($returnUrl)?>">
                 <?php foreach ($gruppierteParameter as $gruppenName => $parameterListe): ?>
@@ -273,18 +278,35 @@ foreach ($alleParameter as $p) {
                     </details>
                 <?php endforeach; ?>
 
-                <div class="ea-sticky-bar">
-                    <div class="ea-settings-version">Version 4.5.0 / 31.10.2026</div>
-                    <div class="ea-settings-save-actions ea-form-actions">
-                        <a href="<?=h($returnUrl)?>" class="btn btn-default" id="settings-exit"><?=($meldung !== '' && $meldungTyp === 'success') ? 'Zurück' : 'Abbrechen'?></a>
-                        <button type="submit" class="btn btn-primary"><?=eablage_icon('save')?>Speichern</button>
+                <details class="ea-group-details">
+                    <summary class="ea-group-summary"><span>Aktualisierung</span></summary>
+                    <div class="ea-group-body">
+                        <p class="small">Die Prüfung ruft Veröffentlichungsdaten bei GitHub und Sicherheitsmeldungen bei OSV ab.</p>
+                        <button type="button" id="pdfjs-update-check" class="btn btn-default">Auf Aktualisierung prüfen</button>
+                        <p id="update-check-status" role="status">Noch keine Prüfung in dieser Sitzung.</p>
+                        <h3>eAblage</h3>
+                        <p>Installierte Version <strong><?=h(EABLAGE_WEB_VERSION)?></strong></p>
+                        <div id="eablage-update-status" aria-live="polite"></div>
+                        <h3>PDF.js</h3>
+                        <p>Installierte Version <strong><?=h($pdfjsVersion ?? 'unbekannt')?></strong></p>
+                        <div id="pdfjs-update-status" aria-live="polite"></div>
                     </div>
+                </details>
+            </div>
+
+            <footer class="ea-sticky-bar ea-settings-footer">
+                <div class="ea-settings-version">Version <?=h(EABLAGE_WEB_VERSION)?></div>
+                <div class="ea-settings-save-actions ea-form-actions">
+                    <a href="<?=h($returnUrl)?>" class="btn btn-default" id="settings-exit"><?=($meldung !== '' && $meldungTyp === 'success') ? 'Zurück' : 'Abbrechen'?></a>
+                    <button type="submit" class="btn btn-primary"><?=eablage_icon('save')?>Speichern</button>
                 </div>
-            </form>
-        </div>
+            </footer>
+        </form>
     </div>
 </div>
 
+<script type="application/json" id="pdfjs-update-cache"><?=json_encode($pdfjsCheck, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)?></script>
+<script src="pdfjs_update.js?v=<?=filemtime(__DIR__ . '/pdfjs_update.js')?>" defer></script>
 <script>
 var settingsExit = document.getElementById('settings-exit');
 if (settingsExit.textContent === 'Zurück') {

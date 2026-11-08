@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/dokumentvorschau.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'meldungen.php';
@@ -33,6 +34,7 @@ try {
     <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
     <link rel="stylesheet" href="explorer.css?v=<?=filemtime(__DIR__ . '/explorer.css')?>">
     <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_dokumentvorschau_script(); ?>
     <script src="explorer.js?v=<?=filemtime(__DIR__ . '/explorer.js')?>" defer></script>
 </head>
 <body>
@@ -65,23 +67,16 @@ try {
                         <button class="btn btn-default btn-sm" type="button" id="explorer-next">Weiter</button>
                     </div>
                 </div>
-            </section>
-            <section class="panel panel-primary ea-explorer-preview" aria-labelledby="explorer-preview-heading">
-                <div class="panel-heading ea-explorer-preview-heading">
-                    <span id="explorer-preview-heading"><?=eablage_icon('document')?><span class="ea-preview-title-desktop">PDF-Vorschau</span><span class="ea-preview-title-mobile">Dokument</span></span>
-                    <div class="ea-explorer-preview-actions" id="explorer-actions" hidden>
-                        <a class="btn btn-default ea-heading-btn" id="explorer-open" target="_blank" rel="noopener">PDF öffnen</a>
-                        <a class="btn btn-default ea-heading-btn" id="explorer-edit"><?=eablage_icon('edit')?>Metadaten bearbeiten</a>
-                    </div>
-                </div>
-                <div class="panel-body">
-                    <p id="explorer-selection" class="ea-explorer-empty-preview">Bitte ein Dokument auswählen.</p>
-                    <div id="explorer-pdf"></div>
+                <div class="ea-workspace-footer" id="explorer-actions" hidden>
+                    <a class="btn btn-primary" id="explorer-edit"><?=eablage_icon('edit')?>Metadaten bearbeiten</a>
                 </div>
             </section>
+            <?php eablage_dokumentvorschau('', '', ['pdf_id'=>'explorer-pdf', 'open_id'=>'explorer-open', 'empty_id'=>'explorer-selection', 'heading_id'=>'explorer-preview-heading', 'class'=>'ea-explorer-preview']); ?>
         </div>
         <script type="application/json" id="explorer-plan"><?=$planJson?></script>
     <?php endif; ?>
 </main>
 </body>
 </html>
+
+

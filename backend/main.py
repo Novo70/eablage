@@ -11,7 +11,7 @@ from app.services.text_compare import analyze_text_compare
 from app.services.export_service import prepare_single_export, prepare_full_export
 
 APP_NAME = "e_ablage Backend API"
-APP_VERSION = "4.5.0"
+APP_VERSION = "4.6.0"
 
 app = FastAPI(
     title=APP_NAME,

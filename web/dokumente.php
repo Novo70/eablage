@@ -32,13 +32,15 @@ function build_query(array $overrides = []): string
 }
 function highlight_text($text, array $terms): string
 {
-    $escaped = h($text);
-    foreach ($terms as $term) {
-        if (mb_strlen($term, 'UTF-8') < 2) continue;
-        $pattern = preg_quote(h($term), '/');
-        $escaped = preg_replace('/(' . $pattern . ')/iu', '<mark>$1</mark>', $escaped);
+    $parts = array_values(array_filter($terms, fn($term) => mb_strlen($term, 'UTF-8') >= 2));
+    if (!$parts) return h($text);
+    // Match only raw text: generated tags and escaped entities must never be searched.
+    $pattern = '/(' . implode('|', array_map(fn($term) => preg_quote($term, '/'), $parts)) . ')/iu';
+    $out = '';
+    foreach (preg_split($pattern, (string)$text, -1, PREG_SPLIT_DELIM_CAPTURE) as $index => $part) {
+        $out .= $index % 2 ? '<mark>' . h($part) . '</mark>' : h($part);
     }
-    return $escaped;
+    return $out;
 }
 
 
@@ -154,98 +156,89 @@ $returnUrl = 'dokumente.php' . ($returnQuery !== '' ? '?' . $returnQuery : '');
 </head>
 
 <body>
-    <div id="app">
-        <?php include "navbar.php"; ?>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-12">
-                    <details class="panel panel-default ea-filter-panel" open>
-                        <summary class="panel-heading ea-filter-summary"><?=eablage_icon('search')?>Suche verfeinern</summary>
-                        <div class="panel-body ea-filter-body">
-                            <form method="GET" action="dokumente.php" accept-charset="UTF-8"><input type="hidden" name="page" value="1">
-                                <div class="form-group"><label for="Vorgang">Vorgang</label><select class="form-control" name="Vorgang" id="Vorgang"><option value="0">Alle Vorgänge / ohne Zuordnung</option><?php foreach ($vorgaenge as $id=>$name): ?><option value="<?=h($id)?>" <?=selected_value($vorgang,(string)$id)?>><?=h($name)?></option><?php endforeach; ?></select><?php if (isset($vorgaenge[$vorgang])): ?><a href="vorgaenge.php?id=<?=h($vorgang)?>">Vorgang öffnen</a><?php endif; ?></div>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group"><label for="Suchbegriff">Suchbegriff</label><input class="form-control" id="Suchbegriff" name="Suchbegriff" type="text" value="<?= h($suchbegriff) ?>"></div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="form-group"><label for="Datumvon">Datum von</label><input class="form-control" id="Datumvon" name="Datumvon" type="date" value="<?= h($datumvon) ?>"></div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="form-group"><label for="Datumbis">Datum bis</label><input class="form-control" id="Datumbis" name="Datumbis" type="date" value="<?= h($datumbis) ?>"></div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="form-group"><label for="Kategorie">Kategorie</label><select class="form-control" id="Kategorie" name="Kategorie"><?php foreach ($kategorien as $value => $label): ?><option value="<?= h($value) ?>" <?= selected_value($kategorie, $value) ?>><?= h($label) ?></option><?php endforeach; ?></select></div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="form-group"><label for="Dokumententyp">Dokumententyp</label><select class="form-control" id="Dokumententyp" name="Dokumententyp"><?php foreach ($dokumenttypen as $value => $label): ?><option value="<?= h($value) ?>" <?= selected_value($dokumenttyp, $value) ?>><?= h($label) ?></option><?php endforeach; ?></select></div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group ea-form-check"><input id="Volltextsuche" name="Volltextsuche" value="1" type="checkbox" <?= $volltextsuche ? ' checked' : '' ?>><label for="Volltextsuche">Volltextsuche</label></div>
-                                    </div>
-                                    <div class="col-md-8 ea-form-actions"><a class="btn btn-default" href="index.php">Neue Suche</a><button class="btn btn-primary" type="submit">Suche aktualisieren</button></div>
-                                </div>
-                            </form>
-                        </div>
-                    </details>
-                    <div class="panel panel-primary ea-documents-panel">
-                        <div class="panel-heading"><h1 class="ea-panel-title"><?=eablage_icon('search')?>Dokumente</h1></div>
-                        <div class="panel-body">
-                            <div class="search-summary"><strong><?= h($totalRows) ?></strong> Treffer gefunden<?php if ($totalRows > 0): ?> — angezeigt werden <?= h($firstHit) ?> bis <?= h($lastHit) ?> — Seite <?= h($page) ?> von <?= h($totalPages) ?><?php endif; ?> <?php if ($volltextsuche): ?><span class="label label-info">Volltextsuche aktiv</span><?php endif; ?></div>
-                            <?php if ($totalRows === 0): ?><div class="alert alert-warning">Keine Dokumente gefunden. Bitte Suchkriterien ändern.</div><?php else: ?>
-                                <?php if ($totalPages > 1): ?>
-                                <div class="pagination-wrapper">
-                                    <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page - 1])) ?>">&laquo; Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button><?php endif; ?> <?php if ($page < $totalPages): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page + 1])) ?>">Nächste &raquo;</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button><?php endif; ?></div>
-                                    <div class="ea-pagination-info">Seite <?= h($page) ?> von <?= h($totalPages) ?></div>
-                                </div>
-                                <?php endif; ?>
-                                <table class="table table-striped table-hover ea-results-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Datum / Kategorie</th>
-                                            <th>Partner</th>
-                                            <th>Betreff</th>
-                                            <th>Nummer</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($documents as $row):
-                                            $link = 'ansehen.php?dokid=' . rawurlencode((string)$row['DokID']) . '&return=' . rawurlencode($returnUrl); ?>
-                                            <tr>
-                                                <td class="ea-result-datecell">
-                                                    <div class="ea-result-meta-row"><span class="ea-result-date"><?= h($row['Datum'] ?? '') ?></span><span class="ea-result-meta"><span class="ea-badge ea-badge-category"><?= h($row['katBez'] ?? '') ?></span><span class="ea-badge ea-badge-type"><?= h($row['doktypBez'] ?? '') ?></span></span></div>
-                                                </td>
-                                                <td class="ea-partner"><?= highlight_text($row['Partner'] ?? '', $terms) ?></td>
-                                                <td class="ea-subject"><a href="<?= h($link) ?>" class="ea-document-link"><span class="ea-pdf-icon" aria-hidden="true"><?=eablage_icon('document')?></span><span class="ea-subject-text"><?= highlight_text(trim((string)($row['Betreff'] ?? '')) !== '' ? $row['Betreff'] : 'Dokument ' . $row['DokID'], $terms) ?></span></a></td>
-                                                <td class="ea-number"><?= highlight_text($row['Nummer'] ?? '', $terms) ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                                <?php if ($totalPages > 1): ?>
-                                <div class="pagination-wrapper">
-                                    <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page - 1])) ?>">&laquo; Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button><?php endif; ?> <?php if ($page < $totalPages): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page + 1])) ?>">Nächste &raquo;</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button><?php endif; ?></div>
-                                    <div class="ea-pagination-info">Seite <?= h($page) ?> von <?= h($totalPages) ?></div>
-                                </div>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+    <?php include "navbar.php"; ?>
+    <main class="container ea-search-results">
+        <section class="panel panel-primary ea-documents-panel" aria-labelledby="search-results-heading">
+            <div class="panel-heading ea-search-heading">
+                <h1 class="ea-panel-title" id="search-results-heading"><?=eablage_icon('search')?>Suchergebnisse <span class="ea-search-hit-count">(<?=h($totalRows)?> Treffer)</span></h1>
             </div>
-        </div>
-    </div>
-    <script>
-        (function() {
-            var filter = document.querySelector('.ea-filter-panel');
-            if (filter && window.matchMedia && window.matchMedia('(max-width: 899px)').matches) {
-                filter.removeAttribute('open');
-            }
-        }());
-    </script>
+            <details class="ea-filter-panel" id="search-refine">
+                <summary class="ea-filter-summary ea-search-filter-summary"><?=eablage_icon('search')?>Suche verfeinern</summary>
+                <div class="panel-body ea-filter-body">
+                    <form method="GET" action="dokumente.php" accept-charset="UTF-8" id="search-refine-form"><input type="hidden" name="page" value="1">
+                        <div class="form-group"><label for="Vorgang">Vorgang</label><select class="form-control" name="Vorgang" id="Vorgang"><option value="0">Alle Vorgänge / ohne Zuordnung</option><?php foreach ($vorgaenge as $id=>$name): ?><option value="<?=h($id)?>" <?=selected_value($vorgang,(string)$id)?>><?=h($name)?></option><?php endforeach; ?></select><?php if (isset($vorgaenge[$vorgang])): ?><a href="vorgaenge.php?id=<?=h($vorgang)?>">Vorgang öffnen</a><?php endif; ?></div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group"><label for="Suchbegriff">Suchbegriff</label><input class="form-control" id="Suchbegriff" name="Suchbegriff" type="text" value="<?= h($suchbegriff) ?>"></div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group"><label for="Datumvon">Datum von</label><input class="form-control" id="Datumvon" name="Datumvon" type="date" value="<?= h($datumvon) ?>"></div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group"><label for="Datumbis">Datum bis</label><input class="form-control" id="Datumbis" name="Datumbis" type="date" value="<?= h($datumbis) ?>"></div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group"><label for="Kategorie">Kategorie</label><select class="form-control" id="Kategorie" name="Kategorie"><?php foreach ($kategorien as $value => $label): ?><option value="<?= h($value) ?>" <?= selected_value($kategorie, $value) ?>><?= h($label) ?></option><?php endforeach; ?></select></div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group"><label for="Dokumententyp">Dokumententyp</label><select class="form-control" id="Dokumententyp" name="Dokumententyp"><?php foreach ($dokumenttypen as $value => $label): ?><option value="<?= h($value) ?>" <?= selected_value($dokumenttyp, $value) ?>><?= h($label) ?></option><?php endforeach; ?></select></div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group ea-form-check"><input id="Volltextsuche" name="Volltextsuche" value="1" type="checkbox" <?= $volltextsuche ? ' checked' : '' ?>><label for="Volltextsuche">Volltextsuche</label></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </details>
+            <div class="ea-results-scroll" tabindex="0" role="region" aria-labelledby="search-results-heading">
+                <div class="search-summary"><strong><?= h($totalRows) ?></strong> Treffer gefunden<?php if ($totalRows > 0): ?> — angezeigt werden <?= h($firstHit) ?> bis <?= h($lastHit) ?> — Seite <?= h($page) ?> von <?= h($totalPages) ?><?php endif; ?> <?php if ($volltextsuche): ?><span class="label label-info">Volltextsuche aktiv</span><?php endif; ?></div>
+                <?php if ($totalRows === 0): ?>
+                    <div class="alert alert-warning">Keine Dokumente gefunden. Bitte Suchkriterien ändern.</div>
+                <?php else: ?>
+                    <table class="table table-striped table-hover ea-results-table">
+                        <thead>
+                            <tr>
+                                <th>Datum / Kategorie</th>
+                                <th>Partner</th>
+                                <th>Betreff</th>
+                                <th>Nummer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($documents as $row):
+                                $link = 'ansehen.php?dokid=' . rawurlencode((string)$row['DokID']) . '&return=' . rawurlencode($returnUrl); ?>
+                                <tr>
+                                    <td class="ea-result-datecell">
+                                        <div class="ea-result-meta-row"><span class="ea-result-date"><?= h($row['Datum'] ?? '') ?></span><span class="ea-result-meta"><span class="ea-badge ea-badge-category"><?= h($row['katBez'] ?? '') ?></span><span class="ea-badge ea-badge-type"><?= h($row['doktypBez'] ?? '') ?></span></span></div>
+                                    </td>
+                                    <td class="ea-partner"><?= highlight_text($row['Partner'] ?? '', $terms) ?></td>
+                                    <td class="ea-subject"><a href="<?= h($link) ?>" class="ea-document-link"><span class="ea-pdf-icon" aria-hidden="true"><?=eablage_icon('document')?></span><span class="ea-subject-text"><?= highlight_text(trim((string)($row['Betreff'] ?? '')) !== '' ? $row['Betreff'] : 'Dokument ' . $row['DokID'], $terms) ?></span></a></td>
+                                    <td class="ea-number"><?= highlight_text($row['Nummer'] ?? '', $terms) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+            <footer class="ea-search-footer">
+                <?php if ($totalPages > 1): ?>
+                <nav class="pagination-wrapper" aria-label="Ergebnisseiten">
+                    <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page - 1])) ?>">&laquo; Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button><?php endif; ?> <?php if ($page < $totalPages): ?><a class="btn btn-default btn-sm" href="dokumente.php?<?= h(build_query(['page' => $page + 1])) ?>">Nächste &raquo;</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button><?php endif; ?></div>
+                    <div class="ea-pagination-info">Seite <?= h($page) ?> von <?= h($totalPages) ?></div>
+                </nav>
+                <?php endif; ?>
+                <div class="ea-search-actions">
+                    <a class="btn btn-default" href="index.php">Neue Suche</a>
+                    <button class="btn btn-primary" type="submit" form="search-refine-form">Suche aktualisieren</button>
+                </div>
+            </footer>
+        </section>
+    </main>
+    <script src="search_results.js?v=<?=filemtime(__DIR__ . '/search_results.js')?>" defer></script>
 </body>
 
 </html>
+
 

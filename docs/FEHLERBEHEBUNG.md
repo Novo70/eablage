@@ -28,7 +28,7 @@ Zuerst betroffene Instanz, eingesetzten Commit und letzte Änderung bestimmen. F
 | Bearbeitung meldet zwischenzeitliche Änderung | Dokument neu laden und Änderungen mit dem aktuellen Stand vergleichen, statt ein altes Formular erneut zu erzwingen. |
 | JSON passt nach Stammdatenumbenennung nicht | Bezeichnungen in JSON sind Momentaufnahmen; gezielt über Archivprüfung reparieren. |
 | Explorer zeigt alte Zuordnung | Seite neu laden; Bestand wird beim Laden aus dem aktuellen Plan aufgebaut. Physischer Export ist keine Datenquelle. |
-| PDF-Vorschau auf Smartphone fehlt | **PDF öffnen** verwenden; die eingebettete Vorschau ist auf kleinen Displays ausgeblendet. |
+| PDF-Vorschau lädt nicht | Unterhalb der Dokumentliste oder des Formulars nachsehen. Bei einem Ladefehler bietet die Vorschau **PDF öffnen** als direkten Zugriff auf das Original. Bei eigenem Webserver auch die [PDF.js-Dateien und MIME-Typen](PDF_VORSCHAU.md#installation-und-update) prüfen. |
 | Einzel-/Gesamtexport scheitert | Backendplan, Archivdateien und Exportparameter prüfen; Gesamtexportziel muss beschreibbar sein. |
 | Alte Ordner nach neuem Export vorhanden | Export räumt vorherige Strukturen nicht auf; für einen aktuellen Vergleich ein leeres Ziel verwenden. |
 | Datenbanksicherung scheitert | Zielpfad, Rechte, Speicherplatz und InnoDB aller Basistabellen prüfen. |

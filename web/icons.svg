@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg">
 <!-- Local monochrome icons; shared by PHP and browser-rendered components. -->
+  <symbol id="expand-horizontal" viewBox="0 0 24 24"><path d="M9 12H3m4-4-4 4 4 4m8-4h6m-4-4 4 4-4 4"/></symbol>
+  <symbol id="collapse-horizontal" viewBox="0 0 24 24"><path d="M3 12h6m-4-4 4 4-4 4m16-4h-6m4-4-4 4 4 4"/></symbol>
+  <symbol id="pages-single" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1"/></symbol>
+  <symbol id="pages-double" viewBox="0 0 24 24"><rect x="2" y="4" width="9" height="16" rx="1"/><rect x="13" y="4" width="9" height="16" rx="1"/></symbol>
   <symbol id="search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
   <symbol id="folder" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M3 9h18"/></symbol>
   <symbol id="link" viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><path d="M8 10V7a4 4 0 0 1 8 0v3m-8 4v3a4 4 0 0 0 8 0v-3M12 8v8"/></g></symbol>
@@ -25,3 +29,4 @@
   <symbol id="database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></symbol>
   <symbol id="check-document" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5m-11 6 3 3 5-6"/></symbol>
 </svg>
+

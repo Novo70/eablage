@@ -10,13 +10,14 @@ for(const url of ['pdf.php?file='+encodeURIComponent('Sehr langer Originalname '
   const text='Zeile 1\n<script>alert("unsafe")</script> & Dokumenttext';
   const html=execFileSync(process.env.PHP_BIN||'php',['-r','require $argv[1]; eablage_dokumentvorschau($argv[2],$argv[3]);',path.join(root,'dokumentvorschau.php'),url,text],{encoding:'utf8'});
   const dom=new JSDOM(html,{runScripts:'dangerously',url:'http://localhost/'}),w=dom.window,d=w.document;
+  w.eval(fs.readFileSync(path.join(root,'dokumentvorschau.js'),'utf8'));
   const frame=d.querySelector('iframe');
-  assert.equal(d.querySelector('.panel-heading > span').textContent,'PDF-Vorschau');
-  assert.equal(frame.getAttribute('src'),url);
-  assert.equal(d.querySelector('.ea-mobile-pdf-overlay a').getAttribute('href'),url);
+  assert.equal(d.querySelector('.panel-heading > span').textContent,'Dokumentvorschau');
+  assert.equal(frame.getAttribute('src'),require('../web/dokumentvorschau.js').previewUrl(url,d.querySelector('[data-document-preview]').dataset.previewVersion));
+  assert.equal(d.querySelector('.ea-mobile-pdf-overlay'),null);
+  assert.equal(d.querySelector('.panel-heading a').getAttribute('href'),url);
   assert.equal(d.querySelector('pre').textContent,text);
   assert.equal(d.querySelectorAll('script:not([src])').length,0);
-  w.eval(fs.readFileSync(path.join(root,'dokumentvorschau.js'),'utf8'));
   d.getElementById('viewTextButton').click();
   assert.equal(d.getElementById('pdfDocumentView').hidden,true);
   assert.equal(d.getElementById('textDocumentView').hidden,false);

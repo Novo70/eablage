@@ -88,8 +88,7 @@ try {
                 <div class="ea-document-actions">
                     <a href="<?=h($returnUrl)?>" class="btn btn-default">Zurück zur Suche</a>
                     <div>
-                        <a href="<?=h($pdfUrl)?>" class="btn btn-default" target="_blank" rel="noopener">PDF öffnen</a>
-                        <a href="<?=h($editUrl)?>" class="btn btn-primary"><?=eablage_icon('edit')?>Bearbeiten</a>
+                        <a href="<?=h($editUrl)?>" class="btn btn-primary"><?=eablage_icon('edit')?>Metadaten bearbeiten</a>
                     </div>
                 </div>
             </div>

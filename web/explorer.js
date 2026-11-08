@@ -185,12 +185,12 @@
                         if (info[field]) meta.append(element('span', info[field], 'ea-badge ' + badge));
                     }
                     item.append(meta);
-const titleLine = element('span', undefined, 'ea-explorer-document-line');
-if (info.partner) {
-    titleLine.append(element('span', info.partner, 'ea-explorer-document-partner'));
-}
-titleLine.append(element('span', info.subject || 'Ohne Betreff', 'ea-explorer-document-subject'));
-item.append(titleLine);
+                    const titleLine = element('span', undefined, 'ea-explorer-document-line');
+                    if (info.partner) {
+                        titleLine.append(element('span', info.partner, 'ea-explorer-document-partner'));
+                    }
+                    titleLine.append(element('span', info.subject || 'Ohne Betreff', 'ea-explorer-document-subject'));
+                    item.append(titleLine);
                     if (info.number) item.append(element('span', 'Nr. ' + info.number, 'ea-explorer-document-number'));
                     if (query.trim() && doc.node !== current) {
                         item.append(element('span', 'Ordner: ' + doc.node.parts.slice(current.parts.length).join(' / '), 'ea-explorer-document-path'));
@@ -208,23 +208,18 @@ item.append(titleLine);
         }
         function renderSelection() {
             get('actions').hidden = !selected;
+            const panel = get('pdf').closest('[data-document-preview]');
             if (!selected) {
-                get('pdf').replaceChildren();
-                get('selection').hidden = false;
-                get('open').removeAttribute('href');
+                root.eablageSelectDocumentPreview(panel, null);
                 get('edit').removeAttribute('href');
                 return;
             }
             const links = documentLinks(current, selected, query);
-            get('selection').hidden = true;
-            get('open').href = links.pdf;
             get('edit').href = links.edit;
-            if (get('pdf').firstElementChild?.getAttribute('src') === links.pdf) return;
-            get('pdf').replaceChildren();
-            const frame = element('iframe');
-            frame.title = 'Original-PDF für Dokument ' + selected.dok_id;
-            frame.src = links.pdf;
-            get('pdf').append(frame);
+            root.eablageSelectDocumentPreview(panel, {
+                pdfUrl: links.pdf,
+                textUrl: 'dokument_text.php?dokid=' + encodeURIComponent(selected.dok_id),
+            });
         }
         function render(focusId) {
             get('clear').disabled = !query;

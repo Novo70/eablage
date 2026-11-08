@@ -12,6 +12,8 @@ let browser, context, dir;
 before(async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eablage-ui-'));
     for (const name of fs.readdirSync(web)) if (fs.statSync(path.join(web, name)).isFile()) fs.copyFileSync(path.join(web, name), path.join(dir, name));
+    fs.mkdirSync(path.join(dir,'vendor/pdfjs/web'),{recursive:true});
+    fs.copyFileSync(path.join(web,'vendor/pdfjs/web/viewer.html'),path.join(dir,'vendor/pdfjs/web/viewer.html'));
     fs.copyFileSync(path.join(__dirname, 'fixtures/ui_data.php'), path.join(dir, 'konfiguration.php'));
     fs.writeFileSync(path.join(dir, 'funktionen.php'), "<?php require_once 'nummern_funktionen.php';");
     const source = fs.readFileSync(path.join(web, 'verarbeiten.php'), 'utf8');
@@ -67,8 +69,9 @@ async function open(url, width=1440, post=null) {
     await page.setViewportSize({width,height:900});
     await page.route('http://eablage.test/**', async route => {
         const name=path.basename(new URL(route.request().url()).pathname);
+        if (name==='dokument_text.php') return route.fulfill({json:{text:'Gespeicherter Dokumenttext '+new URL(route.request().url()).searchParams.get('dokid')+' <script>literal</script>'}});
         if (name.endsWith('.php') && route.request().frame() === page.mainFrame()) return route.fulfill({contentType:'text/html',body:rendered.stdout});
-        // The embedded PDF viewer is browser-specific; never recursively serve the application in it.
+        // Never recursively serve the application in the embedded PDF viewer.
         if (name.endsWith('.php')) return route.fulfill({contentType:'text/plain',body:'Test-PDF – Vorschau separat mit einem echten Dokument prüfen.'});
         const file=path.join(dir,name);
         if (fs.existsSync(file)) return route.fulfill({path:file});
@@ -274,7 +277,7 @@ test('document details are read-only, retain search context and share the PDF/te
     try {
         assert.equal(await page.locator('main input, main select, main textarea, main form').count(),0);
         assert.equal(await page.getByRole('link',{name:'Zurück zur Suche'}).getAttribute('href'),search);
-        const edit=new URL(await page.getByRole('link',{name:'Bearbeiten',exact:true}).getAttribute('href'),'http://eablage.test/');
+        const edit=new URL(await page.getByRole('link',{name:'Metadaten bearbeiten',exact:true}).getAttribute('href'),'http://eablage.test/');
         const view=new URL(edit.searchParams.get('return'),'http://eablage.test/');
         assert.equal(view.pathname,'/ansehen.php');
         assert.equal(view.searchParams.get('return'),search);
@@ -308,6 +311,7 @@ test('navigation shows the current work area and closes with Escape, focus and o
         await page.keyboard.press('Escape');
         assert.equal(await page.locator('#eaMenuBtn').getAttribute('aria-expanded'),'false');
         assert.equal(await page.locator('#eaMenuBtn').evaluate(el=>el===document.activeElement),true);
+        await page.locator('#search-refine > summary').click();
         await page.locator('#eaMenuBtn').click();
         assert.match(await page.locator('#eaMenuDropdown a[href^="einstellungen.php"]').getAttribute('href'), /return=dokumente.php%3FSuchbegriff%3DHaus/);
         await page.locator('#Suchbegriff').focus();
@@ -369,7 +373,7 @@ test('pagination is hidden for one page, retained with filters for multiple page
     for(const count of [0,2,51]) {
         const page=await open('dokumente.php?fixture_count='+count+'&Suchbegriff=Haus');
         try {
-            assert.equal(await page.locator('.pagination-wrapper').count(),count>50 ? 2 : 0);
+            assert.equal(await page.locator('.pagination-wrapper').count(),count>50 ? 1 : 0);
             if(count>50) {
                 const next=new URL(await page.locator('.pagination-wrapper a').first().getAttribute('href'),page.url());
                 assert.equal(next.searchParams.get('page'),'2');
@@ -379,3 +383,81 @@ test('pagination is hidden for one page, retained with filters for multiple page
         } finally { await page.close(); }
     }
 });
+
+for (const width of [390,800]) for (const url of ['ansehen.php?dokid=1','bearbeiten.php','verarbeiten.php','explorer.php','vorgaenge.php?id=1']) {
+    test(`${width}px ${url}: mobile PDF preview is embedded with usable height`, async () => {
+        const page=await open(url,width);
+        try {
+            if (url==='explorer.php') {
+                await page.locator('#explorer-items button').first().click();
+                await page.locator('[data-dokid="1"]').click();
+            }
+            if (url.startsWith('vorgaenge')) await page.locator('[data-case-preview]').first().click();
+            const frame=page.locator('.ea-pdf-panel iframe, #explorer-pdf iframe, #vorgang-preview-pdf iframe');
+            assert.equal(await frame.count(),1);
+            assert.equal(await frame.isVisible(),true);
+            const box=await frame.boundingBox();
+            assert.ok(box.height>=360 && Math.abs(box.height-630)<2,'preview uses 70% of the 900px viewport');
+            assert.ok(box.width<=width,'PDF preview fits the viewport');
+            assert.equal(await page.getByText('PDF im Vollbild öffnen',{exact:true}).count(),0);
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal page overflow');
+            if (url.startsWith('ansehen') || url==='bearbeiten.php' || url==='verarbeiten.php') {
+                await page.locator('#viewTextButton').click();
+                assert.equal(await frame.isVisible(),false);
+                await page.locator('#viewPdfButton').click();
+                assert.equal(await frame.isVisible(),true);
+                assert.ok((await frame.boundingBox()).height>=360);
+            }
+            const original=await frame.elementHandle();
+            await page.setViewportSize({width:1000,height:900});
+            await page.setViewportSize({width,height:900});
+            assert.equal(await original.evaluate(el=>el.isConnected),true,'resizing keeps the loaded iframe');
+        } finally { await page.close(); }
+    });
+}
+
+for (const [width,desktop] of [[390,false],[1440,false],[1920,true]]) {
+    test(`${width}px: all five screens share preview controls and separate editing actions`, async()=>{
+        const urls=['ansehen.php?dokid=1','bearbeiten.php','verarbeiten.php','explorer.php','vorgaenge.php?id=1'];
+        let expected;
+        for (const base of urls) {
+            const url=base+(desktop?(base.includes('?')?'&':'?')+'layout=desktop':'');
+            const page=await open(url,width);
+            try {
+                if(base==='explorer.php') { await page.locator('#explorer-items button').first().click();await page.locator('[data-dokid="1"]').click(); }
+                if(base.startsWith('vorgaenge')) await page.locator('[data-case-preview]').first().click();
+                const preview=page.locator('[data-document-preview]'), heading=preview.locator('> .panel-heading');
+                assert.equal((await heading.locator('> span').textContent()).trim(),'Dokumentvorschau');
+                const controls=await heading.locator('[data-preview-open], [data-preview-view]').allTextContents();
+                expected??=controls;
+                assert.deepEqual(controls,expected);
+                assert.deepEqual(controls,['PDF öffnen','PDF','Text']);
+                assert.equal(await heading.locator('[data-preview-spread]').count(),0);
+                assert.equal(await page.getByRole('link',{name:'PDF öffnen',exact:true}).count(),1);
+                assert.equal(await heading.getByRole('link',{name:'Metadaten bearbeiten',exact:true}).count(),0);
+                assert.equal(await page.locator('[data-preview-split-toggle]').isVisible(),desktop);
+                if(base.startsWith('ansehen')||base==='explorer.php'||base.startsWith('vorgaenge')) {
+                    const edit=page.getByRole('link',{name:'Metadaten bearbeiten',exact:true});
+                    assert.equal(await edit.evaluate(el=>Boolean(el.closest('.ea-workspace-footer, .ea-document-actions'))),true);
+                }
+                if(base.startsWith('vorgaenge')) assert.equal(await page.locator('#vorgang-detach').evaluate(el=>Boolean(el.closest('.ea-workspace-footer'))),true);
+                const pdf=preview.locator('iframe'), frame=await pdf.elementHandle(), before=await pdf.boundingBox();
+                await page.locator('#viewTextButton').click();
+                if(base==='explorer.php'||base.startsWith('vorgaenge')) {
+                    await page.waitForFunction(()=>document.querySelector('[data-preview-text-content]').textContent.startsWith('Gespeicherter Dokumenttext'));
+                    assert.match(await preview.locator('pre').textContent(),/<script>literal<\/script>/);
+                    assert.equal(await preview.locator('pre script').count(),0);
+                }
+                if(width<900) assert.ok(Math.abs((await page.locator('#textDocumentView').boundingBox()).height-before.height)<1,'mobile mode switch keeps preview height');
+                await page.locator('#viewPdfButton').click();
+                assert.equal(await frame.evaluate(el=>el.isConnected),true);
+                assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+                if(process.env.UNIFIED_SCREENSHOT_DIR && base==='explorer.php') {
+                    fs.mkdirSync(process.env.UNIFIED_SCREENSHOT_DIR,{recursive:true});
+                    await page.screenshot({path:path.join(process.env.UNIFIED_SCREENSHOT_DIR,`preview-${width}.png`),fullPage:true});
+                }
+            } finally { await page.close(); }
+        }
+    });
+}
+

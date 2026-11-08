@@ -4,7 +4,7 @@ eAblage verarbeitet PDF-Dokumente im Browser: vom Eingang über die automatische
 
 Für Installation und Administration führt die [Dokumentationsübersicht](README.md) zu den zuständigen Anleitungen. Dieses Handbuch beschreibt den täglichen Arbeitsablauf.
 
-Am Desktop sind **Suche**, **Ablage**, **Vorgänge** und **Eingang** direkt in der Kopfleiste erreichbar. Unter **Verwaltung** stehen Stammdaten, Regeln, Papierkorb, Export und Einstellungen. Auf kleinen Bildschirmen enthält das Menü oben rechts alle Bereiche. Der aktuelle Bereich ist hervorgehoben.
+In der Standarddarstellung sind **Suche**, **Ablage**, **Vorgänge** und **Eingang** auf großen Bildschirmen direkt in der Kopfleiste erreichbar. Der optionale [Desktop-Modus](DESKTOP_LAYOUT.md) platziert die Navigation in einer Seitenleiste. Unter **Verwaltung** stehen Stammdaten, Regeln, Papierkorb, Export und Einstellungen. Auf kleinen Bildschirmen enthält das Menü oben rechts alle Bereiche. Der aktuelle Bereich ist hervorgehoben.
 
 ## Empfohlener Arbeitsablauf
 
@@ -48,7 +48,7 @@ Eine PDF, die nicht archiviert werden soll, kann im Eingang mit **Verwerfen** en
 
 ### Dokument öffnen
 
-Beim gewünschten Dokument **Klassifizieren** wählen. Die Anwendung öffnet die vorbereiteten Vorschläge oder startet die Texterkennung und Klassifizierung sofort. Die Arbeitsansicht stellt Formular und PDF gegenüber. Die Textansicht hilft, Erkennungsprobleme und Suchanker zu prüfen. Auf kleinen Bildschirmen wird die PDF separat über die angebotene Schaltfläche geöffnet.
+Beim gewünschten Dokument **Klassifizieren** wählen. Die Anwendung öffnet die vorbereiteten Vorschläge oder startet die Texterkennung und Klassifizierung sofort. Die Arbeitsansicht stellt Formular und PDF gegenüber. Die Textansicht hilft, Erkennungsprobleme und Suchanker zu prüfen. Auf kleinen Bildschirmen steht die eingebettete Vorschau unter dem Formular. **PDF öffnen** öffnet die Originaldatei in einem eigenen Tab.
 
 ## Klassifizierung
 
@@ -148,9 +148,19 @@ Ergebnisse sind nach Dokumentdatum absteigend geordnet; eine Seite enthält bis 
 - In der Dokumentansicht **Bearbeiten** wählen, um Metadaten zu ändern, oder **PDF öffnen**, um das PDF in einem neuen Tab zu öffnen. **Zurück zur Suche** erhält Suchbegriff, Filter und Ergebnisseite.
 - Seitensteuerung verwenden: weitere Treffer anzeigen.
 
-Auf kleinen Bildschirmen ist der Suchfilter platzsparend eingeklappt.
+Die Ergebnisliste beginnt mit der blauen Titelleiste **Suchergebnisse** und der
+Trefferzahl. **Suche verfeinern** öffnet die bisherigen Suchkriterien direkt im
+Fenster und ist nach einer Suche eingeklappt. **Suche aktualisieren** in der
+Fußleiste wendet die Kriterien an und beginnt wieder auf Seite 1. Bei ungültigen
+Formulareingaben öffnet sich der Suchbereich automatisch.
 
-Die Dokumentansicht zeigt Partner, Betreff, Dokumentdatum, beide Kategorien, Dokumententyp, sämtliche Nummern mit Nummernart, Stichwörter und verknüpfte Vorgänge als lesbare Werte. Vorgänge sind direkt aufrufbar. **Technische Angaben** enthält Dokument-ID, Originaldateiname, Archivierungs- und Änderungsdatum, Aufbewahrungsdauer, Prüfsumme und Erkennungsinformation. Am Desktop sind beide Fenster gleich hoch; die Metadaten scrollen innerhalb des linken Fensters, während Titel und untere Aktionen sichtbar bleiben. Bei geringer Fensterhöhe und mobil scrollt die gesamte Seite. Mobil steht die Vorschau unter den Metadaten; das PDF kann im Vollbild geöffnet werden. Das Ansehen ändert weder Metadaten noch Dokumenttext oder Änderungsdatum.
+In breiten Fenstern ab 900 Pixeln und mindestens 600 Pixeln Höhe scrollt die
+Ergebnisliste innerhalb des sichtbaren Arbeitsfensters. Titelleiste und Fußleiste
+mit Seitensteuerung und Suchaktionen bleiben sichtbar. Der aufgeklappte
+Suchbereich ist in der Höhe begrenzt und bei Bedarf separat scrollbar. Mobil
+und bei geringer Fensterhöhe scrollt die gesamte Seite.
+
+Die Dokumentansicht zeigt Partner, Betreff, Dokumentdatum, beide Kategorien, Dokumententyp, sämtliche Nummern mit Nummernart, Stichwörter und verknüpfte Vorgänge als lesbare Werte. Vorgänge sind direkt aufrufbar. **Technische Angaben** enthält Dokument-ID, Originaldateiname, Archivierungs- und Änderungsdatum, Aufbewahrungsdauer, Prüfsumme und Erkennungsinformation. Am Desktop sind beide Fenster gleich hoch; die Metadaten scrollen innerhalb des linken Fensters, während Titel und untere Aktionen sichtbar bleiben. Bei geringer Fensterhöhe und mobil scrollt die gesamte Seite. Mobil erscheint die eingebettete Vorschau unter den Metadaten. **PDF öffnen** öffnet das Original separat. Das Ansehen ändert weder Metadaten noch Dokumenttext oder Änderungsdatum.
 
 ## Archivierte Dokumente bearbeiten
 
@@ -213,8 +223,9 @@ Die Verwaltung der Nummernarten und das Verhalten von AutoKat, KI und Suche besc
 
 Zusammengehörige Dokumente lassen sich unabhängig von der Archivierung zu Vorgängen zusammenstellen. Ein Dokument kann mehreren Vorgängen angehören. Verwaltung, Zuordnung und Suche: [Vorgänge und Dokumentenverknüpfungen](VORGAENGE.md).
 
-Die gemeinsame Vorschau beim Ansehen, Klassifizieren und Bearbeiten trägt den Titel **PDF-Vorschau** und bietet den Wechsel zwischen PDF und Dokumenttext. Der Originaldateiname steht beim Klassifizieren vollständig in den aufklappbaren **Erkennungsdetails**, beim Bearbeiten zusammen mit der technischen Dokument-ID unter **Technische Informationen**. Lange Dateinamen werden dort umgebrochen.
+Die **Dokumentvorschau** bietet den Wechsel zwischen PDF und Dokumenttext. Die lokale [PDF.js-Werkzeugleiste](PDF_VORSCHAU.md) enthält Zoom, Seitennavigation, Textsuche und die Ein- oder Doppelseitenansicht. Die Textsuche im PDF benötigt eine Textschicht. Über **Text** lässt sich separat der gespeicherte Dokumenttext anzeigen. Der Originaldateiname steht beim Klassifizieren vollständig in den aufklappbaren **Erkennungsdetails**, beim Bearbeiten zusammen mit der technischen Dokument-ID unter **Technische Informationen**. Lange Dateinamen werden dort umgebrochen.
 
 ### Desktop-Arbeitsfenster
 
 Beim Klassifizieren und Bearbeiten sind Formular und Vorschau ab 900 px Breite und 600 px Fensterhöhe gleich hoch. Meldungen oberhalb und Arbeitsfenster teilen sich den verfügbaren Platz. Meldungsboxen lassen sich rechts über **×** schließen und geben ihren Platz wieder frei. Das Ausblenden gilt nur für die aktuelle Seite und behebt keine zugrunde liegenden Fehler. Nur die Formularfelder scrollen; Titelzeile und untere Aktionen bleiben sichtbar. Sehr lange Meldungen lassen die Seite wachsen, damit die Arbeitsfenster mindestens 360 px hoch bleiben. Die Menüs in der Titelzeile gehören nicht zum Scrollbereich. Erkennungsdetails beziehungsweise technische Informationen stehen eingeklappt am Ende des linken Scrollbereichs vor der festen Aktionsleiste. Bei relevanten Erkennungsfehlern öffnen sich die Erkennungsdetails weiterhin automatisch. Auf kleineren Bildschirmen und bei geringer Fensterhöhe scrollt weiterhin die gesamte Seite.
+

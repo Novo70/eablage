@@ -1,0 +1,42 @@
+/* eAblage skin; upstream viewer.css remains unchanged for easier updates. */
+:root {
+    color-scheme: light;
+    --main-color: #243b53;
+    --body-bg-color: #e9eef4;
+    --toolbar-bg-color: #f4f7fb;
+    --toolbar-border-color: #c1ccd8;
+    --toolbar-icon-bg-color: #284b70;
+    --toolbar-icon-hover-bg-color: #173b60;
+    --button-hover-color: #dce8f5;
+    --button-active-color: #c9dcf0;
+    --field-color: #243b53;
+    --field-bg-color: #fff;
+    --field-border-color: #a8b9cb;
+    --dropdown-btn-bg-color: #f4f7fb;
+    --dropdown-btn-border: 1px solid #a8b9cb;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+/* Archive previews do not provide document editing or local-file replacement. */
+#editorModeButtons, #editorModeSeparator, #secondaryOpenFile,
+#openFile, #fileInput, #editorComment, #commentManagerToggleButton {
+    display: none !important;
+}
+#ea-pdf-error {
+    position: fixed;
+    z-index: 100000;
+    inset: auto 12px 12px;
+    padding: 12px 16px;
+    border: 1px solid #be8424;
+    border-radius: 6px;
+    color: #503800;
+    background: #fff5d8;
+    font: 14px/1.5 system-ui, sans-serif;
+}
+#ea-pdf-error[hidden] { display: none; }
+#ea-pdf-error a { color: #174c83; text-decoration: underline; }
+@media print { #ea-pdf-error { display: none; } }
+
+/* Always reachable in the viewer toolbar, including the compact mobile layout. */
+#eaSpreadToggle { display: inline-flex; align-items: center; justify-content: center; }
+#eaSpreadToggle::before { display: none; }
+#eaSpreadToggle svg { width: 18px; height: 18px; color: var(--toolbar-icon-bg-color); }

@@ -1,112 +1,114 @@
-# Installation mit integrierter Datenbank
+# eAblage mit integrierter Datenbank installieren
 
-Diese Anleitung beschreibt die vereinfachte Neuinstallation von eAblage 4.5.0 mit integrierter MariaDB. Weboberfläche, Backend, Worker und Datenbank werden gemeinsam mit `compose.fresh.yaml` eingerichtet. Die Variante eignet sich sowohl für den Produktivbetrieb als auch für eine Testinstanz. Eine separat betriebene MariaDB ist nicht erforderlich.
+Diese Anleitung richtet eine neue eAblage-4.6.0-Instanz mit Weboberfläche, Backend, Worker und eigener MariaDB ein. Du brauchst Docker mit Compose, Zugriff auf eine Shell (auf dem NAS per SSH) und beim ersten Start Internetzugang für Images und Python-Pakete.
 
-Alternativ kann eAblage eine [separate Datenbank](INSTALL_STANDARD.md) verwenden. Der Einsatzzweck ist unabhängig von dieser Auswahl. Bei mehreren Instanzen müssen Projektname, Port, Datenbank und Datenverzeichnisse getrennt bleiben; siehe [Mehrere Instanzen betreiben](KONFIGURATION.md#mehrere-instanzen-betreiben).
+Für eine bestehende Instanz gilt die [Update-Anleitung](UPDATE.md). Falls du eine vorhandene MariaDB verwenden möchtest, folge der [Anleitung für eine separate Datenbank](INSTALL_STANDARD.md).
 
-Die Dateinamen `compose.fresh.yaml` und `.env.fresh` bezeichnen diese Installationsvariante, keinen Testbetrieb. Für bestehende Installationen gelten die [Update-Schritte](UPDATE.md).
+## 1. Projekt ablegen und konfigurieren
 
-Voraussetzung: Docker mit Compose, SSH-Zugang und ein vollständiger, zusammengehöriger Projektstand einschließlich `compose.fresh.yaml`, `.env.fresh.example`, `sql/init_docker_paths.sql` und `web/konfiguration_docker.php`. Beim ersten Start werden Images und Python-Pakete aus dem Internet geladen.
-
-## 1. Projekt ablegen
-
-Kopiere den Projektstand in ein neues Projektverzeichnis, im Beispiel `/volume1/docker/eablage`. Wird dieses Verzeichnis bereits für eine andere Instanz verwendet, wähle ein anderes und passe die folgenden Pfade einheitlich an. Die Dateien `compose.fresh.yaml`, `web/Dockerfile`, `backend/Dockerfile` und `sql/schema.sql` müssen dort vorhanden sein. Kopiere **keine** `.env`, `web/konfiguration.php`, PDFs oder Datenbankdateien einer evtl. bereits laufenden Installation. Verwende keinen bereits benutzten Datenordner.
-
-## 2. Vier Werte eintragen
-
-Per SSH auf dem NAS:
+Entpacke den vollständigen Quellcode des gewünschten [Releases](https://github.com/Novo70/eablage/releases) in ein neues Projektverzeichnis, zum Beispiel `/volume1/docker/eablage`. Verwende die Compose-, Konfigurations- und SQL-Dateien aus demselben Release. Übernimm keine Konfigurationsdateien, PDFs oder Datenbankdateien einer vorhandenen Instanz.
 
 ```bash
 cd /volume1/docker/eablage
-cp .env.fresh.example .env.fresh
+(umask 077 && cp .env.fresh.example .env.fresh)
+chmod 600 .env.fresh
 ```
 
-Bearbeite `.env.fresh`: `EABLAGE_WEB_PORT` muss frei sein (Beispiel `8084`), `EABLAGE_DATA_PATH` muss auf einen **neuen, leeren** Ordner zeigen (Beispiel `/volume1/eablage-data`). Ersetze die beiden Passwort-Platzhalter durch verschiedene starke Passwörter. Dieser eine Dateieintrag für `EABLAGE_DB_PASSWORD` wird an Web, Backend und MariaDB übergeben; es gibt keine zweite PHP-Konfiguration mit Passwort.
+Öffne `.env.fresh` im Texteditor und prüfe diese vier Werte.
+
+| Einstellung | Wert |
+| --- | --- |
+| `EABLAGE_WEB_PORT` | Freier Webport, zum Beispiel `8084` |
+| `EABLAGE_DATA_PATH` | Absoluter Pfad zu einem neuen, leeren Datenordner, zum Beispiel `/volume1/eablage-data` |
+| `EABLAGE_DB_PASSWORD` | Starkes Passwort für den Datenbankbenutzer von eAblage |
+| `MARIADB_ROOT_PASSWORD` | Anderes starkes Passwort für die MariaDB-Administration |
+
+Verwende bei der Einrichtung keine Dollarzeichen, Rautezeichen, Leerzeichen oder Anführungszeichen in den Passwörtern. Compose übergibt das Anwendungspasswort an Weboberfläche, Backend, Worker und MariaDB.
+
+## 2. Datenordner vorbereiten
+
+Setze `data_dir` auf denselben Pfad wie `EABLAGE_DATA_PATH`. Die Befehle sind für einen neuen, leeren Ordner gedacht.
 
 ```bash
-sudo chmod 600 .env.fresh
+data_dir=/volume1/eablage-data
+sudo mkdir -p -- "$data_dir"
+for subdir in inbox archiv meta export backup; do
+  sudo mkdir -p -- "$data_dir/$subdir"
+  sudo chmod 755 -- "$data_dir/$subdir"
+done
+sudo chown -R 33:33 -- "$data_dir"
+sudo chmod 755 -- "$data_dir"
 ```
 
-Bei UGOS-ACLs muss der Docker-Dienst die Projektdateien lesen können. Lege die Datenordner an (bei einem anderen Datenpfad den Befehl entsprechend anpassen):
+Weboberfläche, Backend und Worker greifen mit UID/GID `33:33` auf die Dateien zu. Bei abweichenden NAS-Rechten müssen die Schreibrechte dazu passen. Prüfe bei Zugriffsfehlern die ACLs und Verzeichnisrechte von Projektordner und `web`. Für die Beispielinstallation kannst du die Verzeichnisrechte im Projektordner bei Bedarf mit `sudo chmod 755 . web` setzen. Vermeide pauschale `777`-Rechte.
+
+## 3. Starten und testen
+
+Führe alle Compose-Befehle im Projektverzeichnis aus. Verwende durchgehend dieselbe Env-Datei, Compose-Datei und denselben Projektnamen. Der Projektname bestimmt unter anderem, welches Datenbank-Volume Compose verwendet. Gib jeder weiteren Instanz einen eigenen Namen, Port, Datenordner und eine eigene Datenbank. Siehe [Mehrere Instanzen betreiben](KONFIGURATION.md#mehrere-instanzen-betreiben).
 
 ```bash
-sudo mkdir -p /volume1/eablage-data/{inbox,archiv,meta,export,backup}
-sudo chown -R 33:33 /volume1/eablage-data
-sudo chmod 755 /volume1/eablage-data /volume1/eablage-data/{inbox,archiv,meta,export,backup}
-sudo chmod 755 /volume1/docker/eablage /volume1/docker/eablage/web
-```
-
-Die UID 33 ist der Webbenutzer und die voreingestellte Backend-Identität. Für einen anderen Datenpfad oder andere NAS-Rechte müssen die Schreibrechte entsprechend eingerichtet werden. Keine pauschalen `777`-Rechte setzen.
-
-## 3. Starten
-
-Alle folgenden Compose-Befehle im Projektverzeichnis ausführen. **Immer** dieselben drei Optionen verwenden; sie bestimmen die Konfiguration und den Projektnamen dieser Instanz. `eablage` ist der Beispiel-Projektname. Bei einer bestehenden Instanz immer ihren bisherigen Namen verwenden (beispielsweise `eablage-fresh`); ein anderer Name würde ein anderes Datenbank-Volume ansprechen:
-
-```bash
-cd /volume1/docker/eablage
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage config --quiet
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage up -d --build
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage config --quiet &&
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage up -d --build &&
 sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage ps
 ```
 
-Beim ersten Start erstellt MariaDB die Datenbank, importiert `schema.sql`, `seed.sql` und anschließend die fünf internen Docker-Pfade. Das Datenbank-Volume gehört nur zum Compose-Projekt `eablage`. Die Weboberfläche sollte unter `http://NAS-IP:8084` erreichbar sein (Port gegebenenfalls an `.env.fresh` anpassen). Bei einer NAS-Firewall den Port für den gewünschten Client freigeben. Die Anwendung nicht ohne zusätzliche Zugangssicherung ins Internet stellen.
+Compose startet erst nach erfolgreicher Konfigurationsprüfung. Beim ersten Start richtet MariaDB das Datenbankschema, die Stammdaten und die fünf internen Pfade ein. Warte, bis MariaDB als `healthy` angezeigt wird und Weboberfläche, Backend und Worker laufen.
 
-## 4. Erstinstallation prüfen
+Öffne `http://NAS-IP:8084` mit der IP-Adresse deines NAS und dem eingestellten Port. Falls die NAS-Firewall den Zugriff blockiert, gib den Port für die vorgesehenen Clients frei. **eAblage hat keine eigene Anmeldung.** Beschränke den Zugriff auf vertrauenswürdige Clients. Für einen Zugriff aus dem Internet ist eine zusätzliche Zugangssicherung erforderlich.
 
-Die Tabellen und Pfade prüfen:
+1. Lade eine unkritische PDF hoch, klassifiziere und archiviere sie. Öffne sie anschließend über die Suche.
+2. Prüfe die PDF in `archiv` und die JSON-Metadatei in `meta`. Bei mehreren Instanzen darf das Dokument nur in der vorgesehenen Instanz auftauchen.
+3. Teste Export und Sicherung.
 
-```bash
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage exec mariadb sh -c 'mariadb -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" "$MARIADB_DATABASE" -e "SHOW TABLES; SELECT param_key, param_value FROM parameter;"'
-```
+## Betrieb und Fehlersuche
 
-Erwartet werden unter anderem `dokumente`, `parameter`, `/data/archiv/`, `/data/meta/` und `/data/export/`. Anschließend im Browser eine unkritische PDF hochladen, klassifizieren, archivieren und über die Suche wieder öffnen. Prüfe die PDF unter `archiv` und die JSON-Metadatei unter `meta`; teste danach Export und Sicherung. Falls weitere Instanzen laufen, zusätzlich kontrollieren, dass die PDF dort nicht erscheint.
+Die SQL-Initialisierung läuft nur bei einem neuen, leeren MariaDB-Volume. Ein Neustart importiert die SQL-Dateien nicht erneut. Eine Änderung der Passwörter in `.env.fresh` allein ändert die bereits in MariaDB eingerichteten Konten nicht.
 
-Bei Problemen die Logs lesen:
-
-```bash
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage logs mariadb --tail 100
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage logs eablage-web eablage-backend eablage-worker --tail 100
-```
-
-**Wichtig:** Die SQL-Initialisierung läuft nur bei einem erstmals angelegten, leeren Datenbank-Volume. Ein erneuter Start importiert nichts erneut. Ändere Passwörter nicht einfach in `.env.fresh`, nachdem MariaDB bereits initialisiert wurde; der angelegte Datenbankbenutzer behält sein bisheriges Passwort.
-
-Zum Anhalten und Entfernen der Container die Konfiguration dieser Instanz verwenden:
+Zum Anhalten und Entfernen der Container dient `down`. Datenbank-Volume und Datenordner bleiben dabei erhalten.
 
 ```bash
 sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage down
 ```
 
-Dieser Befehl behält Datenordner und Datenbank-Volume. `down -v` würde zusätzlich die Datenbank löschen; diese Option gehört nicht zum normalen Anhalten. Regelmäßige Updates und Sicherungen sind unabhängig vom Einsatzzweck erforderlich: [Aktualisierung](UPDATE.md), [Sicherung und Wiederherstellung](SICHERUNG.md).
+Siehe auch [Aktualisierung](UPDATE.md) und [Sicherung und Wiederherstellung](SICHERUNG.md).
 
-## 5. Optional: Installation vollständig entfernen
-
-Die folgenden Schritte sind nur für eine nicht mehr benötigte Instanz vorgesehen. Sie löschen deren Datenbank und Dokumente dauerhaft. Vorher eine zusammengehörige Sicherung erstellen und die Instanz, den Projektnamen sowie die Pfade prüfen. Im Projektverzeichnis zunächst die Konfiguration kontrollieren:
+<details>
+<summary>Logs, Datenbanktabellen und interne Pfade prüfen</summary>
 
 ```bash
-cd /volume1/docker/eablage
-sed -n '/^EABLAGE_DATA_PATH=/p' .env.fresh
-sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage ps
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage logs --tail 100
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage exec mariadb sh -c 'mariadb -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" "$MARIADB_DATABASE" -e "SHOW TABLES; SELECT param_key, param_value FROM parameter;"'
 ```
 
-Wenn der Datenpfad tatsächlich `/volume1/eablage-data` lautet und die
-Container zur zu entfernenden Instanz gehören, das Compose-Projekt einschließlich seines
-MariaDB-Volumes und der eigens gebauten Images entfernen:
+Erwartet werden unter anderem die Tabellen `dokumente` und `parameter` sowie die internen Pfade `/data/inbox/`, `/data/archiv/`, `/data/meta/`, `/data/export/` und `/data/backup/`.
+
+</details>
+
+<details>
+<summary>Installation vollständig entfernen</summary>
+
+**Die folgenden Schritte löschen die Datenbank und die Dateien dieser Instanz dauerhaft.** 
+Erstelle zuvor eine zusammengehörige Sicherung. Prüfe im Projektverzeichnis den tatsächlichen Datenpfad und den Projektnamen der zu entfernenden Instanz.
+
+```bash
+pwd
+sed -n '/^EABLAGE_DATA_PATH=/p' .env.fresh
+sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage ps -a
+```
+
+Wenn Projektname und Pfade zur gewünschten Instanz gehören, entferne das Compose-Projekt, sein Datenbank-Volume (`-v`) und die lokal gebauten Images (`--rmi local`).
 
 ```bash
 sudo docker compose --env-file .env.fresh -f compose.fresh.yaml -p eablage down -v --rmi local
 ```
 
-`-v` entfernt das Datenbank-Volume dieser Instanz. Anschließend die beiden
-**zuvor geprüften** Verzeichnisse entfernen:
+Entferne danach die beiden **zuvor geprüften** Verzeichnisse. Die folgenden Pfade sind Beispiele.
 
 ```bash
 sudo rm -rf -- /volume1/eablage-data
 sudo rm -rf -- /volume1/docker/eablage
 ```
 
-Bei einem anderen Wert von `EABLAGE_DATA_PATH` den ersten Löschpfad nur nach
-erneuter Prüfung anpassen. Das allgemein heruntergeladene Image `mariadb:11.4`
-kann im Docker-Cache bleiben; es enthält keine Daten dieser Installation.
+Das heruntergeladene MariaDB-Image kann im Docker-Cache bleiben. Es enthält keine Daten der Instanz. Für eine erneute Neuinstallation sind ein leerer Datenordner und ein leeres Datenbank-Volume erforderlich.
 
-Für eine erneute Neuinstallation einen neuen, leeren Datenordner und ein leeres Datenbank-Volume verwenden. Eine bestehende Instanz wird stattdessen gemäß [Aktualisierung](UPDATE.md) aktualisiert.
-
+</details>

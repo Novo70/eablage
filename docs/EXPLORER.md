@@ -35,7 +35,7 @@ Ansicht dem Dokument und hebt den Filter auf.
 Ein Dokument auswählen, um rechts das Original-PDF anzuzeigen. Die ausgewählte
 Dokumentkachel bleibt links blau markiert und wird über der Vorschau nicht wiederholt.
 **PDF öffnen**
-und **Metadaten bearbeiten** stehen platzsparend in der Vorschau-Kopfzeile.
+steht in der Kopfzeile der Vorschau. **Metadaten bearbeiten** befindet sich unter der Dokumentliste.
 **PDF öffnen** öffnet es in einem neuen Tab, auch wenn der Browser keine eingebettete Vorschau
 unterstützt. **Metadaten bearbeiten** führt zur bestehenden Bearbeitungsseite.
 Nach dem Speichern dort **Zurück** wählen: Der Explorer lädt den aktuellen
@@ -47,7 +47,7 @@ im Browser übernimmt zwischenzeitliche Änderungen. Der Kopfbereich enthält nu
 den Titel; zusätzliche Erklärzeilen und Aktionsbuttons entfallen.
 Die Browser-Zurück-/Vorwärtsnavigation
 wechselt zwischen zuvor geöffneten Ordnern und Dokumentauswahlen.
-Auf schmalen Bildschirmen entfällt die eingebettete PDF-Vorschau. Die Schaltflächen **PDF öffnen** und **Metadaten bearbeiten** bleiben verfügbar; PDFs werden separat geöffnet.
+Auf schmalen Bildschirmen steht die eingebettete [PDF.js-Vorschau](PDF_VORSCHAU.md) unter der Dokumentliste. Über **PDF öffnen** lässt sich das Original separat anzeigen.
 
 ## Datenquelle und Grenzen
 

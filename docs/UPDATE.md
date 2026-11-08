@@ -2,6 +2,15 @@
 
 Web, Backend und Worker werden zusammen aus einem vollständigen Projektstand aktualisiert. Vorhandene lokale Konfigurationen und Dokumentdaten müssen dabei erhalten bleiben.
 
+## Aktualisierung von 4.5.0 auf 4.6.0
+
+1. Datenbank, PDF-Archiv und JSON-Metadaten sichern. Danach Web, Backend und Worker für den Wechsel stoppen.
+2. Den vollständigen Stand 4.6.0 übernehmen und die drei Dienste [gemeinsam neu bauen und starten](#gemeinsam-bauen-und-starten). Für den Wechsel von 4.5.0 ist keine SQL-Migration nötig. Bei einem älteren Stand zuerst die dafür aufgeführten Migrationen ausführen. Die vorhandene Datenbank und die konfigurierten Datenpfade weiterverwenden.
+3. Unter **Einstellungen → Aktualisierung** die installierte eAblage-Version prüfen. Das Backend meldet über `GET /health` ebenfalls `4.6.0`. Ein archiviertes PDF, einen Scan und ein Dokument aus dem Eingang in der Vorschau öffnen. Die Aktualisierungsprüfung aufrufen, wenn die Instanz Internetzugang hat.
+4. Neue SQL-Sicherungen tragen die Kennung `4.6.0`. Unterstützte Sicherungen bis einschließlich 4.5.0 bleiben importierbar. Der manuelle Parameter `Version` bleibt bei Bestandsupdates erhalten.
+
+Die [PDF-Vorschau](PDF_VORSCHAU.md) wird mit der Anwendung ausgeliefert. Bei einem eigenen Webserver müssen die PDF.js-Dateien vollständig übernommen und `.mjs` sowie `.wasm` mit den dort beschriebenen MIME-Typen ausgeliefert werden.
+
 ## Aktualisierung von 4.4.0 auf 4.5.0
 
 1. Vollständige Sicherung von Datenbank, PDFs, JSON-Metadaten und lokaler Konfiguration erstellen. Offene Dokumentformulare schließen. Web, Backend und Worker stoppen; die Datenbank bleibt für die Migration erreichbar.
@@ -11,7 +20,7 @@ Web, Backend und Worker werden zusammen aus einem vollständigen Projektstand ak
 5. Suche → Dokumentansicht → Bearbeiten → Ansicht → Suche mit Filtern und Ergebnisseite prüfen. Vorgang anlegen, ein Dokument mehreren Vorgängen zuordnen und eine Zuordnung entfernen. Klassifizierung/Bearbeitung am Desktop mit langen Inhalten und Meldungen sowie mobil prüfen. PDF-/Textvorschau und KI-Diagnose mit einem echten Dokument testen.
 6. Neue SQL-Sicherung erstellen und in einer **getrennten leeren Testinstallation** rücksichern. Dokumente, Nummern, Historie, Vorgänge und Zuordnungen vergleichen. Die neue Sicherung trägt Version 4.5.0; unterstützte Sicherungen von 4.1.0 bis 4.4.0 bleiben importierbar. PDFs und JSON-Dateien separat erhalten. [Sicherungsanleitung](SICHERUNG.md).
 
-Für ältere Installationen zunächst die noch fehlenden Migrationen des folgenden Abschnitts ausführen und anschließend `update_document_links.sql`; erst danach alle Dienste aus 4.5.0 starten. Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
+Für ältere Installationen zunächst die noch fehlenden Migrationen der folgenden Abschnitte ausführen und anschließend `update_document_links.sql`. Wer direkt auf 4.6.0 aktualisiert, startet danach die Dienste aus 4.6.0 und prüft die dort beschriebene Version. Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
 
 ## Aktualisierung von 4.3.0 auf 4.4.0
 
@@ -30,9 +39,9 @@ Für ältere Installationen zunächst die noch fehlenden Migrationen des folgend
 
 3. Vorläufige Eingangs-/KI-Ergebnisse des alten Softwarestands leeren: `DELETE FROM ki_vorschlaege;` und `DELETE FROM verarbeitungsauftraege;`. Die archivierten Dokumente und Original-PDFs im Eingang bleiben erhalten; der Worker bereitet die Ergebnisse neu vor. Das gilt auch beim Wechsel von einem zuvor getesteten Entwicklungsstand.
 4. Web, Backend und Worker aus demselben aktuellen Versionsstand gemeinsam **neu bauen und erstellen**, siehe unten. Ein Containerneustart allein übernimmt keine Codeänderungen.
-5. Bei direktem Update auf dieses Release müssen Oberfläche und `/health` 4.5.0 melden. Nummernarten, eine migrierte Nummer, mehrere Nummern im Dokument, AutoKat-Anker einschließlich maximaler Länge und Leerzeichen, Textvergleich, Schreibvariantensuche und Archivprüfung testen. Bestehende Regeldefinitionen verwenden zunächst **Bisherige Erkennung**. Unter Stammdaten können neue Arten und Erläuterungen ergänzt werden.
+5. Nach dem Update müssen Oberfläche und `/health` die Version des installierten Releases melden. Nummernarten, eine migrierte Nummer, mehrere Nummern im Dokument, AutoKat-Anker einschließlich maximaler Länge und Leerzeichen, Textvergleich, Schreibvariantensuche und Archivprüfung testen. Bestehende Regeldefinitionen verwenden zunächst **Bisherige Erkennung**. Unter Stammdaten können neue Arten und Erläuterungen ergänzt werden.
 6. Die lokale KI bleibt ohne bisherige Aktivierung ausgeschaltet. Bei Nutzung Adresse und Modell einrichten, Verbindung testen und manuelle sowie gegebenenfalls Hintergrundvorschläge prüfen. Einrichtung, Zeitgrenzen, Denkmodus und Diagnose: [Ollama](OLLAMA.md).
-7. Eine neue SQL-Sicherung erstellen und in einer getrennten Installation einschließlich Nummern und Historie rücksichern. Eine mit 4.5.0 erstellte Sicherung trägt 4.5.0. Der manuelle Parameter `Version` bleibt bei Bestandsupdates unverändert; bei Bedarf als Instanzkennzeichnung bewusst anpassen.
+7. Eine neue SQL-Sicherung erstellen und in einer getrennten Installation einschließlich Nummern und Historie rücksichern. Die Sicherungskennung entspricht der Version, mit der die Sicherung erstellt wurde. Der manuelle Parameter `Version` bleibt bei Bestandsupdates unverändert; bei Bedarf als Instanzkennzeichnung bewusst anpassen.
 
 Neue Schreibvorgänge verwenden JSON-Schema 4. Bestehende JSON-Dateien werden durch das SQL-Update nicht verändert; die Archivprüfung kann die neue Nummernliste ergänzen. Schema 1 bis 3 bleiben lesbar. Eine Rückkehr zu älterer Software nach dem Schreiben erfordert den zusammengehörigen Sicherungsstand.
 
@@ -156,7 +165,7 @@ Ein bloßer Containerneustart übernimmt geänderten Code nicht. Der Webdienst h
 
 ## Nachkontrolle
 
-Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.5.0`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
+Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.6.0`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
 
 Für Wartung PHP- und Backend-Datenbankidentität, Metadaten-Mount und UID/GID kontrollieren. Ein gemischter Web-/Backend-/Workerstand soll nicht zum Schreiben verwendet werden. JSON-Reparaturen werden ausschließlich ausdrücklich gestartet.
 

@@ -4,7 +4,7 @@ eAblage klassifiziert, archiviert und recherchiert PDF-Dokumente im Browser. Dok
 
 Apache/PHP und FastAPI laufen in getrennten Containern und nutzen dieselbe MariaDB. Datenbank und PDF-Archiv sind der maßgebliche Bestand; JSON-Begleitdateien machen die Metadaten unabhängig lesbar.
 
-Diese Dokumentation beschreibt eAblage in der Version 4.5.0.
+Diese Dokumentation beschreibt eAblage in der Version 4.6.0.
 
 ## Funktionen
 
@@ -15,6 +15,9 @@ Diese Dokumentation beschreibt eAblage in der Version 4.5.0.
 - Archivierung mit JSON Schema 4, Originaldateiname und SHA-256-Referenz; Recherche und Metadatenbearbeitung.
 - Vorgänge mit mehrfachen Dokumentzuordnungen und eigener Suche.
 - Reine Dokumentansicht mit Metadaten links und PDF-/Textvorschau rechts; einheitliche Desktop-Arbeitsfenster.
+- Lokale PDF.js-Vorschau mit Suche, Zoom und Ein- oder Doppelseitenansicht.
+- Optionaler Desktop-Modus mit Seitenleiste und breiterem Arbeitsbereich.
+- Versionsprüfung für eAblage und PDF.js in den Einstellungen.
 - Virtueller Ablage-Explorer mit Metadatenfilter und Original-PDF-Zugriff.
 - Einzel-/Gesamtexport mit generierten oder bekannten Originalnamen und bis zu fünf Verzeichnisebenen.
 - Ereignisprotokoll mit Dokumenthistorie, aufklappbaren Details und nachvollziehbaren Löschungen.
@@ -26,6 +29,7 @@ Diese Dokumentation beschreibt eAblage in der Version 4.5.0.
 
 | Aufgabe | Dokumentation |
 | --- | --- |
+| Einblick in die Anwendung | [Screenshots](docs/SCREENSHOTS.md) |
 | Vollständige Übersicht | [Dokumentation](docs/README.md) |
 | Tägliche Bedienung | [Benutzerhandbuch](docs/BENUTZERHANDBUCH.md) |
 | Lokale Texterkennung und Eingangsverarbeitung | [OCR](docs/OCR.md), [Stapelverarbeitung](docs/STAPELVERARBEITUNG.md) |

@@ -4,7 +4,7 @@ Diese Anleitung beschreibt die einmalige Installation von eAblage auf einem UGRE
 
 Die Variante eignet sich sowohl für den Produktivbetrieb als auch für eine Testinstanz. Alternativ steht die vereinfachte [Installation mit integrierter Datenbank](INSTALL_FRESH.md) zur Verfügung. Bei mehreren Instanzen gelten die Hinweise unter [Mehrere Instanzen betreiben](KONFIGURATION.md#mehrere-instanzen-betreiben).
 
-**Dokumentationsstand:** eAblage 4.5.0. Für die Installation einen vollständigen, zusammengehörigen Projektstand verwenden und dessen Commit dokumentieren. Für den regulären Produktivbetrieb einen freigegebenen Stand wählen; `develop` zunächst getrennt testen. Die Beispiele setzen ein NAS mit Docker und Docker Compose, SSH-Zugang sowie ausreichend Speicherplatz voraus. Alle Befehle werden per SSH **auf dem NAS** ausgeführt. Alle Pfade, Instanznamen und Passwörter sind neutrale Beispiele und müssen bei abweichender Installation einheitlich angepasst werden.
+**Dokumentationsstand:** eAblage 4.6.0. Für die Installation einen vollständigen, zusammengehörigen Projektstand verwenden und dessen Commit dokumentieren. Für den regulären Produktivbetrieb einen freigegebenen Stand wählen; `develop` zunächst getrennt testen. Die Beispiele setzen ein NAS mit Docker und Docker Compose, SSH-Zugang sowie ausreichend Speicherplatz voraus. Alle Befehle werden per SSH **auf dem NAS** ausgeführt. Alle Pfade, Instanznamen und Passwörter sind neutrale Beispiele und müssen bei abweichender Installation einheitlich angepasst werden.
 
 ## Überblick und Beispielpfade
 
@@ -26,7 +26,7 @@ sudo docker version
 sudo docker compose version
 ```
 
-Besorge den vollständigen gewünschten Projektstand aus dem eAblage-Repository. Dafür benötigst du Leserechte oder eine vom Eigentümer bereitgestellte ZIP-Datei. Notiere den verwendeten Commit. Entpacke **den Inhalt** des Projekts nach `/volume1/docker/eablage`. Dort müssen anschließend `compose.yaml`, `.env.example`, `web/`, `backend/` und `sql/` direkt liegen. Kopiere keine Zugangsdaten aus einer anderen Installation mit.
+Besorge den vollständigen gewünschten Projektstand aus dem eAblage-Repository. Entpacke **den Inhalt** des Projekts nach `/volume1/docker/eablage`. Dort müssen anschließend `compose.yaml`, `.env.example`, `web/`, `backend/` und `sql/` direkt liegen. Kopiere keine Zugangsdaten aus einer anderen Installation mit.
 
 ```bash
 cd /volume1/docker/eablage
@@ -110,7 +110,7 @@ sudo chown -R 33:33 /volume1/eablage-data
 sudo chmod 755 /volume1/eablage-data /volume1/eablage-data/{inbox,archiv,meta,export,backup}
 ```
 
-Im Webcontainer läuft Apache als `www-data` (UID 33); das Backend ist ebenfalls auf UID/GID 33 eingestellt. Deshalb muss dieser Benutzer die Ordner betreten und Dateien darin anlegen können. UGOS-ACLs können die Unix-Rechte zusätzlich einschränken. Falls Schreibtests später scheitern, erteile dem entsprechenden Benutzer beziehungsweise der Gruppe gezielt Lese- und Schreibrechte auf diese fünf Ordner; verwende keine pauschalen `777`-Rechte.
+Im Webcontainer läuft Apache als `www-data` (UID 33); das Backend ist ebenfalls auf UID/GID 33 eingestellt. Deshalb muss dieser Benutzer die Ordner betreten und Dateien darin anlegen können. Falls Schreibtests später scheitern, erteile dem entsprechenden Benutzer beziehungsweise der Gruppe gezielt Lese- und Schreibrechte auf diese fünf Ordner; verwende keine pauschalen `777`-Rechte.
 
 ## 5. eAblage konfigurieren
 
@@ -166,8 +166,6 @@ sudo chown 33:33 web/konfiguration.php
 sudo chmod 600 web/konfiguration.php
 sudo chmod 755 /volume1/docker/eablage /volume1/docker/eablage/web
 ```
-
-Falls die Datei im Container dennoch nicht lesbar ist, prüfe Eigentümer und UGOS-ACLs. Bei einer späteren Bearbeitung durch einen NAS-Benutzer gegebenenfalls mit `sudo` arbeiten und anschließend Eigentümer und Modus erneut setzen.
 
 ## 6. Installationspfade in der Datenbank setzen
 

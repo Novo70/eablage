@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require('playwright');
+const {execFileSync} = require('node:child_process');
 const web = path.join(__dirname, '../web');
 let browser;
 before(async () => {
@@ -22,14 +23,17 @@ async function open(items, query = '', viewport = {width: 1440, height: 1000}) {
     page.on('pageerror', e => failures.push(e.message));
     // Use the actual page markup. Only PHP execution and network data are replaced.
     let markup = fs.readFileSync(path.join(web, 'explorer.php'), 'utf8');
+    const component=execFileSync(process.env.PHP_BIN||'php',['-r',`require $argv[1]; eablage_dokumentvorschau('', '', ['pdf_id'=>'explorer-pdf','open_id'=>'explorer-open','empty_id'=>'explorer-selection','heading_id'=>'explorer-preview-heading','class'=>'ea-explorer-preview']);`,path.join(web,'dokumentvorschau.php')],{encoding:'utf8'});
+    markup=markup.replace(/<\?php eablage_dokumentvorschau\('', '', \[.*?\]\); \?>/,component.replace(/<script[\s\S]*?<\/script>/g,''));
     markup = markup.slice(markup.indexOf('<!DOCTYPE html>')).replace(/<\?[\s\S]*?\?>/g, '');
+    markup=markup.replace('<script src="explorer.js','<script src="dokumentvorschau.js" defer></script><script src="explorer.js');
     const plan = {profile: 1, directory_structure: items.some(x => x.directories.length), items};
     markup = markup.replace('<script type="application/json" id="explorer-plan"></script>',
         '<script type="application/json" id="explorer-plan">' + JSON.stringify(plan).replace(/</g, '\\u003c') + '</script>');
     await page.route('http://explorer.test/**', async route => {
         const pathname = new URL(route.request().url()).pathname;
         if (pathname === '/app/explorer.php') return route.fulfill({contentType: 'text/html', body: markup});
-        if (['explorer.js', 'explorer.css', 'app.css', 'icons.svg'].includes(path.basename(pathname))) {
+        if (['dokumentvorschau.js', 'explorer.js', 'explorer.css', 'app.css', 'icons.svg'].includes(path.basename(pathname))) {
             return route.fulfill({contentType: pathname.endsWith('.js') ? 'text/javascript' : pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css',
                 body: fs.readFileSync(path.join(web, path.basename(pathname)), 'utf8')});
         }
@@ -47,7 +51,7 @@ test('drill down, preview original by ID, edit return, browser Back and clearing
         await page.locator('#explorer-items button').filter({hasText: '2026'}).click();
         await page.locator('#explorer-items button').filter({hasText: '09 - September'}).click();
         await page.locator('[data-dokid="1"]').click();
-        assert.equal(await page.locator('#explorer-pdf iframe').getAttribute('src'), 'archiv_pdf.php?dokid=1');
+        assert.equal(await page.locator('#explorer-pdf iframe').getAttribute('src'), require('../web/dokumentvorschau.js').previewUrl('archiv_pdf.php?dokid=1',await page.locator('[data-document-preview]').getAttribute('data-preview-version')));
         if (process.env.EXPLORER_SCREENSHOT_DIR) await page.screenshot({path: path.join(process.env.EXPLORER_SCREENSHOT_DIR, 'explorer-desktop.png'), fullPage: true});
         const link = new URL(await page.locator('#explorer-edit').getAttribute('href'), page.url());
         const back = new URL(link.searchParams.get('return'), page.url());
@@ -172,7 +176,7 @@ test('scoped filter, descendant path, preview, reload, clear and breadcrumb navi
     } finally { await page.close(); }
 });
 
-test('folder count is inline and preview actions are in the heading without duplicate filename', async () => {
+test('preview controls stay on the right while the metadata action uses the left footer', async () => {
     const {page, failures} = await open([
         item(1, ['Arbeit und Beruf'], 'Erstes Dokument.pdf'),
         item(2, ['Arbeit und Beruf'], 'Zweites Dokument.pdf'),
@@ -180,9 +184,9 @@ test('folder count is inline and preview actions are in the heading without dupl
     ]);
     try {
         const work = page.locator('#explorer-items button').filter({hasText: 'Arbeit und Beruf'});
-        const heading = page.locator('.ea-explorer-preview > .panel-heading');
+        const heading = page.locator('.ea-pdf-panel > .panel-heading');
         const initialHeadingHeight = (await heading.boundingBox()).height;
-        assert.ok(initialHeadingHeight < 60, 'preview keeps its compact title bar');
+        assert.equal(initialHeadingHeight,60,'preview shares the common title height');
         assert.match(await work.textContent(), /Arbeit und Beruf \(2 Dokumente\)/);
         assert.equal(await work.locator('small').count(), 0);
         assert.match(await page.locator('#explorer-items button').filter({hasText: 'Einzeln'}).textContent(), /\(1 Dokument\)/);
@@ -193,7 +197,7 @@ test('folder count is inline and preview actions are in the heading without dupl
         assert.equal((await heading.boundingBox()).height, initialHeadingHeight, 'showing preview actions does not enlarge the title bar');
         assert.equal((await heading.locator('#explorer-open').boundingBox()).height, 34);
         assert.equal(await heading.locator('#explorer-open').isVisible(), true);
-        assert.equal(await heading.locator('#explorer-edit').isVisible(), true);
+        assert.equal(await page.locator('.ea-workspace-footer #explorer-edit').isVisible(), true);
         assert.equal(await heading.locator('#explorer-open').getAttribute('href'), 'archiv_pdf.php?dokid=1');
         assert.deepEqual(failures, []);
     } finally { await page.close(); }
@@ -218,4 +222,18 @@ test('document cards show metadata and never the virtual export filename', async
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
         assert.deepEqual(failures, []);
     } finally { await page.close(); }
+});
+
+test('metadata footer stays reachable while the document list scrolls',async()=>{
+    const {page}=await open(Array.from({length:60},(_,i)=>item(i+1,[],`Document ${i+1}.pdf`)),'?dokid=1');
+    try {
+        const footer=page.locator('.ea-workspace-footer'), before=await footer.boundingBox();
+        await page.locator('.ea-explorer-documents > .panel-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});
+        assert.equal((await footer.boundingBox()).y,before.y);
+        assert.equal(await footer.locator('#explorer-edit').isVisible(),true);
+        const frame=await page.locator('#explorer-pdf iframe').elementHandle();
+        await page.setViewportSize({width:390,height:844});
+        assert.equal(await footer.evaluate(el=>getComputedStyle(el).position),'static');
+        assert.equal(await frame.evaluate(el=>el.isConnected),true);
+    } finally {await page.close();}
 });

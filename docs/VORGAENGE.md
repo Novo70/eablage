@@ -16,7 +16,7 @@ Papierkorbs. Über **Neuen Vorgang anlegen** eine Bezeichnung und optional eine
 Beschreibung erfassen. Gleichlautende Bezeichnungen sind erlaubt; für die
 Unterscheidung möglichst aussagekräftige Namen verwenden.
 
-Ein Klick auf die Bezeichnung öffnet die Detailansicht mit der Dokumentliste links und einer PDF-Vorschau rechts. Ein Dokument in der Liste auswählen, um es rechts anzuzeigen. Über **PDF öffnen** lässt es sich separat öffnen; **Metadaten bearbeiten** führt zum Dokumentformular. Auf schmalen Bildschirmen entfällt die eingebettete Vorschau wie im Ablage-Explorer; nach der Auswahl stehen die Dokumentaktionen unterhalb der Liste bereit. Unter **Vorgang bearbeiten**
+Ein Klick auf die Bezeichnung öffnet die Detailansicht mit der Dokumentliste links und einer PDF-Vorschau rechts. Ein Dokument in der Liste auswählen, um es rechts anzuzeigen. Über **PDF öffnen** lässt es sich separat öffnen; **Metadaten bearbeiten** führt zum Dokumentformular. Auf schmalen Bildschirmen steht die eingebettete [PDF.js-Vorschau](PDF_VORSCHAU.md) unter der Dokumentliste. Unter **Vorgang bearbeiten**
 lassen sich Bezeichnung und Beschreibung ändern. Die Dokumente bleiben dabei
 zugeordnet. **Vorgang löschen** entfernt nach Bestätigung den Vorgang und dessen
 Zuordnungen. Es löscht keine Dokumente, auch keine Dokumente im Papierkorb.

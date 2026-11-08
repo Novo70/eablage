@@ -1,0 +1,265 @@
+/* Optionaler Desktop-Entwurf. app.css und explorer.css bleiben die Basis.
+   Alle Regeln benötigen die bewusste Auswahl UND einen großen Mausarbeitsplatz.
+   Unterhalb der Grenze und bei primärer Touch-Bedienung gilt das bisherige Layout. */
+@media screen and (min-width: 1100px) and (hover: hover) and (pointer: fine) {
+    html[data-ea-layout="desktop"] {
+        --ea-radius: 6px;
+        --ea-shadow: 0 1px 3px rgba(23, 55, 94, .06);
+        --ea-shadow-soft: none;
+        --ea-content-width: 100%;
+        --ea-page-inset: 14px;
+        --ea-sidebar-width: 250px;
+        --ea-nav-height: 0px;
+        --ea-page-top: 10px;
+        --ea-page-bottom: var(--ea-page-top);
+        --ea-workspace-gap: 12px;
+        --ea-gray-300: #b6c3d2;
+        --ea-gray-700: #425466;
+        --ea-desktop-hover: #dbe8f5;
+        --ea-desktop-heading: #0b60af;
+        --ea-desktop-active: #c8ddf1;
+    }
+
+    html[data-ea-layout="desktop"] body {
+        padding-left: var(--ea-sidebar-width);
+        background:
+            radial-gradient(circle at top left, rgba(37, 106, 167, 0.12), transparent 34rem),
+            linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%);
+        font-size: .9rem;
+    }
+
+    html[data-ea-layout="desktop"] .ea-navbar {
+        right: auto;
+        bottom: 0;
+        width: var(--ea-sidebar-width);
+        background: #ffffff;
+        border-right: 1px solid var(--ea-gray-300);
+        border-bottom: 0;
+        backdrop-filter: none;
+        box-shadow: none;
+    }
+
+    html[data-ea-layout="desktop"] .ea-navbar__inner {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        margin: 0;
+        padding: 16px 10px;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 12px;
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+    }
+
+    html[data-ea-layout="desktop"] .ea-navbar__inner > * { flex-shrink: 0; }
+    html[data-ea-layout="desktop"] .ea-brand { padding: 2px 8px 12px; }
+    html[data-ea-layout="desktop"] .ea-brand__logo { height: 28px; border-radius: 4px; }
+    html[data-ea-layout="desktop"] .ea-navbar__links { gap: 4px; margin: 0; flex-direction: column; align-items: stretch; }
+    html[data-ea-layout="desktop"] .ea-navbar__inner > .ea-dropdown { margin: 0; display: block; }
+
+    html[data-ea-layout="desktop"] .ea-navbar__link {
+        min-height: 34px;
+        padding: 6px 12px;
+        justify-content: flex-start;
+        white-space: normal;
+        border-radius: 5px;
+        font-size: .9rem;
+    }
+
+    html[data-ea-layout="desktop"] .ea-dropdown__toggle {
+        display: none;
+    }
+
+    html[data-ea-layout="desktop"] .ea-sidebar-admin-title {
+        display: block;
+        padding: 10px 12px 6px;
+        margin: 0 0 4px;
+        border-top: 1px solid var(--ea-gray-300);
+        font-size: .8rem;
+        color: var(--ea-gray-700);
+        font-weight: 600;
+    }
+    html[data-ea-layout="desktop"] .ea-dropdown__menu {
+        display: block;
+        position: static;
+        width: auto;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        animation: none;
+    }
+    html[data-ea-layout="desktop"] .ea-dropdown__item {
+        min-height: 34px;
+        padding: 8px 12px;
+        border-radius: 5px;
+        font-size: .9rem;
+        overflow-wrap: anywhere;
+    }
+    html[data-ea-layout="desktop"] .ea-dropdown__item.ea-menu-primary { display: none; }
+    html[data-ea-layout="desktop"] .ea-dropdown__item[aria-current="page"],
+    html[data-ea-layout="desktop"] .ea-navbar__link[aria-current="page"] {
+        color: var(--ea-blue-900);
+        background: var(--ea-desktop-active);
+        box-shadow: inset 4px 0 var(--ea-blue-700);
+    }
+
+    html[data-ea-layout="desktop"] .panel { margin-bottom: 16px; border-color: var(--ea-gray-300); box-shadow: none; }
+    html[data-ea-layout="desktop"] .panel-heading {
+        padding: 10px 14px;
+        font-size: .93rem;
+        color: var(--ea-gray-950);
+        background: var(--ea-gray-100);
+    }
+
+    html[data-ea-layout="desktop"] .panel-primary > .panel-heading {
+        color: #ffffff;
+        background: var(--ea-desktop-heading);
+        border-bottom: 1px solid var(--ea-gray-300);
+    }
+
+    html[data-ea-layout="desktop"] .panel-body { padding: 14px; }
+
+    /* Dieselbe Höhe für Titel mit und ohne Vorschauaktionen. */
+    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading,
+    html[data-ea-layout="desktop"] .ea-classification-panel > .panel-heading,
+    html[data-ea-layout="desktop"] .ea-document-layout > .panel > .panel-heading {
+        min-height: 46px;
+        padding: 6px 14px;
+    }
+
+    html[data-ea-layout="desktop"] .form-group { margin-bottom: 12px; }
+    html[data-ea-layout="desktop"] label { margin-bottom: 4px; font-size: .85rem; }
+    html[data-ea-layout="desktop"] .form-control {
+        min-height: 34px;
+        padding: 6px 10px;
+        border-radius: 5px;
+        font-size: .9rem;
+        border-color: #83909e;
+        box-shadow: none;
+    }
+
+    html[data-ea-layout="desktop"] .form-control:focus {
+        box-shadow: 0 0 0 2px rgba(37, 106, 167, .16);
+    }
+
+    html[data-ea-layout="desktop"] .btn {
+        min-height: 34px;
+        padding: 6px 12px;
+        border-radius: 5px;
+        font-size: .85rem;
+        font-weight: 600;
+        box-shadow: none;
+    }
+
+    html[data-ea-layout="desktop"] .btn-primary { background: var(--ea-blue-700); }
+    html[data-ea-layout="desktop"] .btn-primary:hover,
+    html[data-ea-layout="desktop"] .btn-primary:focus { background: var(--ea-blue-900); }
+    html[data-ea-layout="desktop"] .btn-sm { min-height: 30px; padding: 4px 10px; }
+    html[data-ea-layout="desktop"] .ea-heading-btn,
+    html[data-ea-layout="desktop"] .panel-heading .btn-group-xs .btn {
+        min-height: 30px;
+        padding: 4px 9px;
+        font-size: .78rem;
+    }
+
+    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading .btn {
+        height: 30px;
+        min-height: 30px;
+        color: var(--ea-blue-900);
+        border-color: #8193a6;
+        background: var(--ea-white);
+    }
+    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading .btn:hover,
+    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading .btn:focus-visible,
+    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading .btn.active,
+    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading .btn[aria-pressed="true"] { background: var(--ea-desktop-hover); }
+    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading .btn:focus-visible { outline-color: var(--ea-blue-700); }
+    html[data-ea-layout="desktop"] .ea-more-actions summary {
+        width: 30px;
+        height: 30px;
+        color: var(--ea-blue-900);
+        background: var(--ea-white);
+        border-color: #8193a6;
+        border-radius: 5px;
+    }
+    html[data-ea-layout="desktop"] .ea-more-actions summary:hover,
+    html[data-ea-layout="desktop"] .ea-more-actions summary:focus-visible { background: var(--ea-desktop-hover); }
+    html[data-ea-layout="desktop"] .ea-more-actions summary:focus-visible { outline-color: var(--ea-blue-700); }
+
+    /* Weiße Fokusrahmen auf den blauen Haupttitelleisten. */
+    html[data-ea-layout="desktop"] .panel-primary > .panel-heading .btn:focus-visible,
+    html[data-ea-layout="desktop"] .panel-primary > .panel-heading .ea-more-actions summary:focus-visible {
+        outline-color: var(--ea-white);
+    }
+
+    html[data-ea-layout="desktop"] .table th,
+    html[data-ea-layout="desktop"] .table td { padding: 9px 10px; }
+    html[data-ea-layout="desktop"] .table th { text-transform: none; letter-spacing: normal; background: #e4ecf4; }
+    html[data-ea-layout="desktop"] .ea-detail-panel { border-radius: 5px; }
+    html[data-ea-layout="desktop"] .ea-tabs a { padding: 7px 12px; }
+
+    html[data-ea-layout="desktop"] .ea-explorer-item { padding: 8px 10px; }
+    html[data-ea-layout="desktop"] .ea-explorer-document {
+        margin: 3px 0;
+        border-radius: 5px;
+        box-shadow: none;
+    }
+
+    html[data-ea-layout="desktop"] .ea-explorer-document[aria-current] {
+        background: var(--ea-desktop-active);
+        border-color: #8193a6;
+        box-shadow: inset 3px 0 var(--ea-blue-700);
+    }
+
+    html[data-ea-layout="desktop"] .ea-explorer-layout > .panel,
+    html[data-ea-layout="desktop"] .ea-document-layout > .panel,
+    html[data-ea-layout="desktop"] .ea-classification-column > .panel,
+    html[data-ea-layout="desktop"] .ea-document-preview > .panel { margin-bottom: 0; }
+
+    /* Die bestehenden Scrollbereiche und die randlose PDF-Fläche erhalten. */
+    html[data-ea-layout="desktop"] .ea-pdf-panel .ea-pdf-body { padding: 0; }
+
+    @media (min-height: 600px) {
+        html[data-ea-layout="desktop"] .ea-classification-panel > .panel-body,
+        html[data-ea-layout="desktop"] .ea-document-layout > .panel > .panel-body { padding: 0; }
+        html[data-ea-layout="desktop"] .ea-form-scroll { padding: 16px; }
+    }
+
+    html[data-ea-layout="desktop"] .ea-document-scroll { padding: 16px; }
+    html[data-ea-layout="desktop"] .ea-results-scroll { --ea-search-result-inset: 14px; }
+    html[data-ea-layout="desktop"] .ea-document-metadata { gap: 8px 14px; }
+    html[data-ea-layout="desktop"] .ea-document-summary h2 { font-size: 1.15rem; }
+    html[data-ea-layout="desktop"] .ea-document-view .ea-document-actions,
+    html[data-ea-layout="desktop"] .ea-classification-panel .ea-form-footer,
+    html[data-ea-layout="desktop"] .ea-search-footer,
+    html[data-ea-layout="desktop"] .ea-workspace-footer {
+        padding: 10px 14px;
+        background: var(--ea-gray-100);
+    }
+
+    /* Mindestens etwa 440 Pixel für den linken Arbeitsbereich erhalten.
+       In schmaleren Fenstern gelten weiterhin die bestehenden 50/50-Regeln. */
+    @media (min-width: 1600px) {
+        html[data-ea-layout="desktop"][data-ea-preview-split="wide"] .ea-explorer-layout,
+        html[data-ea-layout="desktop"][data-ea-preview-split="wide"] .ea-document-layout {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        }
+        html[data-ea-layout="desktop"][data-ea-preview-split="wide"] .ea-classification-row > .ea-classification-column:first-child {
+            width: 33.3333%;
+        }
+        html[data-ea-layout="desktop"][data-ea-preview-split="wide"] .ea-classification-row > .ea-classification-column:last-child {
+            width: 66.6667%;
+        }
+    }
+}
+
+
+
+

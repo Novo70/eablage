@@ -44,6 +44,7 @@ try {
     copy(__DIR__ . '/../web/vorgaenge_funktionen.php', "$directory/vorgaenge_funktionen.php");
     copy(__DIR__ . '/../web/protokoll_funktionen.php', "$directory/protokoll_funktionen.php");
     file_put_contents("$directory/app.css", '');
+    file_put_contents("$directory/search_results.js", '');
     file_put_contents("$directory/navbar.php", '');
     file_put_contents("$directory/funktionen.php", '<?php
         function eablage_lade_kategorien($db) { return []; }
@@ -55,6 +56,33 @@ try {
         parse_str($argv[1], $_GET); $_REQUEST = $_GET; $_POST = [];
         $_SERVER["QUERY_STRING"] = $argv[1];
         chdir(__DIR__); require "dokumente.php";');
+
+    // Exercise the actual page helpers without duplicating their implementation.
+    file_put_contents("$directory/highlight.php", '<?php
+        $_GET = $_REQUEST = $_POST = [];
+        chdir(__DIR__); ob_start(); require "dokumente.php"; ob_end_clean();
+        echo highlight_text($argv[1], json_decode($argv[2], true, 512, JSON_THROW_ON_ERROR));');
+    $highlightCases = [
+        ['Müller & Söhne GmbH', ['Müller', 'ma'], '<mark>Müller</mark> &amp; Söhne GmbH'],
+        ['Rechnung Mai 2026', ['Rechnung', 'ar'], '<mark>Rechnung</mark> Mai 2026'],
+        ['Müller & Söhne', ['am'], 'Müller &amp; Söhne'],
+        ["O'Brien", ['03'], 'O&#039;Brien'],
+        ['<script>alert(1)</script>', ['script', 'alert'], '&lt;<mark>script</mark>&gt;<mark>alert</mark>(1)&lt;/<mark>script</mark>&gt;'],
+        ['MÜLLER & Müller', ['müller'], '<mark>MÜLLER</mark> &amp; <mark>Müller</mark>'],
+        ['A & B', ['', 'A'], 'A &amp; B'],
+        ['AB-123/45 (Test)', ['123/45', '(Test)'], 'AB-<mark>123/45</mark> <mark>(Test)</mark>'],
+    ];
+    foreach ($highlightCases as [$text, $terms, $expected]) {
+        $process = proc_open([PHP_BINARY, "$directory/highlight.php", $text, json_encode($terms)],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $actual = stream_get_contents($pipes[1]);
+        $errors = stream_get_contents($pipes[2]);
+        fclose($pipes[1]); fclose($pipes[2]);
+        if (proc_close($process) !== 0 || $errors !== '') throw new RuntimeException($errors);
+        if ($actual !== $expected) {
+            throw new RuntimeException('Highlight mismatch: ' . json_encode([$text, $terms, $actual], JSON_UNESCAPED_UNICODE));
+        }
+    }
 
     $search = function (string $term, array $expected, array $filters = [], ?int $total = null) use ($directory): void {
         $query = http_build_query(['Suchbegriff' => $term] + $filters);
@@ -107,4 +135,5 @@ try {
     foreach (glob("$directory/*") as $file) unlink($file);
     rmdir($directory);
 }
+
 

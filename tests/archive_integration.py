@@ -298,7 +298,7 @@ try:
             cursor.execute(f'SELECT COUNT(*) FROM `{table}`')
             auxiliary_count += cursor.fetchone()[0]
         assert backup['tables']==11 and backup['rows']==2+event_count+auxiliary_count,backup
-        assert Path(backup['path']).read_text().startswith('-- e_ablage MariaDB-Datensicherung; Version: 4.5.0\n')
+        assert Path(backup['path']).read_text().startswith('-- e_ablage MariaDB-Datensicherung; Version: 4.6.0\n')
         # Let PDO execute the generated SQL, preserving quoted strings/semicolons.
         restore_runner=base/'restore.php'
         restore_runner.write_text("<?php require 'konfiguration.php'; $db_config->exec('USE " + restore + "'); $db_config->exec(file_get_contents(" + json.dumps(backup['path']) + '));')

@@ -17,7 +17,7 @@ class OllamaSettingsTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for name in ['einstellungen.php', 'icons.php', 'csrf.php', 'meldungen.php', 'app.css', 'ollama.js']:
+        for name in ['einstellungen.php', 'icons.php', 'csrf.php', 'meldungen.php', 'app.css', 'ollama.js', 'pdfjs_update.php', 'pdfjs_update.js']:
             shutil.copy(ROOT / 'web' / name, self.root / name)
         (self.root / 'navbar.php').write_text('')
         (self.root / 'konfiguration.php').write_text('''<?php

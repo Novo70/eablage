@@ -4,9 +4,9 @@ Diese Seite beschreibt aktuelle Prüfverfahren, keine früheren Freigabeprotokol
 
 ## Arbeitsmodell
 
-Dieses Repository enthält die veröffentlichten eAblage-Versionen. Änderungen in einem eigenen Feature-Branch auf Basis von `main` vorbereiten und Pull Requests gegen `main` richten.
+Feature-Branches im Entwicklungsrepository `Novo70/eablage-private` von `develop` abzweigen und Pull Requests wieder gegen `develop` richten. Das öffentliche Repository `Novo70/eablage` nur für ausdrücklich beauftragte Veröffentlichungen verwenden.
 
-`main` enthält den freigegebenen Stand. Web, Backend und Worker gemeinsam ändern, versionieren und prüfen. Für schreibende Vorgänge die eindeutige fachliche Verantwortung gemäß [Architektur](ARCHITEKTUR.md) erhalten. Zugangsdaten und Dokumentdaten nicht ins Repository aufnehmen.
+`develop` enthält die Weiterentwicklung, `main` den freigegebenen Stand. Web, Backend und Worker gemeinsam ändern, versionieren und prüfen. Für schreibende Vorgänge die eindeutige fachliche Verantwortung gemäß [Architektur](ARCHITEKTUR.md) erhalten. Zugangsdaten und Dokumentdaten nicht ins Repository aufnehmen.
 
 Markdown ist die maßgebliche Dokumentation. Verhalten in der zuständigen Fachseite ändern und den Einstieg unter [docs/README.md](README.md) aktuell halten. Andere Seiten sollen auf die ausführliche Erklärung verweisen. Historische Ergebnisse gehören nicht als vermeintlich aktuelle Freigabe in die Anleitungen.
 
@@ -39,6 +39,7 @@ Für CSS, Navigationskomponenten und visuelle Vergleiche gelten ergänzend die [
 | Status und Rücksprung aus Klassifizierung/Bearbeitung | `node --test tests/status_toggle.test.cjs tests/classification_draft.test.cjs` | Node |
 | Sammelauswahl und Batchsteuerung | `node --test tests/archive_maintenance_dom.test.cjs` | Node und `linkedom` |
 | Explorer im Browser | `node --test tests/explorer_browser.test.cjs` | Playwright und Chromium |
+| Suchergebnisfenster, Filter, Fußleiste und Pagination | `node --test tests/search_results_browser.test.cjs` | PHP CLI mit PDO/mbstring, Playwright und Chromium |
 | Nummern- und Regel-Editor | `node --test tests/document_numbers.test.cjs tests/number_rules.test.cjs` | Node und `jsdom` |
 | Nummern-/Stammdaten-/KI-Oberfläche | `node --test tests/document_numbers_browser.test.cjs tests/master_data_browser.test.cjs tests/ollama_browser.test.cjs` | PHP CLI, Playwright und Chromium |
 | Gemeinsame PDF-/Textvorschau | `node --test tests/document_preview.test.cjs` | PHP CLI, Node und `jsdom` |
@@ -94,7 +95,7 @@ Mit gesicherten, entbehrlichen Testdaten prüfen:
 15. **Inbox:** Worker-Vorbereitung und sofortige manuelle Klassifizierung prüfen. Unveränderte fertige PDFs werden im laufenden Worker nicht neu gelesen; eine geleerte Auftragstabelle und geänderte PDFs werden erkannt. Lesefehler, Wiederholung und inzwischen deaktivierte Vorschlagswerte prüfen.
 16. **Formularkonflikte:** Dokument in zwei Fenstern öffnen. Nach Speicherung im ersten darf das zweite dessen Änderungen weder beim Speichern noch über Hilfsaktionen überschreiben.
 17. **Regelvorbereitung:** Ohne Regeltreffer und bei reinen E-Regeln „Speichern und Regel vorbereiten“ im Drei-Punkte-Menü prüfen; manuell vervollständigte Werte müssen im inaktiven K-Regelentwurf stehen. Bei einer erkannten K-Regel bleibt die Aktion ausgeblendet.
-18. **Versionsstand und Rücksicherung:** Oberfläche und `/health` melden 4.5.0. Neue SQL-Sicherungen tragen 4.5.0 und enthalten auch Vorgänge/Zuordnungen; gültige 4.1.0-, 4.2.0-, 4.3.0-, 4.4.0- und 4.5.0-Dumps sind importierbar, ungültige Schemata und nicht unterstützte Kennungen werden vor Änderungen abgewiesen.
+18. **Versionsstand und Rücksicherung:** Oberfläche und `/health` melden 4.6.0. Neue SQL-Sicherungen tragen 4.6.0 und enthalten auch Vorgänge/Zuordnungen; gültige 4.1.0-, 4.2.0-, 4.3.0-, 4.4.0-, 4.5.0- und 4.6.0-Dumps sind importierbar, ungültige Schemata und nicht unterstützte Kennungen werden vor Änderungen abgewiesen.
 19. **Dokumenthistorie:** [Funktionsprüfung](DOKUMENTHISTORIE.md#funktionsprüfung) einschließlich Ereignis-Rollback und neuer/alter Rücksicherungen durchführen. PHP-Prüfungen: `php tests/document_history.php` und `php tests/restore_preflight.php`; MariaDB-Ende-zu-Ende-Prüfung mit dem vorhandenen `tests/archive_integration.py` in einer Wegwerfinstanz.
 20. **Historienrücksprung:** Aus der Bearbeitung die Historie öffnen, filtern und blättern; **Zurück** erhält ungespeicherte Metadaten, neu eingelesenen Text und das ursprüngliche Rücksprungziel. Der Ausgangsstand wird nicht stillschweigend gespeichert.
 21. **Ausdrückliche OCR:** In Klassifizierung und Bearbeitung eine PDF mit fehlerhafter vorhandener Textschicht vollständig neu erkennen. In der Klassifizierung Bestätigung, Ersetzung ungespeicherter Eingaben, neue Vorschläge und erneuerten Inbox-Cache prüfen; ein normaler Folgeaufruf muss das neue Ergebnis verwenden. Bei belegter Dateisperre nach Abschluss ausdrücklich erneut starten. In der Bearbeitung bleiben andere Formularwerte erhalten und neuer Text wird erst beim Speichern übernommen. Originalbytes und Prüfsumme bleiben unverändert.
@@ -164,3 +165,4 @@ Browsertests prüfen, dass Eingangseinträge nur kurze KI-Statuslabels anzeigen 
 ## Dokumentansicht
 
 `ansehen.php` lädt archivierte, nicht gelöschte Dokumente ausschließlich lesend und verwendet `dokumentvorschau.php` für die PDF-/Textvorschau. `dokument_navigation.php` enthält die gemeinsame Rücksprungprüfung von Ansicht und Bearbeitung. Die Suche übergibt ihren vollständigen Kontext als Rücksprungziel; die Bearbeitung kehrt zur Ansicht zurück. `php tests/document_view.php` prüft mit synthetischen PDO-Daten die tatsächliche Seite, Statuscodes, Escaping, Nummern, Vorgangslinks und Rücksprünge; schreibende SQL-Anweisungen sind im Test untersagt. `tests/ui_layout_browser.test.cjs` prüft die Darstellung in drei Breiten und die Bedienung der Vorschau. Der Suchintegrationstest erwartet jetzt Links auf die Dokumentansicht.
+

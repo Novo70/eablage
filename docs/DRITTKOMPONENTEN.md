@@ -1,6 +1,6 @@
 # Drittkomponenten und Lizenzen
 
-Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellprojekts 4.5.0. Die dokumentierte Paketinventur stammt aus dem Stand 4.2.0; die Erweiterungen bis 4.5.0 führen keine neuen Laufzeitabhängigkeiten ein. Ollama ist ein optionaler externer Dienst; Modell und Modelllizenz werden getrennt gewählt. Neu gebaute Images müssen weiterhin anhand ihrer tatsächlichen Pakete geprüft werden. Sie ersetzt **keine** vollständige Software Bill of Materials (SBOM) oder die Lizenzinventur eines gebauten Containerimages. Maßgeblich sind die jeweils tatsächlich installierten Versionen und die mitgelieferten Lizenztexte.
+Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellprojekts 4.6.0. Die dokumentierte Paketinventur stammt aus dem Stand 4.2.0; die Erweiterungen bis 4.5.0 führen keine neuen Laufzeitabhängigkeiten ein. Seit 4.6.0 gehört PDF.js als lokale JavaScript-Abhängigkeit zur PDF-Vorschau. Ollama ist ein optionaler externer Dienst; Modell und Modelllizenz werden getrennt gewählt. Neu gebaute Images müssen weiterhin anhand ihrer tatsächlichen Pakete geprüft werden. Sie ersetzt **keine** vollständige Software Bill of Materials (SBOM) oder die Lizenzinventur eines gebauten Containerimages. Maßgeblich sind die jeweils tatsächlich installierten Versionen und die mitgelieferten Lizenztexte.
 
 | Komponente | Verwendung | Lizenz / Hinweis |
 | --- | --- | --- |
@@ -8,6 +8,7 @@ Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellpr
 | Uvicorn | ASGI-Server | BSD-3-Clause |
 | python-dotenv | Konfiguration | BSD-3-Clause |
 | MySQL Connector/Python 26.7.0 | Datenbankzugriff im Backend | GPL-2.0 mit Oracle Universal FOSS Exception 1.0; siehe unten |
+| PDF.js 6.5.438 | Lokaler PDF-Viewer im Browser | Apache License 2.0; zusätzliche Lizenztexte der mitgelieferten Ressourcen in `web/vendor/pdfjs/`; siehe [PDF-Vorschau](PDF_VORSCHAU.md) |
 | PHP 8.3 | Weboberfläche | PHP License 3.01 |
 | Apache HTTP Server | Webserver | Apache License 2.0 |
 | Python 3.11 | Backend-Laufzeit | Python Software Foundation License |
@@ -35,7 +36,7 @@ Die Dockerfiles installieren zusätzlich Pakete des Basisbetriebssystems. Bei Ve
 
 Diese Übersicht erhebt keinen Anspruch auf verbindliche Rechtsberatung.
 
-## Vollständige Python-Paketliste für eAblage 4.5.0
+## Vollständige Python-Paketliste für eAblage 4.6.0
 
 Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches extrahiert und umfasst **sämtliche 15 festgeschriebenen Python-Pakete**, einschließlich transitiver Abhängigkeiten. Die Lizenzspalte nennt die übliche Projektlizenz, nicht eine unabhängig geprüfte Lizenzdatei jedes konkreten Wheels.
 

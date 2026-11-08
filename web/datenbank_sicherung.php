@@ -73,7 +73,7 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
         $db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         $db->beginTransaction();
         $snapshotStarted = true;
-        eablage_backup_write($handle, "-- e_ablage MariaDB-Datensicherung; Version: 4.5.0\n");
+        eablage_backup_write($handle, "-- e_ablage MariaDB-Datensicherung; Version: 4.6.0\n");
         eablage_backup_write($handle, "-- Ereignisprotokoll: 1\n");
         eablage_backup_write($handle, '-- Datenbank: ' . $databaseName . "\n");
         eablage_backup_write($handle, '-- Erstellt: ' . date('Y-m-d H:i:s') . "\n\n");

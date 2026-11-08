@@ -1,6 +1,6 @@
 # eAblage Dokumentation
 
-Diese Dokumentation beschreibt eAblage 4.5.0 mit Vorgangsverknüpfungen, Dokumentansicht, einheitlichen Arbeitsfenstern, optionaler lokaler KI und mehreren Nummern pro Dokument. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
+Diese Dokumentation beschreibt eAblage 4.6.0 mit lokaler PDF.js-Vorschau, optionalem Desktop-Modus und Aktualisierungsprüfung. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
 
 Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale Beispiele.
 
@@ -18,7 +18,8 @@ Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale B
 
 | Thema | Zuständige Beschreibung |
 | --- | --- |
-| Eingang, Klassifizierung, Archivierung, Suche und Bearbeitung | [Benutzerhandbuch](BENUTZERHANDBUCH.md) |
+| Tägliche Bedienung und Oberflächen | [Benutzerhandbuch](BENUTZERHANDBUCH.md), [Screenshots](SCREENSHOTS.md) |
+| Dokumentvorschau und Oberflächenvarianten | [PDF.js-Vorschau](PDF_VORSCHAU.md), [Desktop-Modus](DESKTOP_LAYOUT.md) |
 | Ergänzende Klassifizierung mit lokaler KI | [Ollama](OLLAMA.md) |
 | Text aus gescannten oder gemischten PDFs erkennen | [Lokale OCR](OCR.md) |
 | Inbox automatisch vorbereiten und manuell prüfen | [Stapelverarbeitung](STAPELVERARBEITUNG.md) |
