@@ -2,6 +2,29 @@
 
 Web, Backend und Worker werden zusammen aus einem vollständigen Projektstand aktualisiert. Vorhandene lokale Konfigurationen und Dokumentdaten müssen dabei erhalten bleiben.
 
+## Aktualisierung von 4.6.0 auf 4.6.1
+
+1. Datenbank, PDF-Archiv, JSON-Metadaten und lokale Konfiguration zusammen sichern. Offene Formulare schließen und Web, Backend und Worker für die Aktualisierung stoppen; die Datenbank bleibt für die SQL-Updates erreichbar.
+2. In der **richtigen Anwendungsdatenbank** die beiden Datenupdates vollständig ausführen:
+
+   - [update_empty_master_data.sql](../sql/update_empty_master_data.sql) entfernt ausschließlich leere ID-0-Platzhalter aus Kategorien und Dokumententypen. Dokumente, Regeln und bestehende `0`-Zuordnungen bleiben unverändert.
+   - [update_export_descriptions.sql](../sql/update_export_descriptions.sql) ergänzt die Beschreibungen der Einzel- und Gesamtexportparameter. Eigene Hinweise und alle eingestellten Werte bleiben erhalten.
+
+   Beide Skripte sind wiederholbar. Es gibt keine neue Strukturmigration; `schema.sql` und `seed.sql` bleiben der leeren Neuinstallation vorbehalten. Wurden die Skripte bereits mit einem Entwicklungsstand ausgeführt, ist keine erneute Ausführung nötig.
+3. Den vollständigen Stand 4.6.1 übernehmen und Web, Backend und Worker [gemeinsam neu bauen und erstellen](#gemeinsam-bauen-und-starten). Lokale Konfiguration, Datenbank und Datenpfade erhalten; die Datenbankbezeichnung nicht durch eine Versionsnummer ersetzen. Die aktualisierte Apache-Konfiguration erfordert ein neu gebautes Webimage.
+4. Die Browserseite vollständig neu laden. Unter **Einstellungen → Aktualisierung** sowie über `GET /health` die installierte Version `4.6.1` kontrollieren. Einstellungen, alle Stammdatenreiter, Regelliste/-anlage/-bearbeitung und Ereignisprotokoll in Standard- und Desktop-Modus sowie mobil prüfen. Kopf-/Aktionsleisten, Scrollbereiche, Filter, Seitenumschaltung und Speicherrückmeldungen kontrollieren; danach ein Dokument anzeigen, bearbeiten und archivieren.
+5. Eine neue SQL-Sicherung erstellen und in einer **getrennten leeren Testinstallation** rücksichern. Die neue Sicherung trägt die Kennung `4.6.1`; unterstützte Sicherungen von 4.1.0 bis einschließlich 4.6.0 bleiben importierbar. Fehlende Stammdatenzuordnungen und Regelvorbelegungen mit leerer Auswahl prüfen. PDF- und Metadatendateien separat mit erhalten.
+
+Neuinstallationen verwenden direkt `schema.sql` und `seed.sql`; die beiden Datenupdates sind dort nicht zusätzlich erforderlich. Beim direkten Wechsel von einem älteren Stand zuerst dessen fehlende Migrationen aus den folgenden Abschnitten und anschließend die beiden 4.6.1-Datenupdates anwenden.
+
+### Leere Stammdaten-Platzhalter entfernen
+
+Nach einer Datenbanksicherung [sql/update_empty_master_data.sql](../sql/update_empty_master_data.sql) in der gewünschten eAblage-Datenbank ausführen. Das wiederholbare Skript entfernt die leeren ID-0-Zeilen aus `kategorie` und `doktyp`. Dokumente, Regeln und deren bestehende `0`-Werte bleiben unverändert: `0` bedeutet weiterhin „keine Zuordnung“. Die aktualisierte Oberfläche stellt die leere Auswahl selbst bereit und zeigt keine ID-0-Platzhalter in der Verwaltung. Rücksicherungen über die aktualisierte Anwendung bereinigen entsprechende ältere Sicherungen automatisch. [Details](STAMMDATEN.md).
+
+### Hinweise zu Exportparametern ergänzen
+
+Für eine bestehende Installation [sql/update_export_descriptions.sql](../sql/update_export_descriptions.sql) in der gewünschten eAblage-Datenbank ausführen und anschließend die Einstellungen neu laden. Das Skript ist wiederholbar und ergänzt die Hinweise für Einzel- und Gesamtexport. Es ändert nur fehlende oder bekannte Standardbeschreibungen; eigene Hinweise, Parameterwerte und Dokumentdaten bleiben erhalten. Es sind weder Strukturänderungen noch ein Container-Neubau erforderlich. `seed.sql` dafür nicht in eine bestehende Datenbank importieren.
+
 ## Aktualisierung von 4.5.0 auf 4.6.0
 
 1. Datenbank, PDF-Archiv und JSON-Metadaten sichern. Danach Web, Backend und Worker für den Wechsel stoppen.
@@ -20,7 +43,7 @@ Die [PDF-Vorschau](PDF_VORSCHAU.md) wird mit der Anwendung ausgeliefert. Bei ein
 5. Suche → Dokumentansicht → Bearbeiten → Ansicht → Suche mit Filtern und Ergebnisseite prüfen. Vorgang anlegen, ein Dokument mehreren Vorgängen zuordnen und eine Zuordnung entfernen. Klassifizierung/Bearbeitung am Desktop mit langen Inhalten und Meldungen sowie mobil prüfen. PDF-/Textvorschau und KI-Diagnose mit einem echten Dokument testen.
 6. Neue SQL-Sicherung erstellen und in einer **getrennten leeren Testinstallation** rücksichern. Dokumente, Nummern, Historie, Vorgänge und Zuordnungen vergleichen. Die neue Sicherung trägt Version 4.5.0; unterstützte Sicherungen von 4.1.0 bis 4.4.0 bleiben importierbar. PDFs und JSON-Dateien separat erhalten. [Sicherungsanleitung](SICHERUNG.md).
 
-Für ältere Installationen zunächst die noch fehlenden Migrationen der folgenden Abschnitte ausführen und anschließend `update_document_links.sql`. Wer direkt auf 4.6.0 aktualisiert, startet danach die Dienste aus 4.6.0 und prüft die dort beschriebene Version. Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
+Für ältere Installationen zunächst die noch fehlenden Migrationen der folgenden Abschnitte ausführen und anschließend `update_document_links.sql`. Wer direkt auf 4.6.1 aktualisiert, führt danach auch die beiden 4.6.1-Datenupdates aus, startet die Dienste aus 4.6.1 und prüft die dort beschriebene Version. Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
 
 ## Aktualisierung von 4.3.0 auf 4.4.0
 
@@ -165,7 +188,7 @@ Ein bloßer Containerneustart übernimmt geänderten Code nicht. Der Webdienst h
 
 ## Nachkontrolle
 
-Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.6.0`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
+Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.6.1`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
 
 Für Wartung PHP- und Backend-Datenbankidentität, Metadaten-Mount und UID/GID kontrollieren. Ein gemischter Web-/Backend-/Workerstand soll nicht zum Schreiben verwendet werden. JSON-Reparaturen werden ausschließlich ausdrücklich gestartet.
 

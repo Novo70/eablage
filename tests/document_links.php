@@ -29,7 +29,7 @@ try {
     $legacyDir=$dir.'/legacy';
     $old=eablage_create_database_backup($db,$name,$legacyDir);
     $oldPath=$legacyDir.'/'.$old['filename'];
-    file_put_contents($oldPath,str_replace('Version: 4.6.0','Version: 4.4.0',file_get_contents($oldPath)));
+    file_put_contents($oldPath,str_replace('Version: '.EABLAGE_WEB_VERSION,'Version: 4.4.0',file_get_contents($oldPath)));
     $before=$db->query('SELECT * FROM dokumente ORDER BY DokID')->fetchAll(PDO::FETCH_ASSOC);
     $migration=file_get_contents(__DIR__.'/../sql/update_document_links.sql');
     check($migration===file_get_contents(__DIR__.'/../web/vorgaenge_schema.sql'),'Restore migration differs');
@@ -57,7 +57,7 @@ try {
     $db->exec('UPDATE dokumente SET GeloeschtAm=NULL WHERE DokID=10001');
     $currentDir=$dir.'/current';$current=eablage_create_database_backup($db,$name,$currentDir);
     $currentPath=$currentDir.'/'.$current['filename'];
-    check(str_starts_with(file_get_contents($currentPath),"-- e_ablage MariaDB-Datensicherung; Version: 4.6.0\n"),'Incorrect backup version');
+    check(str_starts_with(file_get_contents($currentPath),"-- e_ablage MariaDB-Datensicherung; Version: ".EABLAGE_WEB_VERSION."\n"),'Incorrect backup version');
     check(eablage_restore_validate($currentPath)['cases']===true,'Cases not recognized');
     // Reject partial link-table pairs before any import.
     $raw=file_get_contents($currentPath);

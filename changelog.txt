@@ -1,5 +1,32 @@
 # Changelog
 
+## 4.6.1 – Einheitliche Verwaltungsfenster und Wartung – 10.11.2026
+
+### Oberfläche und Bedienung
+
+- Einstellungen, Klassifizierungsregeln, Regelanlage/-bearbeitung und Ereignisprotokoll verwenden auf großen Bildschirmen feste Kopf- und Aktionsleisten mit internem Scrollbereich. Kleine und niedrige Fenster behalten normales Seitenscrolling; Standard- und Desktop-Modus verwenden die jeweils passende Titelhöhe.
+- Stammdaten mit festen Reitern und Spaltenüberschriften, schmalerer Bezeichnung, eigener zweizeiliger Erläuterung und kompakten Spalten für Verwendung, Aktionen und Status. Redundante Überschrift und Fußzeile entfallen; mobil bleibt die Erläuterung aufklappbar.
+- Ungespeicherte Stammdatenänderungen heben „Speichern“ blau mit weißer Schrift hervor. Nach bestätigtem Speichern erscheint der Button wieder normal; Beschriftung und Breite bleiben gleich. Fehler und weitere Änderungen während des Speicherns erhalten die Markierung.
+- Fragezeichen-Tooltips erläutern Umbenennen, Erläuterungen für eigene Dokumentation und KI, Statuswechsel und Löschvoraussetzungen. Aktionsspalten bieten auch mit breiteren Systemschriften Platz für nebeneinanderstehende Buttons.
+- Regelliste ohne doppelte Trefferübersicht, mit einzeiliger Rangüberschrift und ausgerichteten Filteraktionen. „Neue Regel“ steht in der festen Fußzeile. Im Ereignisprotokoll bleiben Trefferzahl, Seitenumschaltung und Rückkehr erreichbar.
+- Einheitliche Titelleisten auf großen Bildschirmen und einheitliche Fragezeichen-Hilfe bei Stammdaten und Vorgängen. Der Papierkorb bricht lange Betreffzeilen um und gruppiert seine Aktionen.
+- „Dokument bearbeiten“ im Ereignisprotokoll erhält Filter und Ergebnisseite für die Rückkehr. Die Rücksicherung zeigt die tatsächlich unterstützten Sicherungsversionen.
+- Papierkorb und Exportverwaltung scrollen auf großen Bildschirmen innerhalb des Fensters. In der Exportverwaltung bleiben die Reiter für Gesamtexport, Datensicherung und Archivprüfung sichtbar. Aktionen und Ergebnisse stehen im jeweiligen Bereich.
+- Die Vorgangsübersicht zeigt Bezeichnung, Beschreibung, Anlagedatum und Dokumentanzahl. Die Liste lässt sich nach Bezeichnung oder Anlagedatum sortieren.
+
+### Datenbank und Aktualisierung
+
+- Leere ID-0-Platzhalter für Kategorien und Dokumententypen entfallen. `0` bleibt „keine Zuordnung“; Dokument- und Regelwerte bleiben erhalten. Die leere Auswahl wird von der Oberfläche bereitgestellt, ältere Sicherungen werden bei der Rücksicherung entsprechend bereinigt.
+- Verständliche Beschreibungen für alle 37 Einzel- und Gesamtexportparameter; das SQL-Update erhält eigene Hinweise und eingestellte Werte.
+- Die manuelle Umgebungskennzeichnung heißt „Datenbankbezeichnung“. Bestehende Werte und der bisherige Parameterschlüssel bleiben erhalten; die Angabe ist keine Programmversion.
+- Für Bestandsinstallationen die beiden Datenupdates gemäß [Update von 4.6.0 auf 4.6.1](docs/UPDATE.md#aktualisierung-von-460-auf-461) ausführen. Keine neue Schema-Migration erforderlich. Web, Backend und Worker gemeinsam neu bauen und erstellen.
+
+### Betrieb und Qualitätssicherung
+
+- Zentrale Release-Angaben für Oberfläche, Backend und SQL-Sicherungskennung mit automatischer Konsistenzprüfung. Neue SQL-Sicherungen tragen 4.6.1; unterstützte Sicherungen von 4.1.0 bis 4.6.0 bleiben importierbar.
+- Sicherheitsmodell im README präzisiert; das Webimage liefert Sicherheitsheader auch bei Fehlerantworten.
+- Automatische GitHub-Prüfungen für PHP/Python, JavaScript/Browser, MariaDB/OCR, Apache und Windows-Deployment sowie wöchentliche Abhängigkeitsvorschläge. Gemeinsame Web-Testumgebung ohne lokale Konfigurationsdateien.
+
 ## 4.6.0 – PDF-Vorschau und Desktop-Modus – 07.11.2026
 
 ### PDF-Vorschau

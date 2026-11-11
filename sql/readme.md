@@ -4,8 +4,13 @@ Die maßgebliche Anleitung zu Schema, Rechten, Neuinstallation und Aktualisierun
 
 `schema.sql`, `seed.sql` und bei der standardmäßigen Containerstruktur `init_docker_paths.sql` sind für eine **leere Neuinstallation** bestimmt. Sie dürfen nicht über einen bestehenden Bestand importiert werden. Die übrigen Skripte werden nur nach Prüfung des Ausgangsschemas, Sicherung und Schreibpause entsprechend der Datenbankanleitung angewendet.
 
+Beim Update von **4.6.0 auf 4.6.1** die beiden Datenupdates `update_empty_master_data.sql` und `update_export_descriptions.sql` gemäß [Updateanleitung](../docs/UPDATE.md#aktualisierung-von-460-auf-461) ausführen. Eine neue Strukturmigration ist dafür nicht nötig.
+
 Eine kompatible Sicherung in eine vorbereitete leere Installation zurückspielen: [Sicherung und Wiederherstellung](../docs/SICHERUNG.md). Begleitdateien und PDFs müssen zum Sicherungsstand passen; sie sind nicht im SQL-Dump enthalten.
 
+- `update_empty_master_data.sql`: nach Datenbanksicherung ausschließlich leere ID-0-Platzhalter aus Kategorie und Dokumententyp entfernen; wiederholbar, Dokument- und Regelwerte bleiben unverändert. [Details](../docs/UPDATE.md#leere-stammdaten-platzhalter-entfernen).
+
+- `update_export_descriptions.sql`: verständliche Beschreibungen für alle Einzel- und Gesamtexportparameter ergänzen; wiederholbar, eigene Hinweise und eingestellte Werte bleiben erhalten. Keine Strukturänderungen. [Details](../docs/UPDATE.md#hinweise-zu-exportparametern-ergänzen).
 
 - `update_document_path.sql`: nach Sicherung und Schreibpause den redundanten Dokumentpfad entfernen; Prüfung und Vorgehen siehe [Datenbankanleitung](../docs/DATENBANK.md#redundanten-dokumentpfad-entfernen).
 

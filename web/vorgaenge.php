@@ -18,6 +18,17 @@ $token = eablage_aktion_token();
 $id = 0; $error = ''; $item = null; $items = []; $documents = []; $candidates = [];
 $return = vorgang_return($_POST['return'] ?? $_GET['return'] ?? '');
 $search = is_string($_GET['q'] ?? '') ? trim($_GET['q'] ?? '') : '';
+$sortOptions = [
+    'name' => ['Bezeichnung A–Z', 'v.Bezeichnung ASC, v.ID ASC'],
+    'name-desc' => ['Bezeichnung Z–A', 'v.Bezeichnung DESC, v.ID DESC'],
+    'date' => ['Neueste zuerst', 'v.ErstelltAm DESC, v.ID DESC'],
+    'date-asc' => ['Älteste zuerst', 'v.ErstelltAm ASC, v.ID ASC'],
+];
+$requestedSort = $_GET['sort'] ?? '';
+$sort = is_string($requestedSort) && isset($sortOptions[$requestedSort]) ? $requestedSort : 'name';
+$listUrl = static fn(string $order, int $page = 1): string => 'vorgaenge.php?' . http_build_query([
+    'q' => $search, 'sort' => $order, 'page' => $page, 'return' => $return,
+]);
 $documentSearch = is_string($_GET['document_q'] ?? '') ? trim($_GET['document_q'] ?? '') : '';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $total = 0; $pages = 1;
@@ -98,7 +109,7 @@ try {
         $like = '%' . $search . '%';
         $stmt = $db->prepare('SELECT COUNT(*) FROM vorgang WHERE Bezeichnung LIKE ? OR Beschreibung LIKE ?'); $stmt->execute([$like,$like]); $total=(int)$stmt->fetchColumn();
         $pages=max(1,(int)ceil($total/50)); $page=min($page,$pages);
-        $stmt = $db->prepare('SELECT v.*, (SELECT COUNT(*) FROM dokument_vorgang dv JOIN dokumente d ON d.DokID=dv.DokumentID WHERE dv.VorgangID=v.ID AND d.GeloeschtAm IS NULL) AS Anzahl FROM vorgang v WHERE v.Bezeichnung LIKE ? OR v.Beschreibung LIKE ? ORDER BY v.Bezeichnung,v.ID LIMIT 50 OFFSET ' . (($page-1)*50));
+        $stmt = $db->prepare('SELECT v.*, (SELECT COUNT(*) FROM dokument_vorgang dv JOIN dokumente d ON d.DokID=dv.DokumentID WHERE dv.VorgangID=v.ID AND d.GeloeschtAm IS NULL) AS Anzahl FROM vorgang v WHERE v.Bezeichnung LIKE ? OR v.Beschreibung LIKE ? ORDER BY ' . $sortOptions[$sort][1] . ' LIMIT 50 OFFSET ' . (($page-1)*50));
         $stmt->execute([$like,$like]); $items=$stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (Throwable $e) {
@@ -150,12 +161,60 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
             <?php foreach (array_slice($candidates,0,50) as $doc): ?><div class="ea-vorgang-document"><div><?=h($doc['Datum'])?> · <?=h($doc['Partner'])?><br><?=h($doc['Betreff'])?></div><form method="post"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="return" value="<?=h($return)?>"><input type="hidden" name="document_id" value="<?=$doc['DokID']?>"><button class="btn btn-default btn-sm" type="submit" name="action" value="attach">Zuordnen</button></form></div><?php endforeach; ?>
         </div></details>
     <?php elseif (!$id): ?>
-        <form method="get" class="ea-vorgang-search"><input type="hidden" name="return" value="<?=h($return)?>"><label for="q">Vorgänge suchen</label><div class="ea-vorgang-add"><input class="form-control" type="search" name="q" id="q" value="<?=h($search)?>"><button class="btn btn-default" type="submit"><?=eablage_icon('search')?>Suchen</button></div></form>
+        <form method="get" class="ea-vorgang-search"><input type="hidden" name="return" value="<?=h($return)?>"><input type="hidden" name="sort" value="<?=h($sort)?>"><label for="q">Vorgänge suchen</label><div class="ea-vorgang-add"><input class="form-control" type="search" name="q" id="q" value="<?=h($search)?>"><button class="btn btn-default" type="submit"><?=eablage_icon('search')?>Suchen</button></div></form>
         <details class="panel panel-default" <?=$newName!=='' ? 'open' : ''?>><summary class="panel-heading">Neuen Vorgang anlegen</summary><div class="panel-body"><form method="post"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="return" value="<?=h($return)?>"><div class="form-group"><label for="new_name">Bezeichnung</label><input class="form-control" id="new_name" name="name" required maxlength="255" value="<?=h($newName)?>"></div><div class="form-group"><label for="new_description">Beschreibung (optional)</label><textarea class="form-control" id="new_description" name="description" rows="3" maxlength="10000"><?=h($newDescription)?></textarea></div><div class="ea-form-actions"><button class="btn btn-primary" type="submit" name="action" value="create">Vorgang anlegen</button></div></form></div></details>
         <section class="panel panel-default"><div class="panel-heading"><h3>Vorgänge (<?=$total?>)</h3></div><div class="panel-body">
             <?php if (!$items): ?><p>Keine Vorgänge gefunden.</p><?php endif; ?>
-            <?php foreach ($items as $entry): ?><article class="ea-vorgang-document"><div><a href="vorgaenge.php?id=<?=$entry['ID']?><?=$return !== '' ? '&amp;return='.rawurlencode($return) : ''?>"><strong><?=h($entry['Bezeichnung'])?></strong></a><p class="ea-vorgang-description"><?=h($entry['Beschreibung'])?></p></div><span><?=h($entry['Anzahl'])?> Dokumente</span></article><?php endforeach; ?>
-            <?php if ($pages>1): ?><div class="pagination-wrapper"><?php if ($page>1): ?><a href="?<?=h(http_build_query(['q'=>$search,'page'=>$page-1,'return'=>$return]))?>">« Vorherige</a><?php endif; ?><span>Seite <?=$page?> von <?=$pages?></span><?php if ($page<$pages): ?><a href="?<?=h(http_build_query(['q'=>$search,'page'=>$page+1,'return'=>$return]))?>">Nächste »</a><?php endif; ?></div><?php endif; ?>
+            <?php if ($items): ?>
+                <form method="get" class="ea-vorgang-mobile-sort">
+                    <input type="hidden" name="q" value="<?=h($search)?>">
+                    <input type="hidden" name="return" value="<?=h($return)?>">
+                    <label for="vorgang-sort">Sortieren nach</label>
+                    <div class="ea-vorgang-add">
+                        <select name="sort" id="vorgang-sort" class="form-control">
+                            <?php foreach ($sortOptions as $value => [$label]): ?>
+                                <option value="<?=h($value)?>" <?=$sort === $value ? 'selected' : ''?>><?=h($label)?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="btn btn-default">Sortieren</button>
+                    </div>
+                </form>
+                <table class="table table-striped ea-vorgang-list" aria-label="Vorgänge">
+                    <thead>
+                        <tr>
+                            <?php $byName = in_array($sort, ['name', 'name-desc'], true); ?>
+                            <th scope="col" <?=$byName ? 'aria-sort="' . ($sort === 'name' ? 'ascending' : 'descending') . '"' : ''?>>
+                                <a href="<?=h($listUrl($sort === 'name' ? 'name-desc' : 'name'))?>">Bezeichnung<?php if ($byName): ?> <span aria-hidden="true"><?=$sort === 'name' ? '↑' : '↓'?></span><?php endif; ?></a>
+                            </th>
+                            <th scope="col">Beschreibung</th>
+                            <th scope="col" <?=!$byName ? 'aria-sort="' . ($sort === 'date' ? 'descending' : 'ascending') . '"' : ''?>>
+                                <a href="<?=h($listUrl($sort === 'date' ? 'date-asc' : 'date'))?>">Angelegt am<?php if (!$byName): ?> <span aria-hidden="true"><?=$sort === 'date' ? '↓' : '↑'?></span><?php endif; ?></a>
+                            </th>
+                            <th scope="col">Dokumente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($items as $entry):
+                            $entryUrl = 'vorgaenge.php?' . http_build_query(['id' => (int)$entry['ID']] + ($return !== '' ? ['return' => $return] : []));
+                            $created = new DateTimeImmutable($entry['ErstelltAm']);
+                        ?>
+                            <tr>
+                                <td><a href="<?=h($entryUrl)?>"><strong><?=h($entry['Bezeichnung'])?></strong></a></td>
+                                <td class="ea-vorgang-list-description"><?php if ($entry['Beschreibung'] !== ''): ?><span title="<?=h($entry['Beschreibung'])?>"><?=h($entry['Beschreibung'])?></span><?php endif; ?></td>
+                                <td><span class="ea-vorgang-mobile-label">Angelegt am </span><time datetime="<?=h($created->format('Y-m-d'))?>"><?=h($created->format('d.m.Y'))?></time></td>
+                                <td><?=h($entry['Anzahl'])?><span class="ea-vorgang-mobile-label"> Dokumente</span></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+            <?php if ($pages > 1): ?>
+                <div class="pagination-wrapper">
+                    <?php if ($page > 1): ?><a href="<?=h($listUrl($sort, $page - 1))?>">« Vorherige</a><?php endif; ?>
+                    <span>Seite <?=$page?> von <?=$pages?></span>
+                    <?php if ($page < $pages): ?><a href="<?=h($listUrl($sort, $page + 1))?>">Nächste »</a><?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div></section>
     <?php endif; ?>
         </div>

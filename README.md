@@ -4,7 +4,7 @@ eAblage klassifiziert, archiviert und recherchiert PDF-Dokumente im Browser. Dok
 
 Apache/PHP und FastAPI laufen in getrennten Containern und nutzen dieselbe MariaDB. Datenbank und PDF-Archiv sind der maßgebliche Bestand; JSON-Begleitdateien machen die Metadaten unabhängig lesbar.
 
-Diese Dokumentation beschreibt eAblage in der Version 4.6.0.
+Diese Dokumentation beschreibt eAblage in der Version 4.6.1.
 
 ## Funktionen
 
@@ -38,7 +38,11 @@ Diese Dokumentation beschreibt eAblage in der Version 4.6.0.
 | Bestehende Instanz aktualisieren | [Aktualisierung](docs/UPDATE.md) |
 | Datenbank und Dateien sichern/wiederherstellen | [Sicherung](docs/SICHERUNG.md) |
 
-Die Anwendung ist für lokalen Einbenutzerbetrieb vorgesehen und besitzt keine eigene Anmeldung. Webzugriff sollte daher auf vertrauenswürdige Clients begrenzt werden. Produktions- und Testinstanzen benötigen getrennte Datenbanken, Datenpfade und Ports.
+Die Anwendung ist für lokalen Einbenutzerbetrieb vorgesehen und besitzt keine eigene Anmeldung oder Benutzerrechteverwaltung. Wer die Oberfläche erreicht, kann Dokumente lesen, ändern und löschen. Nutze eAblage deshalb nur in einem vertrauenswürdigen LAN mit entsprechend begrenztem Zugriff. Für Zugriffe von außerhalb ist ein Reverse-Proxy mit vorgeschalteter Anmeldung und HTTPS erforderlich; der direkte Webport darf dabei nicht von außen erreichbar sein. Backend und Datenbank bleiben intern. CSRF-Tokens ersetzen diese Zugangssicherung nicht.
+
+Produktions- und Testinstanzen benötigen getrennte Datenbanken, Datenpfade und Ports. Die frei wählbare **Datenbankbezeichnung** in den Einstellungen kennzeichnet die jeweilige Umgebung und bleibt bei Updates erhalten. Sie ist unabhängig von der angezeigten eAblage-Version.
+
+Die Oberfläche und die Dokumentation sind derzeit auf Deutsch verfügbar.
 
 Beschreibungen der Installation, Bedienung, Betrieb und technische Referenz sind über die Übersicht erreichbar.
 

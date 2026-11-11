@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from web_fixture import copy_web
 
 ROOT = Path(__file__).resolve().parents[1]
 PHP = os.environ.get('PHP_BIN', shutil.which('php'))
@@ -17,8 +18,7 @@ class OllamaSettingsTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for name in ['einstellungen.php', 'icons.php', 'csrf.php', 'meldungen.php', 'app.css', 'ollama.js', 'pdfjs_update.php', 'pdfjs_update.js']:
-            shutil.copy(ROOT / 'web' / name, self.root / name)
+        copy_web(self.root)
         (self.root / 'navbar.php').write_text('')
         (self.root / 'konfiguration.php').write_text('''<?php
 if (!class_exists('PDO')) { class PDO { const FETCH_ASSOC=2; } }
@@ -26,10 +26,11 @@ class TestStatement {
     public array $bound=[];
     function __construct(public $db) {}
     function bindValue($key,$value) { $this->bound[$key]=$value; }
-    function execute() { if ($this->bound[':key'] === 'ollamaTextAnfang') $this->db->head=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaTextEnde') $this->db->tail=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaHintergrund') $this->db->background=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaDiagnoseAnzeigen') $this->db->diagnostic=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaDenkmodus') $this->db->thinking=$this->bound[':value']; else $this->db->value=$this->bound[':value']; }
-    function fetchAll($mode) { return [['param_key'=>'ollamaAnweisung','param_value'=>$this->db->value,'beschreibung'=>'Fachliche Anweisung','gruppierung'=>'Lokale KI','rang'=>'40'], ['param_key'=>'ollamaDenkmodus','param_value'=>$this->db->thinking,'beschreibung'=>'Denkmodus','gruppierung'=>'Lokale KI','rang'=>'50'], ['param_key'=>'ollamaHintergrund','param_value'=>$this->db->background,'beschreibung'=>'KI im Hintergrund','gruppierung'=>'Lokale KI','rang'=>'60'], ['param_key'=>'ollamaTextAnfang','param_value'=>$this->db->head,'beschreibung'=>'Textanfang','gruppierung'=>'Lokale KI','rang'=>'70'], ['param_key'=>'ollamaTextEnde','param_value'=>$this->db->tail,'beschreibung'=>'Textende','gruppierung'=>'Lokale KI','rang'=>'80'], ['param_key'=>'ollamaDiagnoseAnzeigen','param_value'=>$this->db->diagnostic,'beschreibung'=>'KI-Diagnose','gruppierung'=>'Entwicklerwerkzeuge','rang'=>'10']]; }
+    function execute() { if ($this->bound[':key'] === 'Version') $this->db->databaseLabel=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaTextAnfang') $this->db->head=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaTextEnde') $this->db->tail=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaHintergrund') $this->db->background=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaDiagnoseAnzeigen') $this->db->diagnostic=$this->bound[':value']; elseif ($this->bound[':key'] === 'ollamaDenkmodus') $this->db->thinking=$this->bound[':value']; else $this->db->value=$this->bound[':value']; }
+    function fetchAll($mode) { return [['param_key'=>'Version','param_value'=>$this->db->databaseLabel,'beschreibung'=>'Alte Beschreibung','gruppierung'=>'System','rang'=>'1'], ['param_key'=>'ollamaAnweisung','param_value'=>$this->db->value,'beschreibung'=>'Fachliche Anweisung','gruppierung'=>'Lokale KI','rang'=>'40'], ['param_key'=>'ollamaDenkmodus','param_value'=>$this->db->thinking,'beschreibung'=>'Denkmodus','gruppierung'=>'Lokale KI','rang'=>'50'], ['param_key'=>'ollamaHintergrund','param_value'=>$this->db->background,'beschreibung'=>'KI im Hintergrund','gruppierung'=>'Lokale KI','rang'=>'60'], ['param_key'=>'ollamaTextAnfang','param_value'=>$this->db->head,'beschreibung'=>'Textanfang','gruppierung'=>'Lokale KI','rang'=>'70'], ['param_key'=>'ollamaTextEnde','param_value'=>$this->db->tail,'beschreibung'=>'Textende','gruppierung'=>'Lokale KI','rang'=>'80'], ['param_key'=>'ollamaDiagnoseAnzeigen','param_value'=>$this->db->diagnostic,'beschreibung'=>'KI-Diagnose','gruppierung'=>'Entwicklerwerkzeuge','rang'=>'10']]; }
 }
 class TestDatabase {
+    public string $databaseLabel='Produktive Datenbank auf UGREEN';
     public string $value="Gespeicherte Hinweise\\n</textarea><script>unsafe()</script>";
     public string $head='9000'; public string $tail='3000'; public string $beforeHead='9000'; public string $beforeTail='3000';
     public string $background='aus'; public string $beforeBackground='aus';
@@ -51,7 +52,7 @@ $_POST=json_decode($argv[1],true);
 $_SERVER['REQUEST_METHOD']=$_POST ? 'POST' : 'GET';
 if ($_POST) $_POST['aktion_token']=eablage_aktion_token();
 require 'einstellungen.php';
-echo "\\nSTATE:" . json_encode(['value'=>$db->value,'thinking'=>$db->thinking,'diagnostic'=>$db->diagnostic,'background'=>$db->background,'head'=>$db->head,'tail'=>$db->tail,'commits'=>$db->commits]);
+echo "\\nSTATE:" . json_encode(['databaseLabel'=>$db->databaseLabel,'value'=>$db->value,'thinking'=>$db->thinking,'diagnostic'=>$db->diagnostic,'background'=>$db->background,'head'=>$db->head,'tail'=>$db->tail,'commits'=>$db->commits]);
 ''')
 
     def call(self, payload):
@@ -60,6 +61,19 @@ echo "\\nSTATE:" . json_encode(['value'=>$db->value,'thinking'=>$db->thinking,'d
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout[-1000:])
         html, state = result.stdout.rsplit('\nSTATE:', 1)
         return html, json.loads(state)
+
+    def test_database_label_remains_independent_of_release(self):
+        html, state = self.call({})
+        self.assertIn('Datenbankbezeichnung', html)
+        self.assertIn('name="params[Version]"', html)
+        self.assertEqual(state['databaseLabel'], 'Produktive Datenbank auf UGREEN')
+        metadata = json.loads((ROOT / 'release.json').read_text())
+        self.assertIn('Version ' + metadata['version'], html)
+        _, state = self.call({'params': {'Version': 'Testdatenbank <lokal>'}})
+        self.assertEqual(state['databaseLabel'], 'Testdatenbank <lokal>')
+        self.assertEqual(state['commits'], 1)
+        _, state = self.call({'params': {'ollamaDenkmodus': 'ja'}})
+        self.assertEqual(state['databaseLabel'], 'Produktive Datenbank auf UGREEN')
 
     def test_thinking_selector_saves_both_modes_and_rejects_invalid(self):
         for value in ['ja', 'nein']:

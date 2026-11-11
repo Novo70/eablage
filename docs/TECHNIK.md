@@ -31,6 +31,8 @@ Die Schnittstellen werden intern von PHP verwendet. Für Wartungs- und Stammdate
 
 Schreibende Webformulare senden den sitzungsgebundenen `aktion_token`. `web/csrf.php` erzeugt und prüft ihn vor Änderungen, auch bei paketweisen Wartungsanfragen. Der Token schützt gegen gefälschte browserseitige Anfragen, ersetzt aber weder eine Zugangssicherung noch die Trennung des internen Backends vom öffentlichen Netz. Nach einem Versionswechsel geöffnete alte Formulare neu laden.
 
+Das Webimage aktiviert `mod_headers` und setzt über `apache-security.conf` auch für Fehlerantworten `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin` und `X-Frame-Options: SAMEORIGIN`. Die eingebettete PDF-Vorschau wird von derselben Herkunft geladen. Eine eigene Content-Security-Policy ist noch nicht eingerichtet. Reverse-Proxys sollen diese Header erhalten und keine widersprüchlichen doppelten Werte ergänzen. Bei Änderungen an dieser Apache-Konfiguration das Webimage neu bauen.
+
 | Methode und Pfad | Zweck |
 | --- | --- |
 | `POST /ollama/check` | Gespeicherte lokale KI-Konfiguration und Modell prüfen; Datenbankkennung erforderlich |

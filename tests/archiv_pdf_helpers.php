@@ -20,6 +20,8 @@ try {
     require __DIR__ . '/../web/dokument_navigation.php';
     $return = 'explorer.php?dokid=17&folder=%5B%22Haus%22%5D';
     check(valid_return_url($return) === $return, 'Explorer return lost');
+    $historyReturn = 'protokoll.php?dokid=42&regel=R0001&seite=2';
+    check(valid_return_url($historyReturn) === $historyReturn, 'Event history return lost');
     check(valid_return_url('ansehen.php?dokid=42&return=dokumente.php%3Fpage%3D2') === 'ansehen.php?dokid=42&return=dokumente.php%3Fpage%3D2', 'Document view return lost');
     foreach (['https://example.com', '//example.com/explorer.php', '../explorer.php', "explorer.php\r\nX-Test: bad"] as $url) {
         check(valid_return_url($url) === 'dokumente.php', 'Unsafe return accepted');

@@ -53,6 +53,8 @@ def _database(cursor, database):
 
 def _usage(cursor, definition, entry_id):
     table, _, doc_fields, rule_fields = definition
+    if table in {'kategorie', 'doktyp'} and str(entry_id or '').strip() in {'', '0'}:
+        return 0, []  # Unassigned fields are not references to a master-data row.
     if table == 'nummernart':
         cursor.execute('SELECT COUNT(*) AS n FROM dokument_nummer WHERE NummernartID=%s', (entry_id,))
         documents = int(cursor.fetchone()['n'])
@@ -78,7 +80,8 @@ def list_entries(kind, database):
         order = 'Sortierung,' if kind == 'number_types' else ''
         extra = ',Sortierung AS sort_order' if kind == 'number_types' else ''
         cursor.execute(f"SELECT id, {label} AS name, Aktiv AS active, COALESCE(Erlaeuterung, '') AS explanation{extra} FROM {table} ORDER BY {order}{label}, id")
-        items = cursor.fetchall()
+        items = [item for item in cursor.fetchall()
+                 if table not in {'kategorie', 'doktyp'} or str(item['id']).strip() != '0']
         for item in items:
             item["documents"], item["rules"] = _usage(cursor, spec, item["id"])
         return {"items": items}

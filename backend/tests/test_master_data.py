@@ -130,6 +130,38 @@ class MasterDataTests(unittest.TestCase):
             "UPDATE kategorie SET katBez = %s WHERE id = %s", ("O'Brien", "10"))
         connection.commit.assert_called_once()
 
+    def test_zero_placeholders_are_not_listed_or_counted(self):
+        for kind in ['categories', 'document_types']:
+            connection = MagicMock()
+            cursor = connection.cursor.return_value
+            cursor.fetchone.side_effect = [{'name': 'test'}, {'n': 3}]
+            cursor.fetchall.side_effect = [[
+                {'id': '0', 'name': '', 'active': 0, 'explanation': ''},
+                {'id': '10', 'name': 'Echter Eintrag', 'active': 1, 'explanation': ''},
+            ], []]
+            with patch('app.services.master_data.get_connection', return_value=connection):
+                result = list_entries(kind, 'test')
+            self.assertEqual([item['id'] for item in result['items']], ['10'])
+            self.assertEqual(result['items'][0]['documents'], 3)
+            self.assertFalse(any('0' in (call.args[1] if len(call.args)>1 else ())
+                                 for call in cursor.execute.call_args_list))
+
+    def test_unassigned_values_are_not_master_references(self):
+        from app.services.master_data import _usage
+        for kind in ['categories', 'document_types']:
+            for value in ['0', '', None]:
+                cursor = MagicMock()
+                self.assertEqual(_usage(cursor, definition(kind), value), (0, []))
+                cursor.execute.assert_not_called()
+
+    def test_zero_id_is_reserved_for_no_assignment(self):
+        with patch('app.services.master_data.get_connection') as connect:
+            for kind in ['categories', 'document_types']:
+                for action in ['rename', 'activate', 'deactivate', 'delete']:
+                    with self.assertRaises(MasterDataError):
+                        mutate(kind, 'test', action, '0', name='Platzhalter')
+            connect.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

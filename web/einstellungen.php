@@ -46,6 +46,12 @@ function valid_return_url(?string $url): string
     return $returnUrl;
 }
 
+$parameterLabels = [
+    'Version' => 'Datenbankbezeichnung',
+    'ollamaDiagnoseAnzeigen' => 'KI-Diagnose anzeigen',
+    'ollamaHintergrund' => 'KI im Hintergrund',
+];
+
 $exportDirectoryOptions = [
     '(keine)' => 'Keine Ebene',
     'Kategorie' => 'Kategorie',
@@ -165,10 +171,12 @@ foreach ($alleParameter as $p) {
 <?php require_once 'navbar.php'; ?>
 
 <div class="container ea-settings-container">
+    <div class="ea-admin-notices">
     <?php if ($meldung !== ''): ?>
         <?=eablage_render_message($meldungTyp, $meldung)?>
     <?php endif; ?>
 
+    </div>
     <div class="panel panel-primary ea-settings-panel">
         <div class="panel-heading"><?=eablage_icon('settings')?>Einstellungen</div>
         <form class="panel-body" method="POST" action="einstellungen.php" id="settings-form">
@@ -197,9 +205,9 @@ foreach ($alleParameter as $p) {
                             <?php foreach ($parameterListe as $param): ?>
                                 <div class="row ea-param-row">
                                     <div class="col-md-5">
-                                        <div class="ea-param-label"><?=h($param['param_key'] === 'ollamaDiagnoseAnzeigen' ? 'KI-Diagnose anzeigen' : ($param['param_key'] === 'ollamaHintergrund' ? 'KI im Hintergrund' : $param['param_key']))?></div>
-                                        <?php if (!empty($param['beschreibung'])): ?>
-                                            <div class="ea-param-desc"><?=h($param['beschreibung'])?></div>
+                                        <div class="ea-param-label"><?=h($parameterLabels[$param['param_key']] ?? $param['param_key'])?></div>
+                                        <?php if ($param['param_key'] === 'Version' || !empty($param['beschreibung'])): ?>
+                                            <div class="ea-param-desc"><?=h($param['param_key'] === 'Version' ? 'Frei wählbare Kennzeichnung dieser Datenbank, z. B. „Testdatenbank“ oder „Produktive Datenbank auf UGREEN“. Wird bei Updates nicht geändert.' : $param['beschreibung'])?></div>
                                         <?php endif; ?>
                                     </div>
 

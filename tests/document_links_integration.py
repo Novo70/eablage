@@ -3,12 +3,14 @@
 Creates/drops its own random database; starts a temporary PHP web root and a local
 metadata API fixture. Does not use an installed application or its configuration.
 """
+from web_fixture import copy_web
 import hashlib
 from html.parser import HTMLParser
 from http.cookiejar import CookieJar
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import socket
@@ -64,7 +66,7 @@ class DocumentLinksHTTP(unittest.TestCase):
         cursor.execute(f'CREATE DATABASE `{name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');cursor.execute(f'USE `{name}`')
         def rows(sql,params=()):cursor.execute(sql,params);return cursor.fetchall()
         with tempfile.TemporaryDirectory() as directory:
-            work=Path(directory);web=work/'web';shutil.copytree(ROOT/'web',web)
+            work=Path(directory);web=work/'web';copy_web(web)
             for folder in ['archive','meta','inbox']: (work/folder).mkdir()
             setup=work/'setup.php'
             setup.write_text("<?php\n$db=new PDO('mysql:host=127.0.0.1;port="+str(config['port'])+';dbname='+name+";charset=utf8mb4','root',getenv('EABLAGE_TEST_DB_PASSWORD')?:'',[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);\n"+f"require {json.dumps(str(ROOT/'web/datenbank_wiederherstellung.php'))};\n"+'foreach ($argv as $i=>$path) { if($i===0)continue;foreach(eablage_restore_statements($path) as $sql)$db->exec($sql);}')
@@ -152,6 +154,27 @@ class DocumentLinksHTTP(unittest.TestCase):
                 self.assertEqual(rows('SELECT * FROM dokument_vorgang WHERE VorgangID=%s',(case_a,)),[])
                 self.assertEqual(len(rows('SELECT * FROM dokument_vorgang WHERE VorgangID=%s',(case_b,))),2)
                 self.assertEqual(request('/vorgaenge.php?id='+str(case_a))[0],404)
+                # Verify sorting of all filtered results before LIMIT/OFFSET with real MariaDB.
+                cursor.executemany(
+                    'INSERT INTO vorgang (Bezeichnung,Beschreibung,ErstelltAm) VALUES (%s,%s,%s)',
+                    [(f'Testreihe {index:02d}', 'Suchfilter', f'2026-01-01 12:00:{(index + 17) % 52:02d}')
+                     for index in range(52)]
+                )
+                for order in ('name', 'name-desc', 'date', 'date-asc', 'invalid'):
+                    expected = list(range(52))
+                    if order in ('date', 'date-asc'):
+                        expected.sort(key=lambda index: (index + 17) % 52)
+                    if order in ('name-desc', 'date'):
+                        expected.reverse()
+                    for page, expected_rows in ((1, expected[:50]), (2, expected[50:])):
+                        status, html, _ = request('/vorgaenge.php?' + urlencode({
+                            'q': 'Suchfilter', 'sort': order, 'page': page
+                        }))
+                        self.assertEqual(status, 200)
+                        self.assertEqual(
+                            [int(index) for index in re.findall(r'<strong>Testreihe (\d+)</strong>', html)],
+                            expected_rows, (order, page)
+                        )
                 log.flush();log.seek(0);self.assertNotIn('Fatal error',log.read())
             finally:
                 server.terminate();server.wait(timeout=10);api.shutdown();api.server_close();log.close()

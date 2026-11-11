@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/web_fixture.php';
 // Nur gegen eine ausdrücklich freigegebene lokale Wegwerf-MariaDB ausführen:
 // EABLAGE_TEST_DB_PORT=3307 php tests/document_search.php
 if (!getenv('EABLAGE_TEST_DB_PORT')) {
@@ -39,10 +40,7 @@ try {
     $insertNumber->execute([1,'AB12345','AB12345']);
     $insertNumber->execute([4,'VER98765','VER98765']);
     $db->exec('INSERT INTO dokument_vorgang (DokumentID, VorgangID) VALUES (1, 1), (4, 1)');
-    copy(__DIR__ . '/../web/dokumente.php', "$directory/dokumente.php");
-    copy(__DIR__ . '/../web/icons.php', "$directory/icons.php");
-    copy(__DIR__ . '/../web/vorgaenge_funktionen.php', "$directory/vorgaenge_funktionen.php");
-    copy(__DIR__ . '/../web/protokoll_funktionen.php', "$directory/protokoll_funktionen.php");
+    eablage_test_copy_web($directory);
     file_put_contents("$directory/app.css", '');
     file_put_contents("$directory/search_results.js", '');
     file_put_contents("$directory/navbar.php", '');
@@ -132,8 +130,7 @@ try {
     echo "Document search: PASS\n";
 } finally {
     $db->exec("DROP DATABASE `$name`");
-    foreach (glob("$directory/*") as $file) unlink($file);
-    rmdir($directory);
+    eablage_test_remove_tree($directory);
 }
 
 

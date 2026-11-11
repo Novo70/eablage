@@ -77,8 +77,9 @@ function eablage_vorgaenge_editor(PDO $db, array $ids): void
     <div class="form-group ea-vorgaenge-editor" data-vorgaenge-editor>
         <div class="ea-vorgang-label">
             <label for="vorgaenge-auswahl">Vorgänge</label>
-            <button type="button" class="ea-vorgang-help" aria-label="Hinweis zu Vorgängen" aria-describedby="vorgaenge-hinweis">?</button>
-            <span class="ea-vorgang-help-text" id="vorgaenge-hinweis" role="tooltip">Die Zuordnung wird mit dem Dokument gespeichert. Ein neu angelegter Vorgang bleibt auch beim Abbrechen bestehen.</span>
+            <button type="button" class="ea-help-button" aria-label="Hinweis zu Vorgängen"
+                data-help-tooltip="Die Zuordnung wird mit dem Dokument gespeichert. Ein neu angelegter Vorgang bleibt auch beim Abbrechen bestehen."
+                title="Die Zuordnung wird mit dem Dokument gespeichert. Ein neu angelegter Vorgang bleibt auch beim Abbrechen bestehen.">?</button>
         </div>
         <input type="hidden" name="vorgaenge_json" value="<?=$h(json_encode($ids))?>" data-vorgaenge-value>
         <div data-vorgaenge-rows></div>
@@ -97,6 +98,7 @@ function eablage_vorgaenge_editor(PDO $db, array $ids): void
         <p role="alert" class="text-danger" data-vorgaenge-error hidden></p>
         <noscript>Für die Vorgangsauswahl bitte JavaScript aktivieren. Bestehende Zuordnungen bleiben erhalten.</noscript>
     </div>
+    <script src="help_tooltip.js?v=<?=filemtime(__DIR__ . '/help_tooltip.js')?>" defer></script>
     <script src="vorgaenge.js?v=<?=filemtime(__DIR__ . '/vorgaenge.js')?>" defer></script>
     <?php
 }

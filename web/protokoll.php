@@ -112,21 +112,22 @@ function history_page(int $page): string
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>e_ablage – Ereignisprotokoll / Dokumenthistorie</title>
-    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
     <link rel="shortcut icon" href="ea_icon4.png" type="image/png" />
     <link rel="icon" href="ea_icon4.png" type="image/png" />
 </head>
 
 <body>
     <?php include 'navbar.php'; ?>
-    <main class="container">
-        <div class="panel panel-primary">
-            <div class="panel-heading">
-                <div class="panel-title"><?=eablage_icon('clipboard')?>Ereignisprotokoll / Dokumenthistorie</div>
+    <main class="container ea-history-container">
+        <div class="panel panel-primary ea-history-panel">
+            <div class="panel-heading ea-history-heading">
+                <h1 class="ea-history-title"><?=eablage_icon('clipboard')?>Ereignisprotokoll / Dokumenthistorie</h1>
             </div>
-            <div class="panel-body">
+            <div class="panel-body ea-history-body">
+                <div class="ea-history-scroll">
                 <p>Gespeicherte Dokumentereignisse, neueste zuerst. Frühere Info-Texte bleiben beim Dokument unter „Technische Informationen“ erhalten.</p>
-                <form method="get" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:15px">
+                <form method="get" class="ea-history-toolbar">
                     <?php if ($hasReturn): ?><input type="hidden" name="return" value="<?= h($returnUrl) ?>"><?php endif; ?>
                     <label>DokID <input class="form-control" name="dokid" inputmode="numeric" value="<?= h($dokId) ?>"></label>
                     <label>Ereignis <select class="form-control" name="ereignis">
@@ -137,7 +138,7 @@ function history_page(int $page): string
                     <button class="btn btn-primary" type="submit">Filtern</button> <a href="<?= h($resetUrl) ?>" class="btn btn-default">Zurücksetzen</a>
                 </form>
                 <?php if ($error !== ''): ?><div class="alert alert-danger"><?= h($error) ?></div>
-                <?php else: ?><p><?= h($total) ?> Ereignisse · Seite <?= h($page) ?> von <?= max(1, (int)ceil($total / 50)) ?></p>
+                <?php else: ?>
                     <?php if (!$rows): ?><p>Keine Ereignisse für diese Auswahl vorhanden.</p><?php endif; ?>
                     <?php foreach ($rows as $row): ?>
                         <details class="ea-group-details">
@@ -146,7 +147,12 @@ function history_page(int $page): string
                                     <span class="ea-result-meta-row ea-inbox-filename">
                                         <span class="ea-result-date"><?= h($row['Zeitpunkt']) ?> · <?= h(EABLAGE_EREIGNISSE[$row['Ereignistyp']] ?? $row['Ereignistyp']) ?></span>
                                         <span class="ea-result-meta">DokID <?= h($row['DokID']) ?> · <?= h($row['Quelle']) ?></span>
-                                        <?php if ($row['vorhanden'] !== null && $row['GeloeschtAm'] === null): ?><a class="ea-result-meta" href="bearbeiten.php?dokid=<?= (int)$row['DokID'] ?>">Dokument öffnen</a><?php endif; ?>
+                                        <?php if ($row['vorhanden'] !== null && $row['GeloeschtAm'] === null): ?>
+                                            <a class="ea-result-meta" href="<?= h('bearbeiten.php?' . http_build_query([
+                                                'dokid' => (int)$row['DokID'],
+                                                'return' => history_page($page),
+                                            ])) ?>">Dokument bearbeiten</a>
+                                        <?php endif; ?>
                                     </span>
                                 </span>
                             </summary>
@@ -159,10 +165,18 @@ function history_page(int $page): string
                             </div>
                         </details>
                     <?php endforeach; ?>
-                    <?php if ($page > 1): ?><a class="btn btn-default" href="<?= h(history_page($page - 1)) ?>">Neuere Ereignisse</a><?php endif; ?>
-                    <?php if ($page * 50 < $total): ?><a class="btn btn-default" href="<?= h(history_page($page + 1)) ?>">Ältere Ereignisse</a><?php endif; ?>
                 <?php endif; ?>
-                <div class="ea-form-actions"><a href="<?= h($returnUrl) ?>" class="btn btn-default">Zurück</a></div>
+                </div>
+                <footer class="ea-history-footer ea-search-footer">
+                    <?php if ($error === ''): ?><span><?= h($total) ?> Ereignisse · Seite <?= h($page) ?> von <?= max(1, (int)ceil($total / 50)) ?></span><?php endif; ?>
+                    <div class="ea-search-actions">
+                        <?php if ($error === ''): ?>
+                            <?php if ($page > 1): ?><a class="btn btn-default" href="<?= h(history_page($page - 1)) ?>">Neuere Ereignisse</a><?php endif; ?>
+                            <?php if ($page * 50 < $total): ?><a class="btn btn-default" href="<?= h(history_page($page + 1)) ?>">Ältere Ereignisse</a><?php endif; ?>
+                        <?php endif; ?>
+                        <a href="<?= h($returnUrl) ?>" class="btn btn-default">Zurück</a>
+                    </div>
+                </footer>
             </div>
         </div>
     </main>

@@ -1,10 +1,10 @@
 <?php require_once __DIR__ . '/icons.php'; ?>
-<div class="panel panel-primary" id="archivpruefung">
+<div class="panel panel-default" id="archivpruefung">
     <div class="panel-heading"><?=eablage_icon('check-document')?>Archivprüfung &amp; Metadatenreparatur</div>
     <div class="panel-body">
         <p>Prüft die Zuordnung von Datenbankeinträgen, PDFs und Metadateien sowie vorhandene SHA-256-Prüfsummen. Die Prüfung verändert keine Dateien oder Referenzwerte. Die Datenbank ist für Metadaten maßgeblich. Das Einlesen aller PDFs mit Prüfsumme kann Zeit benötigen.</p>
         <p>Reparaturen erzeugen JSON-Metadateien aus den Datenbankwerten.</p>
-        <form method="POST" action="gesamtexport.php#archivpruefung">
+        <form method="POST" action="gesamtexport.php?bereich=archiv">
             <input type="hidden" name="action" value="archive_audit">
             <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
             <button type="submit" class="btn btn-primary">Archiv prüfen</button>
@@ -28,7 +28,7 @@
             <?php if (empty($archiveReport['issues'])): ?>
                 <p class="alert alert-success">Keine Abweichungen gefunden.</p>
             <?php else: ?>
-                <form id="archive-repair-form" method="POST" action="gesamtexport.php#archivpruefung" onsubmit="return confirm('Ausgewählte JSON-Metadateien aus der Datenbank neu erzeugen? Vorhandene JSON-Inhalte werden ersetzt.');">
+                <form id="archive-repair-form" method="POST" action="gesamtexport.php?bereich=archiv" onsubmit="return confirm('Ausgewählte JSON-Metadateien aus der Datenbank neu erzeugen? Vorhandene JSON-Inhalte werden ersetzt.');">
                     <input type="hidden" name="action" value="archive_repair">
                     <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                     <?php if ($archiveReport['repairable'] > 0): ?>

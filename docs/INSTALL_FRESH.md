@@ -1,6 +1,6 @@
 # eAblage mit integrierter Datenbank installieren
 
-Diese Anleitung richtet eine neue eAblage-4.6.0-Instanz mit Weboberfläche, Backend, Worker und eigener MariaDB ein. Du brauchst Docker mit Compose, Zugriff auf eine Shell (auf dem NAS per SSH) und beim ersten Start Internetzugang für Images und Python-Pakete.
+Diese Anleitung richtet eine neue eAblage-4.6.1-Instanz mit Weboberfläche, Backend, Worker und eigener MariaDB ein. Du brauchst Docker mit Compose, Zugriff auf eine Shell (auf dem NAS per SSH) und beim ersten Start Internetzugang für Images und Python-Pakete.
 
 Für eine bestehende Instanz gilt die [Update-Anleitung](UPDATE.md). Falls du eine vorhandene MariaDB verwenden möchtest, folge der [Anleitung für eine separate Datenbank](INSTALL_STANDARD.md).
 

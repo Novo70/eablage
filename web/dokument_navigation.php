@@ -10,6 +10,6 @@ function valid_return_url(?string $url): string
         || isset($parts['user']) || isset($parts['pass']) || isset($parts['port'])
     ) return 'dokumente.php';
     $path = (string)($parts['path'] ?? '');
-    if (!in_array($path, ['dokumente.php', 'verarbeiten.php', 'bearbeiten.php', 'ansehen.php', 'explorer.php', 'vorgaenge.php'], true)) return 'dokumente.php';
+    if (!in_array($path, ['dokumente.php', 'verarbeiten.php', 'bearbeiten.php', 'ansehen.php', 'explorer.php', 'vorgaenge.php', 'protokoll.php'], true)) return 'dokumente.php';
     return $path . (isset($parts['query']) ? '?' . $parts['query'] : '');
 }

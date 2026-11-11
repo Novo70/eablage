@@ -11,9 +11,17 @@ Neue Einträge werden aktiv angelegt. Die nächste numerische ID wird automatisc
 vergeben. Der aktuelle Bereich endet bei 999, passend zu den dreistelligen
 AutoKat-Zuordnungsfeldern. Bestehende IDs werden niemals geändert.
 
+`0` bedeutet bei Kategorie, Kategorie 2 und Dokumententyp **keine Zuordnung**. Dafür gibt es keinen eigenen Stammdateneintrag. Die leere Auswahl wird von der Oberfläche bereitgestellt; `0` in Dokumenten und leere beziehungsweise `0`-Werte in Regelfeldern bleiben erhalten und zählen nicht als Stammdatenverknüpfungen. Die Verwaltung zeigt keine ID-0-Platzhalter an und vergibt nur positive IDs.
+
+Bestehende leere ID-0-Einträge lassen sich nach einer Datenbanksicherung mit [update_empty_master_data.sql](../sql/update_empty_master_data.sql) entfernen. Das Skript ist wiederholbar und löscht ausschließlich ID `0` mit leerer Bezeichnung in `kategorie` und `doktyp`. Andere IDs sowie unerwartet benannte ID-0-Zeilen bleiben unverändert. Dokumente, Regeln und deren Zuordnungswerte werden nicht verändert. Neuinstallationen benötigen diese Platzhalter nicht. Die Rücksicherung über eAblage entfernt solche leeren Platzhalter auch aus älteren Sicherungen; bei einem manuellen Import außerhalb der Anwendung das Bereinigungsskript anschließend selbst ausführen.
+
 - Bezeichnung und Erläuterung speichern: Speichern steht zusammen mit Löschen in Aktionen. Der neue
-  Name gilt auch für ältere Dokumente. Kein Neuladen; der Button bestätigt kurz mit
-  „✓ Gespeichert“. Andere noch nicht gespeicherte Zeilen bleiben erhalten.
+  Name gilt auch für ältere Dokumente. Ungespeicherte Änderungen an Bezeichnung, Erläuterung
+  oder Sortierung heben den Button wie einen Hauptbutton blau mit weißer Schrift hervor. Erst nach bestätigtem
+  Speichern kehrt er zur normalen Darstellung zurück; die Beschriftung bleibt „Speichern“.
+  Bei Fehlern und bei weiteren Änderungen während des Speicherns bleibt die Markierung erhalten.
+  Wer Änderungen auf den gespeicherten Wert zurücksetzt, entfernt damit die Markierung.
+  Kein Neuladen; andere noch nicht gespeicherte Zeilen bleiben erhalten.
 - Deaktivieren: nur möglich, wenn keine AutoKat-Regel verweist. Auch inaktive
   Regeln zählen. Der aktive Status ganz rechts ist dann ausgegraut und nicht
   anklickbar. Die Spalte Verwendung zeigt die verknüpften Regeln mit Links.
@@ -33,7 +41,7 @@ die Bildschirmposition erhalten bleibt. Anlegen ist eine eigene Formularaktion.
 
 ## Optionale Erläuterung
 
-Jede Kategorie und jeder Dokumententyp kann eine **Erläuterung** mit bis zu 1000 Zeichen einschließlich Zeilenumbrüchen erhalten. Sie dokumentiert Definition, typische Inhalte und Abgrenzungen der eigenen Ablagesystematik und ist auch ohne KI nutzbar. In der Liste den Bereich **Erläuterung** unter der Bezeichnung aufklappen; der Button **Speichern** speichert beide Angaben zusammen. Ein leerer Text entfernt die Erläuterung. Beim Anlegen steht das optionale Feld ebenfalls zur Verfügung.
+Jede Kategorie und jeder Dokumententyp kann eine **Erläuterung** mit bis zu 1000 Zeichen einschließlich Zeilenumbrüchen erhalten. Sie dokumentiert Definition, typische Inhalte und Abgrenzungen der eigenen Ablagesystematik und ist auch ohne KI nutzbar. Auf großen Bildschirmen steht das zweizeilige, vergrößerbare Feld neben der Bezeichnung; mobil lässt es sich unter der Bezeichnung aufklappen. Der Button **Speichern** speichert beide Angaben zusammen. Ein leerer Text entfernt die Erläuterung. Beim Anlegen steht das optionale Feld ebenfalls zur Verfügung.
 
 Beispiel für **Haus und Garten**: „Unterlagen zu eigenen Immobilien, deren Nutzung, Unterhaltung und Absicherung; einschließlich Gebäudeversicherung.“ Für Dokumententypen eignen sich beispielsweise Abgrenzungen zwischen Rechnung, Vertrag und Vertragsänderung.
 

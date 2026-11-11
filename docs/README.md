@@ -1,6 +1,6 @@
 # eAblage Dokumentation
 
-Diese Dokumentation beschreibt eAblage 4.6.0 mit lokaler PDF.js-Vorschau, optionalem Desktop-Modus und Aktualisierungsprüfung. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
+Diese Dokumentation beschreibt eAblage 4.6.1 mit einheitlichen Verwaltungsfenstern, lokaler PDF.js-Vorschau, optionalem Desktop-Modus und Aktualisierungsprüfung. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
 
 Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale Beispiele.
 

@@ -220,6 +220,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+$areas = [
+    'export' => 'Gesamtexport',
+    'sicherung' => 'Datensicherung',
+    'archiv' => 'Archivprüfung',
+];
+$requestedArea = $_GET['bereich'] ?? '';
+$area = is_string($requestedArea) && isset($areas[$requestedArea]) ? $requestedArea : 'export';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $area = match ($_POST['action'] ?? '') {
+        'export' => 'export',
+        'backup', 'restore' => 'sicherung',
+        'archive_audit', 'archive_repair' => 'archiv',
+        default => $area,
+    };
+}
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -232,119 +247,133 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 <?php require_once 'navbar.php'; ?>
-<div class="container">
-    <?php if ($meldung !== ''): ?>
-        <?=eablage_render_message($meldungTyp, $meldung)?>
-    <?php endif; ?>
-
-    <div class="panel panel-primary">
-        <div class="panel-heading"><?=eablage_icon('export')?>Dokumenten-Gesamtexport</div>
-        <div class="panel-body">
-            <p>Die Parameter für den Gesamtexport können in den Einstellungen geändert werden. Dort kann das Exportverzeichnis unter "Pfad" sowie die Zusammensetzung des Dateinamens unter "Gesamtexport"
-                konfiguriert werden.</p>
-
-            <dl>
-                <dt>Zielverzeichnis</dt>
-                <dd><code><?=h($targetRoot ?? '(nicht konfiguriert)')?></code></dd>
-            </dl>
-
-            <?php if (!$targetConfigured): ?>
-                <?=eablage_render_message('warning', 'Bitte zunächst in den Einstellungen den Parameter 1_expVerzeichnis_linux auf ein beschreibbares NAS-Verzeichnis setzen.')?>
+<main class="container ea-admin-workspace">
+    <section class="panel panel-primary ea-admin-workspace-panel" aria-labelledby="export-heading">
+        <div class="panel-heading" id="export-heading"><?=eablage_icon('export')?>Export &amp; Datensicherung</div>
+        <nav class="ea-tabs ea-admin-workspace-tabs" aria-label="Export und Datensicherung">
+            <?php foreach ($areas as $key => $label): ?>
+                <a href="gesamtexport.php?bereich=<?=h($key)?>" <?=$area === $key ? 'aria-current="page"' : ''?>><?=h($label)?></a>
+            <?php endforeach; ?>
+        </nav>
+        <div class="panel-body ea-admin-workspace-scroll" tabindex="0" role="region" aria-label="<?=h($areas[$area])?>">
+            <?php if ($meldung !== ''): ?>
+                <?=eablage_render_message($meldungTyp, $meldung)?>
             <?php endif; ?>
 
-            <form method="POST" action="gesamtexport.php" onsubmit="return confirm('Gesamtexport jetzt starten? Bereits vorhandene Exportdateien mit gleichem Namen werden überschrieben.');">
-                <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
-                <input type="hidden" name="action" value="export">
-                <button type="submit" class="btn btn-primary" <?=!$targetConfigured ? 'disabled' : ''?>><?=eablage_icon('export')?>Gesamtexport starten</button>
-            </form>
-        </div>
-    </div>
+            <?php if ($area === 'export'): ?>
+                <div class="panel panel-default">
+                    <div class="panel-heading"><?=eablage_icon('export')?>Dokumenten-Gesamtexport</div>
+                    <div class="panel-body">
+                        <p>Die Parameter für den Gesamtexport können in den Einstellungen geändert werden. Dort kann das Exportverzeichnis unter "Pfad" sowie die Zusammensetzung des Dateinamens unter "Gesamtexport"
+                            konfiguriert werden.</p>
 
-    <?php if ($exportResult !== null): ?>
-        <div class="panel panel-default">
-            <div class="panel-heading">Ergebnis Gesamtexport</div>
-            <div class="panel-body">
-                <p><strong>Geplant:</strong> <?=h($exportResult['planned'])?> &nbsp; <strong>Exportiert:</strong> <?=h($exportResult['exported'])?> &nbsp; <strong>Fehler/Hinweise:</strong> <?=h(count($exportResult['errors']))?></p>
-                <?php if (!empty($exportResult['errors'])): ?>
-                    <details>
-                        <summary>Fehler und Hinweise anzeigen</summary>
-                        <ul style="margin-top:10px;">
-                            <?php foreach ($exportResult['errors'] as $error): ?>
-                                <li><?=h($error)?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </details>
+                        <dl>
+                            <dt>Zielverzeichnis</dt>
+                            <dd><code><?=h($targetRoot ?? '(nicht konfiguriert)')?></code></dd>
+                        </dl>
+
+                        <?php if (!$targetConfigured): ?>
+                            <?=eablage_render_message('warning', 'Bitte zunächst in den Einstellungen den Parameter 1_expVerzeichnis_linux auf ein beschreibbares NAS-Verzeichnis setzen.')?>
+                        <?php endif; ?>
+
+                        <form method="POST" action="gesamtexport.php?bereich=export" onsubmit="return confirm('Gesamtexport jetzt starten? Bereits vorhandene Exportdateien mit gleichem Namen werden überschrieben.');">
+                            <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
+                            <input type="hidden" name="action" value="export">
+                            <button type="submit" class="btn btn-primary" <?=!$targetConfigured ? 'disabled' : ''?>><?=eablage_icon('export')?>Gesamtexport starten</button>
+                        </form>
+                    </div>
+                </div>
+
+                <?php if ($exportResult !== null): ?>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Ergebnis Gesamtexport</div>
+                        <div class="panel-body">
+                            <p><strong>Geplant:</strong> <?=h($exportResult['planned'])?> &nbsp; <strong>Exportiert:</strong> <?=h($exportResult['exported'])?> &nbsp; <strong>Fehler/Hinweise:</strong> <?=h(count($exportResult['errors']))?></p>
+                            <?php if (!empty($exportResult['errors'])): ?>
+                                <details>
+                                    <summary>Fehler und Hinweise anzeigen</summary>
+                                    <ul style="margin-top:10px;">
+                                        <?php foreach ($exportResult['errors'] as $error): ?>
+                                            <li><?=h($error)?></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </details>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 <?php endif; ?>
-            </div>
-        </div>
-    <?php endif; ?>
 
-    <div class="panel panel-primary">
-        <div class="panel-heading"><?=eablage_icon('database')?>Backup der Datenbank</div>
-        <div class="panel-body">
-            <p>Erstellt eine SQL-Sicherung der eAblage-Datenbank mit Tabellenstruktur und Daten. Die Sicherung wird im Zielverzeichnis gespeichert.</p>
+            <?php elseif ($area === 'sicherung'): ?>
+                <div class="panel panel-default">
+                    <div class="panel-heading"><?=eablage_icon('database')?>Backup der Datenbank</div>
+                    <div class="panel-body">
+                        <p>Erstellt eine SQL-Sicherung der eAblage-Datenbank mit Tabellenstruktur und Daten. Die Sicherung wird im Zielverzeichnis gespeichert.</p>
 
-            <dl>
-                <dt>Datenbank</dt>
-                <dd><code><?=h(defined('MYSQL_DATENBANK') ? MYSQL_DATENBANK : '(nicht ermittelbar)')?></code></dd>
-                <dt>Zielverzeichnis</dt>
-                <dd><code><?=h($backupRoot ?? '(nicht konfiguriert)')?></code></dd>
-            </dl>
+                        <dl>
+                            <dt>Datenbank</dt>
+                            <dd><code><?=h(defined('MYSQL_DATENBANK') ? MYSQL_DATENBANK : '(nicht ermittelbar)')?></code></dd>
+                            <dt>Zielverzeichnis</dt>
+                            <dd><code><?=h($backupRoot ?? '(nicht konfiguriert)')?></code></dd>
+                        </dl>
 
-            <?php if (!$backupConfigured): ?>
-                <?=eablage_render_message('warning', 'Bitte zunächst den Parameter pfadDatensicherung_linux anlegen bzw. in den Einstellungen auf ein beschreibbares NAS-Verzeichnis setzen.')?>
+                        <?php if (!$backupConfigured): ?>
+                            <?=eablage_render_message('warning', 'Bitte zunächst den Parameter pfadDatensicherung_linux anlegen bzw. in den Einstellungen auf ein beschreibbares NAS-Verzeichnis setzen.')?>
+                        <?php endif; ?>
+
+                        <form method="POST" action="gesamtexport.php?bereich=sicherung" onsubmit="return confirm('Datenbanksicherung jetzt erstellen?');">
+                            <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
+                            <input type="hidden" name="action" value="backup">
+                            <button type="submit" class="btn btn-primary" <?=!$backupConfigured ? 'disabled' : ''?>><?=eablage_icon('database')?>Datenbanksicherung erstellen</button>
+                        </form>
+                    </div>
+                </div>
+
+                <?php if ($backupResult !== null): ?>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Ergebnis Datensicherung</div>
+                        <div class="panel-body">
+                            <p><strong>Datei:</strong> <?=h($backupResult['filename'])?></p>
+                            <p><strong>Erstellt:</strong> <?=h($backupResult['created_at'])?></p>
+                            <p><strong>Größe:</strong> <?=h(format_bytes($backupResult['size']))?> &nbsp; <strong>Tabellen:</strong> <?=h($backupResult['tables'])?> &nbsp; <strong>Datensätze:</strong> <?=h($backupResult['rows'])?></p>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                <?php if ($restoreAvailable && $backupConfigured): ?>
+                    <div class="panel panel-default" id="datenbank-wiederherstellen">
+                        <div class="panel-heading"><?=eablage_icon('database')?>Datenbank aus Backup initialisieren</div>
+                        <div class="panel-body">
+                            <p>Nur bei leerer Tabelle <code>dokumente</code>. Vorhandene Stammdaten, Parameter und Dokumenthistorie werden durch den gesicherten Stand ersetzt. Eine ältere Sicherung ohne Historie leert die vorhandene Protokolltabelle. Unterstützte eAblage-Versionen: <?=h(implode(', ', EABLAGE_RESTORE_VERSIONS))?>. Der Papierkorb wird mit übernommen. Andere Sicherungen benötigen eine gesonderte Migration.</p>
+                            <p>Die SQL-Sicherung enthält keine PDFs und Metadateien. Diese müssen zum gesicherten Stand passen und werden anschließend über die eigenständige Archivprüfung geprüft.</p>
+                            <?php if (empty($restoreFiles)): ?>
+                                <p>Keine auswählbare Sicherung im konfigurierten Verzeichnis gefunden.</p>
+                            <?php else: ?>
+                                <form method="POST" action="gesamtexport.php?bereich=sicherung" onsubmit="return confirm('Datenbank aus der ausgewählten Sicherung initialisieren? Die bestehenden Tabellen, Startdaten und die Dokumenthistorie werden ersetzt. Bei älteren Sicherungen ohne Historie wird das bisherige Protokoll geleert.');">
+                                    <input type="hidden" name="action" value="restore">
+                                    <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
+                                    <label for="restore_file">SQL-Sicherung</label>
+                                    <select id="restore_file" name="restore_file" required>
+                                        <?php foreach ($restoreFiles as $file): ?>
+                                            <option value="<?=h($file)?>"><?=h($file)?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p><label><input type="checkbox" name="restore_confirm" value="yes" required> Diese Datenbank jetzt mit der ausgewählten Sicherung befüllen.</label></p>
+                                    <button type="submit" class="btn btn-warning"><?=eablage_icon('database')?>Datenbank initialisieren</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                <?php if ($restoreResult !== null): ?>
+                    <div class="panel panel-default"><div class="panel-heading">Ergebnis Rücksicherung</div><div class="panel-body">
+                        <p><?=h($restoreResult['filename'])?>: <?=h($restoreResult['tables'])?> Tabellen, <?=h($restoreResult['documents'])?> Dokumente importiert.</p>
+                        <p><a href="gesamtexport.php?bereich=archiv">Zur unabhängigen Archivprüfung</a>. Dort die Prüfung starten, nachdem die zugehörigen PDFs und Metadateien bereitgestellt wurden.</p>
+                    </div></div>
+                <?php endif; ?>
+            <?php else: ?>
+                <?php require 'archiv_wartung_ansicht.php'; ?>
             <?php endif; ?>
-
-            <form method="POST" action="gesamtexport.php" onsubmit="return confirm('Datenbanksicherung jetzt erstellen?');">
-                <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
-                <input type="hidden" name="action" value="backup">
-                <button type="submit" class="btn btn-primary" <?=!$backupConfigured ? 'disabled' : ''?>><?=eablage_icon('database')?>Datenbanksicherung erstellen</button>
-            </form>
         </div>
-    </div>
-
-    <?php if ($backupResult !== null): ?>
-        <div class="panel panel-default">
-            <div class="panel-heading">Ergebnis Datensicherung</div>
-            <div class="panel-body">
-                <p><strong>Datei:</strong> <?=h($backupResult['filename'])?></p>
-                <p><strong>Erstellt:</strong> <?=h($backupResult['created_at'])?></p>
-                <p><strong>Größe:</strong> <?=h(format_bytes($backupResult['size']))?> &nbsp; <strong>Tabellen:</strong> <?=h($backupResult['tables'])?> &nbsp; <strong>Datensätze:</strong> <?=h($backupResult['rows'])?></p>
-            </div>
-        </div>
-    <?php endif; ?>
-    <?php if ($restoreAvailable && $backupConfigured): ?>
-        <div class="panel panel-primary" id="datenbank-wiederherstellen">
-            <div class="panel-heading"><?=eablage_icon('database')?>Datenbank aus Backup initialisieren</div>
-            <div class="panel-body">
-                <p>Nur bei leerer Tabelle <code>dokumente</code>. Vorhandene Stammdaten, Parameter und Dokumenthistorie werden durch den gesicherten Stand ersetzt. Eine ältere Sicherung ohne Historie leert die vorhandene Protokolltabelle. Nur unterstützte eAblage-Sicherungen aus Version 4.1.0 oder 4.2.0 einschließlich Papierkorb werden angenommen. Andere Sicherungen benötigen eine gesonderte Migration.</p>
-                <p>Die SQL-Sicherung enthält keine PDFs und Metadateien. Diese müssen zum gesicherten Stand passen und werden anschließend über die eigenständige Archivprüfung geprüft.</p>
-                <?php if (empty($restoreFiles)): ?>
-                    <p>Keine auswählbare Sicherung im konfigurierten Verzeichnis gefunden.</p>
-                <?php else: ?>
-                    <form method="POST" action="gesamtexport.php#datenbank-wiederherstellen" onsubmit="return confirm('Datenbank aus der ausgewählten Sicherung initialisieren? Die bestehenden Tabellen, Startdaten und die Dokumenthistorie werden ersetzt. Bei älteren Sicherungen ohne Historie wird das bisherige Protokoll geleert.');">
-                        <input type="hidden" name="action" value="restore">
-                        <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
-                        <label for="restore_file">SQL-Sicherung</label>
-                        <select id="restore_file" name="restore_file" required>
-                            <?php foreach ($restoreFiles as $file): ?>
-                                <option value="<?=h($file)?>"><?=h($file)?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <p><label><input type="checkbox" name="restore_confirm" value="yes" required> Diese Datenbank jetzt mit der ausgewählten Sicherung befüllen.</label></p>
-                        <button type="submit" class="btn btn-warning"><?=eablage_icon('database')?>Datenbank initialisieren</button>
-                    </form>
-                <?php endif; ?>
-            </div>
-        </div>
-    <?php endif; ?>
-    <?php if ($restoreResult !== null): ?>
-        <div class="panel panel-default"><div class="panel-heading">Ergebnis Rücksicherung</div><div class="panel-body">
-            <p><?=h($restoreResult['filename'])?>: <?=h($restoreResult['tables'])?> Tabellen, <?=h($restoreResult['documents'])?> Dokumente importiert.</p>
-            <p><a href="gesamtexport.php#archivpruefung">Zur unabhängigen Archivprüfung</a>. Dort die Prüfung starten, nachdem die zugehörigen PDFs und Metadateien bereitgestellt wurden.</p>
-        </div></div>
-    <?php endif; ?>
-    <?php require 'archiv_wartung_ansicht.php'; ?>
-</div>
+    </section>
+</main>
 </body>
 </html>

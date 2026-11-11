@@ -270,7 +270,8 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
 <body>
 <?php require_once 'navbar.php'; ?>
 <div class="ea-main-container">
-<div class="container" style="margin-top:20px; margin-bottom:30px;">
+<div class="container ea-rule-editor-container">
+    <div class="ea-admin-notices">
     <?php if ($fehler !== ''): ?>
         <?=eablage_render_message('danger', $fehler)?>
     <?php endif; ?>
@@ -279,10 +280,11 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
         <?=eablage_render_message('info', 'Dokument ' . $sourceDokId . ' ist bereits archiviert. Die Regelvorlage übernimmt die Klassifikationswerte und bleibt zunächst inaktiv. Bitte Suchbegriffe festlegen und Betreff sowie Nummer auf wiederverwendbare Werte prüfen. Abbrechen verwirft nur die Regelvorlage.')?>
     <?php endif; ?>
 
-    <div class="panel panel-primary">
-        <div class="panel-heading"><?=eablage_icon('edit')?><?= $neu ? 'Neue AutoKat-Regel' : 'AutoKat-Regel ' . h($regel['RegelID']) ?></div>
-        <div class="panel-body">
-            <form method="post">
+    </div>
+    <div class="panel panel-primary ea-rule-editor-panel">
+        <div class="panel-heading ea-rule-editor-heading"><h1 class="ea-rule-editor-title"><?=eablage_icon('edit')?><?= $neu ? 'Neue AutoKat-Regel' : 'AutoKat-Regel ' . h($regel['RegelID']) ?></h1></div>
+        <form method="post" class="panel-body ea-rule-editor-form">
+            <div class="ea-rule-editor-scroll">
                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                 <input type="hidden" name="is_new" value="<?= $neu ? '1' : '0' ?>">
                 <input type="hidden" name="regel_id" value="<?= h($regel['RegelID']) ?>">
@@ -359,12 +361,12 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
                 <input type="hidden" name="number_rules_json" id="number_rules_json" value="<?=h($numberDefinitionsRaw)?>">
                 <script type="application/json" id="rule-number-kinds"><?=json_encode($db->query('SELECT id,Bezeichnung FROM nummernart WHERE Aktiv=1 ORDER BY Sortierung,Bezeichnung')->fetchAll(PDO::FETCH_ASSOC),JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?></script>
                 </div></div><script src="nummern_regeln.js"></script>
-                <div class="ea-form-actions">
-                    <a href="<?= h($returnUrl) ?>" class="btn btn-default">Abbrechen</a>
-                    <button type="submit" class="btn btn-primary"><?=eablage_icon('save')?>Speichern</button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <footer class="ea-form-actions ea-rule-editor-footer">
+                <a href="<?= h($returnUrl) ?>" class="btn btn-default">Abbrechen</a>
+                <button type="submit" class="btn btn-primary"><?=eablage_icon('save')?>Speichern</button>
+            </footer>
+        </form>
     </div>
 </div>
 </div>

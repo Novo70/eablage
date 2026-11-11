@@ -20,6 +20,8 @@ Ein PDF-Export enthält nicht die SQL-Datenbank oder einen vollständigen Beglei
 
 Die Parameter beginnen mit `1_` für Gesamtexport/Explorer und `2_` für Einzelexport. `1_expDateinameModus` beziehungsweise `2_expDateinameModus` wählen:
 
+Unter **Einstellungen** erläutern die Beschreibungen unter den Parametern die Bedeutung und die vorgesehenen Eingaben. Für bestehende Installationen ergänzt [update_export_descriptions.sql](../sql/update_export_descriptions.sql) fehlende Hinweise und aktualisiert bekannte Standardtexte. Das wiederholbare Skript verändert ausschließlich die Beschreibungen; eigene Hinweistexte und eingestellte Werte bleiben erhalten. Die Seed-Daten für Neuinstallationen enthalten dieselben Hinweise.
+
 | Modus | Verhalten |
 | --- | --- |
 | `generiert` | Name aus den aktivierten Metadaten in der unten genannten Reihenfolge |

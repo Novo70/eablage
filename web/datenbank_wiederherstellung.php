@@ -2,7 +2,7 @@
 // Initialbefüllung aus einer unterstützten eAblage-Sicherung.
 // Die Archivprüfung bleibt ein eigenständiger Vorgang.
 
-const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0', '4.6.0'];
+const EABLAGE_RESTORE_VERSIONS = ['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0', '4.6.0', '4.6.1'];
 const EABLAGE_RESTORE_TABLES = ['autokat', 'doktyp', 'dokumente', 'kategorie', 'parameter'];
 
 function eablage_restore_empty(PDO $db): bool
@@ -208,6 +208,9 @@ function eablage_restore_database_unlocked(PDO $db, string $path): array
     if (!$summary['cases']) {
         foreach (eablage_restore_statements(__DIR__.'/vorgaenge_schema.sql') as $sql) $db->exec($sql);
     }
+    // Older backups may contain empty ID-0 rows. Zero assignments remain unchanged.
+    $db->exec("DELETE FROM kategorie WHERE id = '0' AND TRIM(COALESCE(katBez, '')) = ''");
+    $db->exec("DELETE FROM doktyp WHERE id = '0' AND TRIM(COALESCE(doktypBez, '')) = ''");
     $summary['documents'] = (int)$db->query('SELECT COUNT(*) FROM dokumente')->fetchColumn();
     unlink($marker);
     return $summary;

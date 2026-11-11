@@ -59,7 +59,7 @@ Eine technische Änderung sollte durchgeführt werden, wenn ihr erwarteter Nutze
 
 ## Versionierung und Dokumentation
 
-Webanwendung und Backend werden gemeinsam versioniert und zusammen getestet. `main` enthält den freigegebenen Stand; `develop` enthält die Weiterentwicklung. Die manuelle Instanzkennzeichnung `Version` in der Datenbank ersetzt keinen Commit- oder Versionsnachweis.
+Webanwendung und Backend werden gemeinsam versioniert und zusammen getestet. `main` enthält den freigegebenen Stand; `develop` enthält die Weiterentwicklung. `release.json` im Repository-Hauptverzeichnis definiert Version und Veröffentlichungsdatum. Bytegleiche, generierte Kopien in den Container-Verzeichnissen werden durch die CI geprüft. Die manuelle Datenbankbezeichnung (historischer Parameterschlüssel `Version`) bleibt davon unabhängig und wird bei Updates nicht überschrieben.
 
 Markdown ist die einzige redaktionelle Dokumentationsquelle. Änderungen am Verhalten werden im gleichen Änderungsvorgang an der zuständigen Dokumentationsseite gepflegt. Die [Dokumentationsübersicht](README.md) führt zu Installation, Bedienung, Betrieb und Referenz. Historische Prüfergebnisse und überholte Anleitungen gehören nicht in die aktuelle Dokumentation; die Git-Historie bewahrt frühere Fassungen. Die Changelogs bleiben eigenständige Änderungshistorien.
 

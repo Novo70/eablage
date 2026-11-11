@@ -9,13 +9,14 @@ function setup(kind, response, reject = false) {
     const handlers = {};
     const requests = [];
     function element() {
-        return { children: [], style: {}, dataset: {}, classList: { toggle() {}, add() {} },
+        const classes = new Set();
+        return { children: [], style: {}, dataset: {}, classList: { contains: name => classes.has(name), toggle(name, on) { if(on) classes.add(name); else classes.delete(name); }, add(name) { classes.add(name); } },
             setAttribute() {}, removeAttribute() {},
             append(child) { this.children.push(child); },
             replaceChildren(...children) { this.children = children; },
             remove() { this.removed = true; } };
     }
-    const row = Object.assign(element(), { cells: Array(5), after(node) { this.feedback = node; },
+    const row = Object.assign(element(), { cells: Array(5), querySelector: () => null, after(node) { this.feedback = node; },
         getBoundingClientRect: () => ({ height: 72 }) });
     const button = Object.assign(element(), { type:'submit', name:kind === 'master' || kind === 'delete' ? 'action' : '',
         value: kind === 'delete' ? 'delete' : 'deactivate', textContent:kind === 'rename' ? 'Speichern' : '✅ aktiv' });
@@ -56,8 +57,11 @@ for (const kind of ['master','rule','rename','delete']) {
         assert.equal(h.row.feedback.hidden,true);
         assert.equal(h.button.disabled,false);
         if (kind === 'rename') {
-            assert.equal(h.button.textContent,'✓ Gespeichert');
+            assert.equal(h.button.textContent,'Speichern');
+            assert.equal(h.button.classList.contains('ea-master-save-dirty'),false);
+            h.input.value='Weitere Änderung';
             h.handlers.input();
+            assert.equal(h.button.classList.contains('ea-master-save-dirty'),true);
             assert.equal(h.button.textContent,'Speichern');
         } else if (kind === 'delete') {
             assert.equal(h.row.children[0].textContent,'✓ Eintrag gelöscht');
@@ -81,3 +85,19 @@ test('network failure keeps the previous status', async () => {
     assert.equal(h.row.feedback.hidden,false);
 });
 
+
+test('rename: reverting an edit clears the unsaved marker', () => {
+    const h=setup('rename',null);
+    const initial=h.input.value;
+    h.input.value='Andere Bezeichnung';h.handlers.input();
+    assert.equal(h.button.classList.contains('ea-master-save-dirty'),true);
+    h.input.value=initial;h.handlers.input();
+    assert.equal(h.button.classList.contains('ea-master-save-dirty'),false);
+});
+for(const reject of [false,true]) test(`rename: ${reject?'network':'validation'} failure preserves the unsaved marker`, async () => {
+    const h=setup('rename',{ok:false,json:async()=>({ok:false,message:'Ungültig'})},reject);
+    h.input.value='Änderung';h.handlers.input();
+    await h.handlers.submit({preventDefault(){}});
+    assert.equal(h.button.classList.contains('ea-master-save-dirty'),true);
+    assert.equal(h.button.textContent,'Speichern');
+});

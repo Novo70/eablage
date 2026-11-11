@@ -15,6 +15,18 @@ session_write_close();
 function h($value): string {
     return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
+
+function master_help(string $label, string $text): string {
+    return '<button type="button" class="ea-help-button" data-help-tooltip="' . h($text)
+        . '" title="' . h($text) . '" aria-label="Hinweis zu ' . h($label) . '">?</button>';
+}
+$masterHints = [
+    'Bezeichnung' => 'Umbenennen gilt auch für bestehende Dokumente.',
+    'Erläuterung' => 'Die Erläuterung dient der eigenen Dokumentation und hilft der KI, Dokumente passend zu klassifizieren.',
+    'Status' => 'Deaktivierte Einträge bleiben recherchierbar und vorhandene Zuordnungen bleiben erhalten. Deaktivieren ist erst ohne Regelverknüpfungen möglich.',
+    'Aktionen' => 'Löschen ist nur ohne Dokumentverknüpfungen und ohne Regelverknüpfungen möglich.',
+];
+
 function master_call(string $kind, array $payload): array {
     $payload['database'] = MYSQL_DATENBANK;
     $response = eablage_backend_request('POST', '/master-data/' . $kind, $payload, 20);
@@ -98,7 +110,8 @@ try {
 </head>
 <body>
 <?php require 'navbar.php'; ?>
-<div class="container">
+<div class="container ea-master-container">
+    <div class="ea-admin-notices">
     <?php if ($message !== ''): ?><?=eablage_render_message('success', $message)?><?php endif; ?>
     <?php if ($error !== ''): ?><?=eablage_render_message('danger', $error)?><?php endif; ?>
     <?php if ($blockingRules): ?>
@@ -107,7 +120,8 @@ try {
                 <?=!(int)$rule['Aktiv'] ? '(inaktive Regel)' : ''?></li>
         <?php endforeach; ?></ul>
     <?php endif; ?>
-    <div class="panel panel-primary">
+    </div>
+    <div class="panel panel-primary ea-master-panel">
         <div class="panel-heading"><h1 class="ea-master-heading"><?=eablage_icon('table')?>Stammdaten</h1></div>
         <div class="panel-body">
             <nav class="ea-tabs" aria-label="Stammdatenbereiche">
@@ -115,6 +129,7 @@ try {
                 <a href="stammdaten.php?kind=document_types" <?=$kind === 'document_types' ? 'aria-current="page"' : ''?>>Dokumententypen</a>
                 <a href="stammdaten.php?kind=number_types" <?=$kind === 'number_types' ? 'aria-current="page"' : ''?>>Nummernarten</a>
             </nav>
+            <div class="ea-master-scroll">
             <details class="ea-master-section ea-master-create" id="master-create" <?= $error !== '' && ($action ?? '') === 'create' ? 'open' : '' ?>>
                 <summary id="master-create-heading">Neuen Eintrag anlegen</summary>
                     <form method="POST" action="stammdaten.php">
@@ -129,52 +144,60 @@ try {
                             <?php if ($kind==='number_types'): ?><div><label for="new-sort-order">Sortierung</label><input type="number" id="new-sort-order" name="sort_order" class="form-control" min="0" max="9999" value="10"></div><?php endif; ?>
                         </div>
                         <label class="ea-master-new-explanation" for="new-explanation">Erläuterung (optional, bis 1000 Zeichen)</label>
-                        <textarea class="form-control" id="new-explanation" name="explanation" maxlength="1000" rows="3"><?=h($newExplanation)?></textarea>
+                        <textarea class="form-control" id="new-explanation" name="explanation" maxlength="1000" rows="2"><?=h($newExplanation)?></textarea>
                         <p>Definition, typische Inhalte und Abgrenzungen dokumentieren die Ablagesystematik und unterstützen die lokale KI.</p>
                         <p>Neue Einträge sind aktiv.</p>
                         <button class="btn btn-primary" type="submit">Anlegen</button>
                     </form>
             </details>
-            <section class="ea-master-section" aria-labelledby="master-list-heading">
-                <h2 id="master-list-heading"><?=h($title)?></h2>
-                    <p>Umbenennen gilt auch für bestehende Dokumente. Deaktivierte Einträge bleiben recherchierbar und vorhandene Zuordnungen bleiben erhalten.</p>
-                    <p>Deaktivieren ist erst ohne Regelverknüpfungen möglich; Löschen zusätzlich nur ohne Dokumentverknüpfungen.</p>
+            <section class="ea-master-section" aria-label="<?=h($title)?>">
+                    <div class="ea-master-mobile-help" aria-label="Hinweise zu Stammdaten">
+                        <?php foreach ($masterHints as $label => $text): ?><span><?=h($label)?> <?=master_help($label, $text)?></span><?php endforeach; ?>
+                    </div>
                     <div class="table-responsive">
-                    <table class="table table-striped ea-master-table"<?=$kind==='number_types' ? ' data-master-sort' : ''?>>
+                    <table class="table table-striped ea-master-table<?=$kind==='number_types' ? ' ea-master-table--numbers' : ''?>"<?=$kind==='number_types' ? ' data-master-sort' : ''?>>
+                        <colgroup>
+                            <col class="ea-master-name-col"><col>
+                            <?php if ($kind==='number_types'): ?><col class="ea-master-sort-col"><?php endif; ?>
+                            <col class="ea-master-usage-col"><col class="ea-master-actions-col"><col class="ea-master-status-col">
+                        </colgroup>
                         <thead><tr>
                             <?php if ($kind==='number_types'): ?>
-                            <th aria-sort="none"><button type="button" class="ea-master-sort-button" data-sort-key="name">Bezeichnung / Erläuterung<span data-sort-arrow aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="ea-master-sort-button" data-sort-key="name">Bezeichnung<span data-sort-arrow aria-hidden="true"></span></button> <?=master_help('Bezeichnung', $masterHints['Bezeichnung'])?></th>
+                            <th>Erläuterung <?=master_help('Erläuterung', $masterHints['Erläuterung'])?></th>
                             <th aria-sort="ascending"><button type="button" class="ea-master-sort-button" data-sort-key="sort_order">Sortierung<span data-sort-arrow aria-hidden="true"> ↑</span></button></th>
-                            <?php else: ?><th>Bezeichnung / Erläuterung</th><?php endif; ?>
-                            <th>Verwendung</th><th>Aktionen</th><th>Status</th>
+                            <?php else: ?><th>Bezeichnung <?=master_help('Bezeichnung', $masterHints['Bezeichnung'])?></th><th>Erläuterung <?=master_help('Erläuterung', $masterHints['Erläuterung'])?></th><?php endif; ?>
+                            <th>Verwendung</th><th>Aktionen <?=master_help('Aktionen', $masterHints['Aktionen'])?></th><th>Status <?=master_help('Status', $masterHints['Status'])?></th>
                         </tr></thead>
                         <tbody><?php foreach ($items as $item): ?>
                         <tr>
-                            <td>
+                            <td class="ea-master-name-cell">
                                 <form method="POST" action="stammdaten.php" data-row-action="rename" class="ea-master-edit" id="master-edit-<?=bin2hex((string)$item['id'])?>">
                                     <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                                     <input type="hidden" name="kind" value="<?=h($kind)?>">
                                     <input type="hidden" name="entry_id" value="<?=h($item['id'])?>">
                                     <input type="hidden" name="action" value="rename">
                                     <input class="form-control" name="name" required maxlength="255" aria-label="Bezeichnung: <?=h($item['name'])?>" value="<?=h($item['name'])?>">
+                                </form>
+                            </td>
+                            <td class="ea-master-explanation-cell">
                                     <details class="ea-master-explanation">
                                         <summary>Erläuterung <?=trim((string)($item['explanation'] ?? '')) !== '' ? '(vorhanden)' : '(optional)'?></summary>
-                                        <textarea class="form-control" name="explanation" maxlength="1000" rows="3" aria-label="Erläuterung: <?=h($item['name'])?>"><?=h($item['explanation'] ?? '')?></textarea>
+                                        <textarea class="form-control" name="explanation" form="master-edit-<?=bin2hex((string)$item['id'])?>" maxlength="1000" rows="2" aria-label="Erläuterung: <?=h($item['name'])?>"><?=h($item['explanation'] ?? '')?></textarea>
                                     </details>
-                                </form>
                             </td>
                             <?php if ($kind==='number_types'): ?>
                             <td class="ea-master-sort" data-label="Sortierung"><input type="number" name="sort_order" form="master-edit-<?=bin2hex((string)$item['id'])?>" class="form-control" min="0" max="9999" aria-label="Sortierung: <?=h($item['name'])?>" value="<?=h($item['sort_order']??10)?>"></td>
                             <?php endif; ?>
-                            <td><?=h($item['documents'])?> Dokumente
+                            <td class="ea-master-usage-cell"><div><?=h($item['documents'])?> Dokumente</div>
                                 <?php if ($item['rules']): ?>
-                                    <details><summary><?=count($item['rules'])?> AutoKat-Regeln</summary>
+                                    <details><summary class="ea-master-rule-count"><?=count($item['rules'])?> AutoKat-Regeln</summary>
                                     <ul><?php foreach ($item['rules'] as $rule): ?>
                                         <li><a href="autokat_regel_bearbeiten.php?regel=<?=rawurlencode($rule['RegelID'])?>&amp;return=<?=rawurlencode('stammdaten.php?kind=' . $kind)?>"><?=h($rule['RegelID'])?></a><?=!(int)$rule['Aktiv'] ? ' (inaktiv)' : ''?></li>
                                     <?php endforeach; ?></ul></details>
-                                <?php else: ?>, 0 Regeln<?php endif; ?>
+                                <?php else: ?><span class="ea-master-rule-count">0 AutoKat-Regeln</span><?php endif; ?>
                             </td>
-                            <td>
+                            <td class="ea-master-actions-cell">
                                 <div class="ea-master-actions">
                                     <button class="btn btn-default btn-sm" type="submit" form="master-edit-<?=bin2hex((string)$item['id'])?>">Speichern</button>
                                 <form method="POST" action="stammdaten.php" data-row-action="delete">
@@ -187,7 +210,7 @@ try {
                                 </form>
                                 </div>
                             </td>
-                            <td>
+                            <td class="ea-master-status-cell">
                                 <form method="POST" action="stammdaten.php" class="ea-master-status-form" data-status-toggle="master" data-has-rules="<?=$item['rules'] ? '1' : '0'?>">
                                     <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                                     <input type="hidden" name="kind" value="<?=h($kind)?>">
@@ -205,9 +228,12 @@ try {
                     </table>
                     </div>
             </section>
+            </div>
         </div>
     </div>
 </div>
+<script src="help_tooltip.js?v=<?=filemtime(__DIR__ . '/help_tooltip.js')?>" defer></script>
+<script src="master_data_layout.js?v=<?=filemtime(__DIR__ . '/master_data_layout.js')?>" defer></script>
 <script src="status_toggle.js?v=<?=filemtime(__DIR__ . '/status_toggle.js')?>" defer></script>
 <?php if ($kind==='number_types'): ?><script src="master_data_sort.js?v=<?=filemtime(__DIR__ . '/master_data_sort.js')?>" defer></script><?php endif; ?>
 </body>

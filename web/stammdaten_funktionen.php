@@ -12,6 +12,7 @@ function eablage_stammdaten_liste(PDO $db, string $art, bool $nurAktiv = false, 
     $werte = ['0' => ''];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $id = (string)$row['id'];
+        if ($id === '0') continue; // The empty selection is provided above, never by a database row.
         if ($nurAktiv && !(int)$row['Aktiv'] && !in_array($id, array_map('strval', $behalten), true)) continue;
         $werte[$id] = (string)$row[$label] . ((int)$row['Aktiv'] ? '' : ' (inaktiv)');
     }

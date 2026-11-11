@@ -2,6 +2,10 @@
 
 AutoKat gewinnt Metadaten aus dem Dokumenttext. Im Menü **Klassifizierungsregeln** können Regeln angelegt, bearbeitet, gefiltert, getestet und aktiviert beziehungsweise deaktiviert werden. Die grundsätzliche Verarbeitungskette steht im [Benutzerhandbuch](BENUTZERHANDBUCH.md#klassifizierung).
 
+Auf großen Bildschirmen bleiben die Titelleiste und die Fußzeile mit Trefferzahl, Seitenumschaltung und **Neue Regel** sichtbar. Filter, Regelliste und **AutoKat testen** scrollen im Inhaltsbereich; die Spaltenüberschriften der Regelliste bleiben beim Scrollen stehen. In kleinen oder niedrigen Fenstern scrollt weiterhin die ganze Seite.
+
+Auch **Neue Regel** und die Bearbeitung bestehender Regeln verwenden auf großen Bildschirmen einen internen Scrollbereich. Titel sowie **Abbrechen** und **Speichern** bleiben sichtbar.
+
 ## Regeltypen und Rangfolge
 
 | Typ | Wirkung |

@@ -43,7 +43,7 @@ try {
     assert_restore(eablage_restore_parameter_statement($parameterInsert) === $parameterInsert, 'Gespeicherte Anweisung verändert');
     assert_restore(count(eablage_restore_files($dir)) === 1, 'Sicherung nicht gelistet');
     assert_restore(eablage_restore_path($dir, basename($file)) === realpath($file), 'Pfadprüfung fehlgeschlagen');
-    foreach (['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0', '4.6.0'] as $version) {
+    foreach (['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0', '4.6.0', '4.6.1'] as $version) {
         $supported = str_replace('Version: 4.1.0', 'Version: ' . $version, $sql);
         file_put_contents($file, $supported);
         assert_restore(eablage_restore_validate($file)['tables'] === 5, 'Unterstützte Sicherung abgewiesen: ' . $version);
@@ -58,7 +58,7 @@ try {
     file_put_contents($file, $withHistory);
     $summary = eablage_restore_validate($file);
     assert_restore($summary['tables'] === 6 && $summary['history'] === true, 'Protokollbackup nicht erkannt');
-    foreach (['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0', '4.6.0'] as $version) {
+    foreach (['4.1.0', '4.2.0', '4.3.0', '4.4.0', '4.5.0', '4.6.0', '4.6.1'] as $version) {
         file_put_contents($file, str_replace('Version: 4.1.0', 'Version: ' . $version, $withHistory));
         $summary = eablage_restore_validate($file);
         assert_restore($summary['tables'] === 6 && $summary['history'], 'Historienbackup abgewiesen: ' . $version);

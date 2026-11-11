@@ -1,12 +1,10 @@
 <?php
+require_once __DIR__ . '/web_fixture.php';
 // Actual view/controller with synthetic read-only PDO data; no NAS or backend.
 $directory = sys_get_temp_dir() . '/eablage-view-' . bin2hex(random_bytes(6));
 mkdir($directory);
 try {
-    foreach (['ansehen.php', 'dokumentvorschau.php', 'dokument_navigation.php', 'nummern_funktionen.php', 'icons.php', 'navbar.php', 'app.css', 'desktop.css', 'preview_layout.js', 'dokumentvorschau.js', 'pdfjs.js', 'pdfjs.css', 'pdfjs_loader.mjs', 'icons.svg', 'vendor/pdfjs/web/viewer.html'] as $file) {
-        if (!is_dir(dirname($directory . '/' . $file))) mkdir(dirname($directory . '/' . $file), 0777, true);
-        copy(__DIR__ . '/../web/' . $file, $directory . '/' . $file);
-    }
+    eablage_test_copy_web($directory);
     $fixture = file_get_contents(__DIR__ . '/fixtures/ui_data.php');
     $fixture .= "\n";
     // Reject accidental writes in the page or a future shared loader.
@@ -61,9 +59,5 @@ try {
     }
     echo "Document view: PASS\n";
 } finally {
-    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-    foreach ($files as $file) {
-        if ($file->isDir()) rmdir($file->getPathname()); else unlink($file->getPathname());
-    }
-    rmdir($directory);
+    eablage_test_remove_tree($directory);
 }

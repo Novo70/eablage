@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+from web_fixture import copy_web
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,8 +20,7 @@ class OllamaBridgeTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        for filename in ('ollama.php', 'csrf.php', 'backend_client.php'):
-            shutil.copy(ROOT / 'web' / filename, self.root / filename)
+        copy_web(self.root)
         (self.root / 'konfiguration.php').write_text("<?php define('MYSQL_DATENBANK', 'testdb');")
         (self.root / 'run.php').write_text('''<?php
 require 'csrf.php';

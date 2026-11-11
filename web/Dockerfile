@@ -13,7 +13,7 @@ ENV LANG=de_DE.UTF-8
 ENV LC_ALL=de_DE.UTF-8
 ENV TZ=Europe/Berlin
 
-RUN a2enmod rewrite
+RUN a2enmod rewrite headers
 
 # The bounded two-attempt Ollama request can take longer than Apache's default.
 RUN echo 'Timeout 340' > /etc/apache2/conf-available/eablage-timeouts.conf \

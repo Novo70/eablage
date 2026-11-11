@@ -12,7 +12,7 @@ Markdown ist die maßgebliche Dokumentation. Verhalten in der zuständigen Fachs
 
 ## Laufzeit und Abhängigkeiten
 
-Die Dockerfiles definieren PHP 8.3 und Python 3.11. `backend/requirements.in` nennt direkte Laufzeitabhängigkeiten; `requirements.txt` enthält fixierte direkte/transitive Versionen und Hashes. Der Build installiert mit `--require-hashes`. Für Tests kommen unter anderem `httpx2`, `jsdom`, `linkedom` und Playwright hinzu; sie sind keine zusätzlichen Produktionsdienste.
+Die Dockerfiles definieren PHP 8.3 und Python 3.11. `backend/requirements.in` nennt direkte Laufzeitabhängigkeiten; `requirements.txt` enthält fixierte direkte/transitive Versionen und Hashes. Der Build installiert mit `--require-hashes`. Für Tests kommen unter anderem `httpx`, `jsdom`, `linkedom` und Playwright hinzu; sie sind keine zusätzlichen Produktionsdienste.
 
 Abhängigkeiten bewusst aktualisieren und danach prüfen, beispielsweise mit installiertem `uv`:
 
@@ -22,6 +22,46 @@ uv pip compile --python-version 3.11 --generate-hashes backend/requirements.in -
 
 Docker-Basisimages und Betriebssystempakete sind trotz fixierter Python-Pakete beweglich. Für einen exakt reproduzierbaren Wiederherstellungsstand die tatsächlich getesteten Images zusätzlich sichern.
 
+## Automatische Prüfungen auf GitHub
+
+`.github/workflows/tests.yml` läuft für Pull Requests gegen `develop`, `main` und `release/**`, bei Pushes auf diese Branches und manuell. Die Jobs trennen PHP/Python, DOM-Tests, Chromium-Tests, MariaDB/OCR, das gebaute Apache-Webimage und die Windows-Deploymentskripte. Die Datenbanktests erhalten einen eigenen MariaDB-Dienst und erstellen darin ausschließlich zufällig benannte Wegwerfdatenbanken. Die PHP-Helfer im schnellen Job überspringen ihre Datenbankfälle; der MariaDB-Job führt diese ausdrücklich aus.
+
+Testwerkzeuge stehen in `tests/requirements.txt` und `package.json` mit `package-lock.json`. Sie werden nicht in die Produktionsimages eingebaut. Node ist ausschließlich für Tests erforderlich, es gibt weiterhin keinen Frontend-Build. Lokaler Einstieg:
+
+```bash
+python -m pip install --require-hashes -r backend/requirements.txt
+python -m pip install -r tests/requirements.txt
+npm ci --ignore-scripts
+npx --no-install playwright install chromium
+npm run test:dom
+npm run test:browser
+```
+
+Die PHP-Fixtures `tests/web_fixture.php` und `tests/web_fixture.py` kopieren das tatsächliche Webverzeichnis rekursiv. Lokale `konfiguration*.php` und symbolische Links sind ausgeschlossen; jeder Test schreibt seine synthetische Konfiguration anschließend selbst. Neue PHP-Abhängigkeiten müssen dadurch nicht mehr in diesen Tests einzeln nachgetragen werden. Kleine isolierte Komponententests dürfen weiterhin gezielte Fixtures verwenden.
+
+## Release-Daten
+
+`release.json` ist die redaktionelle Quelle für die gemeinsame eAblage-Version und ihr Veröffentlichungsdatum (ISO-Datum). Die getrennten Docker-Buildkontexte benötigen eingecheckte Kopien unter `web/release.json` und `backend/app/release.json`; diese Dateien werden ausschließlich generiert:
+
+```bash
+python scripts/release_metadata.py --write
+python scripts/release_metadata.py
+```
+
+PHP und Python lesen ihre jeweilige lokale Kopie; auch die SQL-Sicherungskennung verwendet diese Version. Die Prüfung vergleicht beide Kopien bytegenau und kontrolliert den neuesten nummerierten Changelog-Eintrag, README, Schema-/Seed-Kopf und die Annahme der aktuellen Sicherungskennung bei der Rücksicherung. Ein Abschnitt „Unveröffentlicht“ darf davor stehen. Bei einer neuen Veröffentlichung Version, Datum und redaktionelle Angaben gemeinsam aktualisieren; die CI erzeugt keine Dateien nachträglich und verdeckt daher keine vergessenen Änderungen.
+
+Der Datenbankparameter mit dem historischen Schlüssel `Version` ist eine frei wählbare **Datenbankbezeichnung**, beispielsweise „Testdatenbank“. Weder Releaseprüfung noch Update ersetzen dessen Wert. Neue Installationen erhalten als neutralen Startwert „Lokale Datenbank“.
+
+## Abhängigkeiten aktualisieren
+
+Dependabot schlägt wöchentlich Updates für Python, Testwerkzeuge, Docker-Basisimages und GitHub-Actions vor. Es gibt kein automatisches Zusammenführen. Die Konfiguration zielt im privaten Entwicklungsrepository auf `develop`; bei einer späteren Übernahme ins öffentliche Repository ohne diesen Branch muss das Ziel auf `main` angepasst werden. Dependabot liest seine Konfiguration vom Standardbranch: Die Aktivierung erfolgt daher erst nach Übernahme der Konfiguration nach `main`.
+
+Bei Python-Updates müssen `backend/requirements.in` und die hashgesicherte `backend/requirements.txt` zusammenpassen; die Releaseprüfung kontrolliert die direkten Pins und die Installation prüft die Hashes. Falls ein Updatevorschlag nicht beide Dateien korrekt nachzieht, den Lock mit dem oben beschriebenen `uv`-Befehl neu erzeugen und erst nach grünen Tests übernehmen. Für npm `npm install --package-lock-only` verwenden. Änderungen an Testabhängigkeiten ändern keine Laufzeitabhängigkeiten der Anwendung.
+
+## Nächster Entwicklungsschritt: Datenbankmigrationen
+
+Der automatisierte Migrationslauf ist noch nicht implementiert. Bis dahin gilt der manuelle Updateweg in [UPDATE.md](UPDATE.md). Vorgesehen sind ein ausdrücklich gestarteter CLI-Lauf mit Datenbanksperre, eine Historie mit Skriptname/Zeitpunkt/Prüfsumme, unveränderliche erfolgreiche Migrationen und eine klare Meldung bei unpassendem Schemastand. Vor der Umsetzung sind der Einstieg für bestehende Installationen, Wiederanlauf nach teilweise ausgeführtem DDL sowie Sicherung/Rücksicherung zu prüfen. Normale Seitenaufrufe sollen keine Strukturänderungen auslösen. Die Datenbankbezeichnung bleibt auch davon unabhängig.
+
 ## Automatisierte Prüfungen
 
 Befehle aus dem Repository-Hauptverzeichnis ausführen, sofern nicht anders angegeben. Eine getrennte Entwicklungsumgebung mit den erforderlichen Abhängigkeiten verwenden.
@@ -30,7 +70,7 @@ Für CSS, Navigationskomponenten und visuelle Vergleiche gelten ergänzend die [
 
 | Prüfung | Befehl | Voraussetzung |
 | --- | --- | --- |
-| Backend-Unit-/API-Tests | `PYTHONPATH=backend python -m pytest backend/tests -q` | Backend-Abhängigkeiten, `pytest` und `httpx2` |
+| Backend-Unit-/API-Tests | `PYTHONPATH=backend python -m pytest backend/tests -q` | Backend-Abhängigkeiten, `pytest` und `httpx` |
 | Deployment-Zielprüfung | `powershell -NoProfile -File tests/deployment_checks.ps1` | Windows PowerShell 5.1 oder PowerShell 7 (`pwsh` statt `powershell`) |
 | Größenlimits (verbindlich vor Deployment) | `PHP_BIN=php python tests/deployment_limits.py -v` | PHP 8.3 CLI |
 | Gemeinsamer HTTP-Client | `PHP_BIN=php python tests/backend_client_integration.py -v` | PHP CLI |
@@ -45,6 +85,7 @@ Für CSS, Navigationskomponenten und visuelle Vergleiche gelten ergänzend die [
 | Gemeinsame PDF-/Textvorschau | `node --test tests/document_preview.test.cjs` | PHP CLI, Node und `jsdom` |
 | Vorgangs-Editor | `node --test tests/document_links.test.cjs tests/document_links_preview.test.cjs` | Node und `jsdom` |
 | Vorgangstabellen, Zuordnungen und Rücksicherung | `EABLAGE_TEST_DB_PORT=13316 php tests/document_links.php` | Wegwerf-MariaDB, PHP mit PDO-MySQL |
+| Leere ID-0-Stammdaten, unveränderte Zuordnungen und alte/neue Rücksicherungen | `EABLAGE_TEST_DB_PORT=13316 php tests/empty_master_data.php` | Wegwerf-MariaDB, PHP mit PDO-MySQL |
 | Vorgänge über echte Webformulare, Archivierung und veraltete Eingaben | `EABLAGE_TEST_DB_PORT=13316 python tests/document_links_integration.py` | Wegwerf-MariaDB, PHP mit PDO-MySQL, mysql-connector-python |
 | Nummernmigration | `EABLAGE_TEST_DB_PORT=13316 python -m unittest discover -s tests -p document_numbers_migration.py -v` | Wegwerf-MariaDB |
 | Nummern speichern und rücksichern | `EABLAGE_TEST_DB_PORT=13316 python tests/document_numbers_integration.py` | Wegwerf-MariaDB, PHP mit PDO-MySQL |
@@ -53,7 +94,7 @@ Für CSS, Navigationskomponenten und visuelle Vergleiche gelten ergänzend die [
 | Dokumentprotokoll und Rollback | `php tests/document_history.php` | PHP CLI |
 | Restore-Vorprüfung | `php tests/restore_preflight.php` | PHP CLI |
 | Webroot-Sperrmuster | `php tests/webroot_rules.php` | PHP CLI; tatsächliche HTTP-403 zusätzlich im gebauten Apache-Container prüfen |
-| PHP-/JSON-API-Verbindung | `python tests/metadata_php_integration.py -v` | Backend-Abhängigkeiten, `httpx2`, PHP CLI |
+| PHP-/JSON-API-Verbindung | `python tests/metadata_php_integration.py -v` | Backend-Abhängigkeiten, `httpx`, PHP CLI |
 | Inbox und Worker | `PHP_BIN=php EABLAGE_TEST_DB_PORT=13316 python tests/inbox_integration.py -v` | Wegwerf-MariaDB, PHP mit PDO-MySQL, Poppler, reportlab und Backend-Testabhängigkeiten |
 | OCR | `python tests/ocr_integration.py -v` | Poppler, Tesseract mit deu+eng, Pillow, reportlab und Backend-Abhängigkeiten |
 | SQL-Schema und DATE-Konvertierung | `python tests/document_schema_integration.py -v` | Wegwerf-MariaDB auf `127.0.0.1`, `EABLAGE_TEST_DB_PORT` |
@@ -95,7 +136,7 @@ Mit gesicherten, entbehrlichen Testdaten prüfen:
 15. **Inbox:** Worker-Vorbereitung und sofortige manuelle Klassifizierung prüfen. Unveränderte fertige PDFs werden im laufenden Worker nicht neu gelesen; eine geleerte Auftragstabelle und geänderte PDFs werden erkannt. Lesefehler, Wiederholung und inzwischen deaktivierte Vorschlagswerte prüfen.
 16. **Formularkonflikte:** Dokument in zwei Fenstern öffnen. Nach Speicherung im ersten darf das zweite dessen Änderungen weder beim Speichern noch über Hilfsaktionen überschreiben.
 17. **Regelvorbereitung:** Ohne Regeltreffer und bei reinen E-Regeln „Speichern und Regel vorbereiten“ im Drei-Punkte-Menü prüfen; manuell vervollständigte Werte müssen im inaktiven K-Regelentwurf stehen. Bei einer erkannten K-Regel bleibt die Aktion ausgeblendet.
-18. **Versionsstand und Rücksicherung:** Oberfläche und `/health` melden 4.6.0. Neue SQL-Sicherungen tragen 4.6.0 und enthalten auch Vorgänge/Zuordnungen; gültige 4.1.0-, 4.2.0-, 4.3.0-, 4.4.0-, 4.5.0- und 4.6.0-Dumps sind importierbar, ungültige Schemata und nicht unterstützte Kennungen werden vor Änderungen abgewiesen.
+18. **Versionsstand und Rücksicherung:** Oberfläche und `/health` melden 4.6.1. Neue SQL-Sicherungen tragen 4.6.1 und enthalten auch Vorgänge/Zuordnungen; gültige 4.1.0-, 4.2.0-, 4.3.0-, 4.4.0-, 4.5.0-, 4.6.0- und 4.6.1-Dumps sind importierbar, ungültige Schemata und nicht unterstützte Kennungen werden vor Änderungen abgewiesen.
 19. **Dokumenthistorie:** [Funktionsprüfung](DOKUMENTHISTORIE.md#funktionsprüfung) einschließlich Ereignis-Rollback und neuer/alter Rücksicherungen durchführen. PHP-Prüfungen: `php tests/document_history.php` und `php tests/restore_preflight.php`; MariaDB-Ende-zu-Ende-Prüfung mit dem vorhandenen `tests/archive_integration.py` in einer Wegwerfinstanz.
 20. **Historienrücksprung:** Aus der Bearbeitung die Historie öffnen, filtern und blättern; **Zurück** erhält ungespeicherte Metadaten, neu eingelesenen Text und das ursprüngliche Rücksprungziel. Der Ausgangsstand wird nicht stillschweigend gespeichert.
 21. **Ausdrückliche OCR:** In Klassifizierung und Bearbeitung eine PDF mit fehlerhafter vorhandener Textschicht vollständig neu erkennen. In der Klassifizierung Bestätigung, Ersetzung ungespeicherter Eingaben, neue Vorschläge und erneuerten Inbox-Cache prüfen; ein normaler Folgeaufruf muss das neue Ergebnis verwenden. Bei belegter Dateisperre nach Abschluss ausdrücklich erneut starten. In der Bearbeitung bleiben andere Formularwerte erhalten und neuer Text wird erst beim Speichern übernommen. Originalbytes und Prüfsumme bleiben unverändert.

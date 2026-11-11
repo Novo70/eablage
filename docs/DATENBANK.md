@@ -127,7 +127,7 @@ Nach Datenbanksicherung und bei pausierten Schreibern [update_master_explanation
 
 ## Bearbeitbare Ollama-Anweisung
 
-`parameter.param_value` verwendet ab dieser unveröffentlichten Erweiterung `TEXT DEFAULT NULL`, damit mehrzeilige Anweisungen länger als 255 Zeichen gespeichert werden können. `sql/update_ollama_instruction.sql` erweitert die Spalte und ergänzt `ollamaAnweisung` mit den Standardvorgaben (Oberflächenlimit 4000 Zeichen). Das Skript ist nach Sicherung und Schreibpause wiederholbar; bestehende Parameterwerte und bereits angepasste Anweisungen bleiben erhalten. Neuinstallationen erhalten Spaltentyp und Parameter aus `schema.sql`/`seed.sql`.
+`parameter.param_value` verwendet seit Version 4.4.0 `TEXT DEFAULT NULL`, damit mehrzeilige Anweisungen länger als 255 Zeichen gespeichert werden können. `sql/update_ollama_instruction.sql` erweitert die Spalte und ergänzt `ollamaAnweisung` mit den Standardvorgaben (Oberflächenlimit 4000 Zeichen). Das Skript ist nach Sicherung und Schreibpause wiederholbar; bestehende Parameterwerte und bereits angepasste Anweisungen bleiben erhalten. Neuinstallationen erhalten Spaltentyp und Parameter aus `schema.sql`/`seed.sql`.
 
 Die integrierte Rücksicherung erweitert VARCHAR-basierte Parameterdefinitionen älterer Sicherungen bereits beim Wiederanlegen der Tabelle. Fehlt `ollamaAnweisung` in einer älteren Sicherung, verwendet das Backend Standards; zum Bearbeiten in den Einstellungen danach das SQL-Update erneut ausführen. Die DDL-Erweiterung benötigt ALTER, die Parametereinrichtung INSERT. Alle vorhandenen Parameter werden weiterhin unverändert verwendet.
 

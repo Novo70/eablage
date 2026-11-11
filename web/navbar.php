@@ -36,6 +36,7 @@ $eaActivePage = match ($eaCurrentPage) {
         'explorer.php' => 'explorer.php',
         'verarbeiten.php' => 'eingang.php',
         'vorgaenge.php' => 'vorgaenge.php',
+        'protokoll.php' => 'protokoll.php',
         default => 'index.php',
     },
     'verarbeiten.php', 'speichern.php' => 'eingang.php',
@@ -133,7 +134,7 @@ $eaActivePage = match ($eaCurrentPage) {
                     'protokoll.php' => 'Ereignisprotokoll',
                     $eaSettingsLink => 'Einstellungen',
                 ] as $href => $label):
-                    $active = $eaCurrentPage === parse_url($href, PHP_URL_PATH)
+                    $active = $eaActivePage === parse_url($href, PHP_URL_PATH)
                         || ($href === 'autokat_regeln.php' && $eaCurrentPage === 'autokat_regel_bearbeiten.php')
                         || ($href === 'gesamtexport.php' && in_array($eaCurrentPage, ['export.php','datenbank_sicherung.php','datenbank_wiederherstellung.php','archiv_wartung.php'], true)); ?>
                     <a href="<?=htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>" class="ea-dropdown__item" <?=$active ? 'aria-current="page"' : ''?>><?=$eaNavIcon($href)?><span><?=htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?></span></a>

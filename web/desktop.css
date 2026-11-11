@@ -127,15 +127,16 @@
     html[data-ea-layout="desktop"] .panel-body { padding: 14px; }
 
     /* Dieselbe Höhe für Titel mit und ohne Vorschauaktionen. */
-    html[data-ea-layout="desktop"] .ea-pdf-panel > .panel-heading,
-    html[data-ea-layout="desktop"] .ea-classification-panel > .panel-heading,
-    html[data-ea-layout="desktop"] .ea-document-layout > .panel > .panel-heading {
+    html[data-ea-layout="desktop"] .panel-primary > .panel-heading {
         min-height: 46px;
         padding: 6px 14px;
     }
 
     html[data-ea-layout="desktop"] .form-group { margin-bottom: 12px; }
     html[data-ea-layout="desktop"] label { margin-bottom: 4px; font-size: .85rem; }
+    html[data-ea-layout="desktop"] .ea-layout-switch__options label {
+        margin-bottom: 0;
+    }
     html[data-ea-layout="desktop"] .form-control {
         min-height: 34px;
         padding: 6px 10px;
@@ -162,6 +163,7 @@
     html[data-ea-layout="desktop"] .btn-primary:hover,
     html[data-ea-layout="desktop"] .btn-primary:focus { background: var(--ea-blue-900); }
     html[data-ea-layout="desktop"] .btn-sm { min-height: 30px; padding: 4px 10px; }
+    html[data-ea-layout="desktop"] .ea-master-actions-col { width: 14rem; }
     html[data-ea-layout="desktop"] .ea-heading-btn,
     html[data-ea-layout="desktop"] .panel-heading .btn-group-xs .btn {
         min-height: 30px;
@@ -203,6 +205,7 @@
     html[data-ea-layout="desktop"] .table td { padding: 9px 10px; }
     html[data-ea-layout="desktop"] .table th { text-transform: none; letter-spacing: normal; background: #e4ecf4; }
     html[data-ea-layout="desktop"] .ea-detail-panel { border-radius: 5px; }
+    html[data-ea-layout="desktop"] .ea-tabs { --ea-tab-inset: 14px; }
     html[data-ea-layout="desktop"] .ea-tabs a { padding: 7px 12px; }
 
     html[data-ea-layout="desktop"] .ea-explorer-item { padding: 8px 10px; }
@@ -230,6 +233,9 @@
         html[data-ea-layout="desktop"] .ea-classification-panel > .panel-body,
         html[data-ea-layout="desktop"] .ea-document-layout > .panel > .panel-body { padding: 0; }
         html[data-ea-layout="desktop"] .ea-form-scroll { padding: 16px; }
+        html[data-ea-layout="desktop"] .ea-settings-scroll { padding: 14px; }
+        html[data-ea-layout="desktop"] .ea-master-panel > .panel-body { padding: 0; }
+        html[data-ea-layout="desktop"] .ea-master-scroll { padding: 0 14px 14px; }
     }
 
     html[data-ea-layout="desktop"] .ea-document-scroll { padding: 16px; }
@@ -239,6 +245,7 @@
     html[data-ea-layout="desktop"] .ea-document-view .ea-document-actions,
     html[data-ea-layout="desktop"] .ea-classification-panel .ea-form-footer,
     html[data-ea-layout="desktop"] .ea-search-footer,
+    html[data-ea-layout="desktop"] .ea-settings-footer,
     html[data-ea-layout="desktop"] .ea-workspace-footer {
         padding: 10px 14px;
         background: var(--ea-gray-100);

@@ -5,14 +5,28 @@ document.querySelectorAll('[data-status-toggle], [data-row-action]').forEach((fo
     const button = Array.from(form.elements).find((element) => element.type === 'submit');
     const row = form.closest('tr');
     const action = form.dataset.rowAction || 'status';
-    const originalLabel = button.textContent;
-    let labelTimer;
-    const showLabel = (text) => { button.textContent = text; };
+    const editableFields = action === 'rename'
+        ? ['name', 'explanation', 'sort_order'].filter((name) => form.elements.namedItem(name)) : [];
+    const savedValues = new Map(editableFields.map((name) => [name, form.elements.namedItem(name).value]));
+    const updateDirty = () => {
+        if (action !== 'rename') return;
+        const dirty = editableFields.some((name) => form.elements.namedItem(name).value !== savedValues.get(name));
+        button.classList.toggle('ea-master-save-dirty', dirty);
+        button.classList.toggle('btn-primary', dirty);
+        button.classList.toggle('btn-default', !dirty);
+        button.title = dirty ? 'Ungespeicherte Änderungen speichern' : 'Alle Änderungen gespeichert';
+        button.setAttribute('aria-label', dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern – alle Änderungen gespeichert');
+    };
     if (action === 'rename') {
-        const edited = () => { clearTimeout(labelTimer); showLabel(originalLabel); };
-        form.addEventListener('input', edited);
-        // The number type sort field lives in its own table cell.
-        form.elements.namedItem('sort_order')?.addEventListener('input', edited);
+        form.addEventListener('input', updateDirty);
+        form.addEventListener('change', updateDirty);
+        // Associated controls in separate cells do not bubble through the form.
+        for (const name of ['sort_order', 'explanation']) {
+            const control = form.elements.namedItem(name);
+            control?.addEventListener('input', updateDirty);
+            control?.addEventListener('change', updateDirty);
+        }
+        updateDirty();
     }
     if (!rowFeedback.has(row)) {
         const feedback = document.createElement('div');
@@ -38,8 +52,6 @@ document.querySelectorAll('[data-status-toggle], [data-row-action]').forEach((fo
         body.set('status_inline', '1');
         pending = true;
         row.dataset.saving = '1';
-        clearTimeout(labelTimer);
-        if (action === 'rename') showLabel(originalLabel);
         button.disabled = true;
         button.setAttribute('aria-busy', 'true');
         errorRow.hidden = true;
@@ -76,16 +88,16 @@ document.querySelectorAll('[data-status-toggle], [data-row-action]').forEach((fo
                 return;
             }
             if (action === 'rename') {
-                // Do not overwrite text edited while the request was in flight.
+                // The confirmed request is the baseline, including when the user has edited further.
+                editableFields.forEach((name) => savedValues.set(name, body.get(name)));
+                updateDirty();
                 const input = form.elements.namedItem('name');
                 const explanation = form.elements.namedItem('explanation');
                 const sortOrder = form.elements.namedItem('sort_order');
                 if (input.value === body.get('name') && (!explanation || explanation.value === body.get('explanation'))
                         && (!sortOrder || sortOrder.value === body.get('sort_order'))) {
-                    const summary = form.querySelector('.ea-master-explanation summary');
+                    const summary = row.querySelector('.ea-master-explanation summary');
                     if (summary && explanation) summary.textContent = explanation.value.trim() ? 'Erläuterung (vorhanden)' : 'Erläuterung (optional)';
-                    showLabel('✓ Gespeichert');
-                    labelTimer = setTimeout(() => showLabel(originalLabel), 2000);
                 }
                 return;
             }

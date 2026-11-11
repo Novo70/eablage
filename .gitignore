@@ -15,6 +15,9 @@ konfiguration_ugreen.php
 #*.pdf
 
 # Temporäre Dateien
+node_modules/
+test-results/
+playwright-report/
 *.tmp
 *.temp
 *.log
@@ -31,6 +34,7 @@ desktop.ini
 
 # Python (für spätere Erweiterungen)
 __pycache__/
+.pytest_cache/
 *.py[cod]
 .venv/
 venv/

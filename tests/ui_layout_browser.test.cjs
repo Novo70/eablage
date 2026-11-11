@@ -59,13 +59,13 @@ if (in_array($page,['verarbeiten.php','bearbeiten.php'],true)) {
     context = await browser.newContext({locale:'de-DE'});
 });
 after(async () => { if (browser) await browser.close(); if (dir) fs.rmSync(dir, {recursive:true,force:true}); });
-async function open(url, width=1440, post=null) {
+async function open(url, width=1440, post=null, touch=false) {
     const args=['-d','session.save_path='+dir, path.join(dir,'run.php'),url];
     if (post) args.push(JSON.stringify(post));
     const rendered=spawnSync(process.env.PHP_BIN || 'php', args, {cwd:dir,encoding:'utf8'});
     assert.equal(rendered.status,0,rendered.stderr);
     assert.equal(rendered.stderr,'');
-    const page=await context.newPage();
+    const page=touch ? await browser.newPage({locale:'de-DE',hasTouch:true}) : await context.newPage();
     await page.setViewportSize({width,height:900});
     await page.route('http://eablage.test/**', async route => {
         const name=path.basename(new URL(route.request().url()).pathname);
@@ -81,7 +81,7 @@ async function open(url, width=1440, post=null) {
     await page.evaluate(()=>document.fonts.ready);
     return page;
 }
-const views=['index.php','dokumente.php','stammdaten.php?kind=categories','stammdaten.php?kind=document_types','stammdaten.php?kind=number_types','einstellungen.php','explorer.php','ansehen.php?dokid=1','verarbeiten.php','bearbeiten.php','vorgaenge.php','vorgaenge.php?id=1'];
+const views=['protokoll.php','autokat_regel_bearbeiten.php','autokat_regeln.php','index.php','dokumente.php','stammdaten.php?kind=categories','stammdaten.php?kind=document_types','stammdaten.php?kind=number_types','einstellungen.php','explorer.php','ansehen.php?dokid=1','verarbeiten.php','bearbeiten.php','vorgaenge.php','vorgaenge.php?id=1'];
 for (const width of [390,800,1440]) for (const url of views) test(`${width}px ${url}: layout and review capture`,async () => {
     const page=await open(url,width);
     try {
@@ -321,24 +321,31 @@ test('navigation shows the current work area and closes with Escape, focus and o
         assert.equal(await page.locator('#eaMenuBtn').getAttribute('aria-expanded'),'false');
     } finally { await page.close(); }
 });
-test('classification keeps safe form actions and a working PDF/text switch', async () => {
+test('classification keeps safe form actions and a working PDF/text switch', {timeout: 45000}, async () => {
     const page=await open('verarbeiten.php');
     try {
         assert.deepEqual(await page.locator('.ea-classification-actions .btn').allTextContents(),['Abbrechen','Speichern']);
         await page.locator('#classification-more-actions summary').click();
         const discard=page.locator('#classification-more-actions button[form="discard-inbox-file-form"]');
         let posts=0; page.on('request',r=>{if(r.method()==='POST')posts++;});
-        page.once('dialog',d=>d.dismiss()); await discard.click();
+        await Promise.all([
+            page.waitForEvent('dialog',{timeout:10000}).then(dialog=>dialog.dismiss()),
+            discard.click({noWaitAfter:true})
+        ]);
         assert.equal(posts,0);
         await page.locator('#viewTextButton').click();
         assert.equal(await page.locator('#textDocumentView').isVisible(),true);
         await page.locator('#viewPdfButton').click();
         assert.equal(await page.locator('#textDocumentView').isVisible(),false);
         await page.locator('#classification-more-actions summary').click();
-        page.once('dialog',d=>d.accept());
-        const request=page.waitForRequest(r=>r.method()==='POST');
-        await discard.click();
-        const submitted=await request;
+        // A 204 fixture records the real submission without loading the same
+        // classification form again while Playwright is handling its dialog.
+        await page.route('**/eingang.php?action=discard',route=>route.fulfill({status:204}));
+        const [submitted]=await Promise.all([
+            page.waitForRequest(r=>r.method()==='POST',{timeout:10000}),
+            page.waitForEvent('dialog',{timeout:10000}).then(dialog=>dialog.accept()),
+            discard.click({noWaitAfter:true})
+        ]);
         assert.match(submitted.url(),/eingang.php\?action=discard$/);
         const fields=new URLSearchParams(submitted.postData());
         assert.equal(fields.get('file'),'Versicherung.pdf');
@@ -461,3 +468,382 @@ for (const [width,desktop] of [[390,false],[1440,false],[1920,true]]) {
     });
 }
 
+
+// Long administration forms must scroll within the workspace in both layouts,
+// including wide touch devices. Use actual templates and realistic repeated rows.
+for (const [width, layout, touch] of [[900,'touch',false],[1440,'touch',false],[1920,'desktop',false],[1200,'touch',true]]) {
+    for (const view of ['einstellungen.php','stammdaten.php?kind=categories','stammdaten.php?kind=document_types','stammdaten.php?kind=number_types']) {
+        test(`${width}px ${layout}${touch?' touch device':''}: ${view} keeps administration title and actions visible`, async () => {
+            const page=await open(view+(view.includes('?')?'&':'?')+'layout='+layout,width,null,touch);
+            const settings=view==='einstellungen.php';
+            const scroll=settings?'.ea-settings-scroll':'.ea-master-scroll';
+            const heading=settings?'.ea-settings-panel > .panel-heading':'.ea-master-panel > .panel-heading';
+            const footer=settings?'.ea-settings-footer':null;
+            try {
+                await page.evaluate(settings => {
+                    const source=document.querySelector(settings?'.ea-param-row':'.ea-master-table tbody tr');
+                    if(settings) document.querySelectorAll('.ea-group-details').forEach(group=>group.open=true);
+                    for(let i=0;i<30;i++) source.parentElement.append(source.cloneNode(true));
+                },settings);
+                const assertPanelBottom=async()=>{
+                    const container=await page.locator(settings?'.ea-settings-container':'.ea-master-container').boundingBox();
+                    const panel=await page.locator(settings?'.ea-settings-panel':'.ea-master-panel').boundingBox();
+                    assert.ok(Math.abs(panel.y+panel.height-container.y-container.height)<1,'panel reaches workspace bottom without extra margin');
+                };
+                await assertPanelBottom();
+                const titleBefore=await page.locator(heading).boundingBox();
+                const footerBefore=footer?await page.locator(footer).boundingBox():null;
+                const tabsBefore=settings?null:await page.locator('.ea-master-panel .ea-tabs').boundingBox();
+                if(footerBefore) assert.ok(footerBefore.y+footerBefore.height<=901,'footer stays in the viewport');
+                assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),'whole page must not overflow');
+                assert.ok(await page.locator(scroll).evaluate(el=>el.scrollHeight>el.clientHeight+100),'long content needs inner scrolling');
+                await page.locator(scroll).evaluate(el=>el.scrollTop=el.scrollHeight);
+                assert.ok(await page.locator(scroll).evaluate(el=>el.scrollTop>0),'inner content scrolls');
+                assert.deepEqual(await page.locator(heading).boundingBox(),titleBefore,'title stays fixed');
+                if(footer) assert.deepEqual(await page.locator(footer).boundingBox(),footerBefore,'footer stays fixed');
+                if(tabsBefore) assert.deepEqual(await page.locator('.ea-master-panel .ea-tabs').boundingBox(),tabsBefore,'area tabs stay fixed');
+                if(settings) assert.equal(await page.locator('#settings-form button[type="submit"]').isVisible(),true);
+                else {
+                    assert.equal(await page.locator('.ea-master-panel footer').count(),0,'master data needs no footer');
+                    assert.equal(await page.locator('#master-list-heading').count(),0,'active tab identifies the list');
+                }
+                await page.locator(scroll).evaluate(el=>el.scrollTop=0);
+                await page.locator('.ea-admin-notices').evaluate(el=>{el.innerHTML='<div class="alert alert-success">Änderungen gespeichert.</div>';});
+                assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),'notice must fit above workspace');
+                const withNotice=await page.locator(footer||'.ea-master-panel').boundingBox();
+                assert.ok(withNotice.y+withNotice.height<=901,'notice preserves workspace height');
+                await assertPanelBottom();
+                if(process.env.UI_SCREENSHOT_DIR && width===1440) {
+                    fs.mkdirSync(process.env.UI_SCREENSHOT_DIR,{recursive:true});
+                    await page.screenshot({path:path.join(process.env.UI_SCREENSHOT_DIR,'admin-'+view.replace(/[^a-z0-9]/gi,'-')+'.png')});
+                }
+            } finally { await page.close(); }
+        });
+    }
+}
+for(const [width,height] of [[390,900],[800,900],[1440,550]]) {
+    for(const view of ['einstellungen.php','stammdaten.php?kind=number_types']) test(`${width}x${height}: ${view} retains page scrolling on small viewports`,async()=>{
+        const page=await open(view+(view.includes('?')?'&':'?')+'layout=touch',width);
+        try {
+            await page.setViewportSize({width,height});
+            const settings=view==='einstellungen.php';
+            await page.evaluate(settings=>{
+                const source=document.querySelector(settings?'.ea-param-row':'.ea-master-table tbody tr');
+                if(settings) document.querySelectorAll('.ea-group-details').forEach(group=>group.open=true);
+                for(let i=0;i<12;i++) source.parentElement.append(source.cloneNode(true));
+            },settings);
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight+100),'small viewports retain document scrolling');
+            assert.equal(await page.locator(settings?'.ea-settings-scroll':'.ea-master-scroll').evaluate(el=>getComputedStyle(el).overflowY),'visible');
+            if(!settings) assert.equal(await page.locator('.ea-master-panel footer').count(),0,'master data has no footer');
+        } finally { await page.close(); }
+    });
+}
+
+for(const [width,layout,touch] of [[900,'touch',false],[1440,'touch',false],[1920,'desktop',false],[1200,'touch',true]]) {
+    test(`${width}px ${layout}: rules have fixed title, footer and table headers`,async()=>{
+        const url='autokat_regeln.php?fixture_count=75&seite=2&q=Haus&typ=K&aktiv=1&nutzung=mit&layout='+layout;
+        const page=await open(url,width,null,touch);
+        try {
+            await page.locator('.ea-autokat-table tbody').evaluate(body=>{
+                const source=body.querySelector('tr');for(let i=0;i<24;i++)body.append(source.cloneNode(true));
+            });
+            const heading=page.locator('.ea-autokat-panel > .panel-heading');
+            const footer=page.locator('.ea-autokat-footer');
+            const scroll=page.locator('.ea-autokat-scroll');
+            const beforeHeading=await heading.boundingBox(),beforeFooter=await footer.boundingBox();
+            const reference=await open('einstellungen.php?layout='+layout,width,null,touch);
+            const referenceHeight=(await reference.locator('.ea-settings-panel > .panel-heading').boundingBox()).height;
+            await reference.close();
+            assert.ok(Math.abs(beforeHeading.height-referenceHeight)<1,'title height matches settings in the actual selected layout');
+            assert.equal(await heading.getByRole('link',{name:'Neue Regel'}).count(),0);
+            const create=footer.getByRole('link',{name:'Neue Regel'});
+            assert.equal(await create.getAttribute('href'),'autokat_regel_bearbeiten.php');
+            assert.equal(await create.isVisible(),true);
+            const container=await page.locator('.ea-autokat-container').boundingBox();
+            const panel=await page.locator('.ea-autokat-panel').boundingBox();
+            assert.ok(Math.abs(panel.y+panel.height-container.y-container.height)<1,'no extra bottom gap');
+            assert.ok(beforeFooter.y+beforeFooter.height<=901,'footer fits viewport');
+            assert.ok(Math.abs(beforeFooter.y+beforeFooter.height-panel.y-panel.height+1)<2,'footer ends at panel edge');
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),'page stays within viewport');
+            assert.equal(await page.locator('.ea-autokat-scroll .search-summary').count(),0,'rule counts appear only in the footer');
+            assert.equal(await page.locator('.ea-autokat-table th.ea-rule-rank').evaluate(el=>{
+                const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length;
+            }),1,'rank heading fits one line');
+            if(width>=1200) {
+                const input=await page.locator('#q').boundingBox();
+                const filter=await page.locator('.ea-autokat-toolbar button[type="submit"]').boundingBox();
+                assert.ok(Math.abs(input.y+input.height-filter.y-filter.height)<1,'filter aligns with the bottom of the input fields');
+            }
+            assert.equal(await page.locator('#q').inputValue(),'Haus');
+            assert.equal(await page.locator('#typ').inputValue(),'K');
+            assert.equal(await page.locator('.ea-autokat-pagination-top').isVisible(),false);
+            for(const link of await footer.locator('.pagination-wrapper a').all()) {
+                const params=new URL(await link.getAttribute('href'),'http://eablage.test').searchParams;
+                assert.equal(params.get('q'),'Haus');assert.equal(params.get('typ'),'K');
+                assert.equal(params.get('aktiv'),'1');assert.equal(params.get('nutzung'),'mit');
+            }
+            await scroll.evaluate(el=>el.scrollTop=500);
+            const scrollBox=await scroll.boundingBox();
+            const th=await page.locator('.ea-autokat-table th').first().boundingBox();
+            assert.ok(Math.abs(th.y-scrollBox.y)<2,'table header sticks below title');
+            assert.deepEqual(await heading.boundingBox(),beforeHeading);
+            assert.deepEqual(await footer.boundingBox(),beforeFooter);
+            await page.locator('textarea[name="test_text"]').fill('Beispieltext');
+            assert.equal(await page.getByRole('button',{name:'Test ausführen'}).isVisible(),true);
+            assert.deepEqual(await footer.boundingBox(),beforeFooter);
+            await page.locator('.ea-admin-notices').evaluate(el=>el.innerHTML='<div class="alert alert-success">Regel aktiviert.</div>');
+            assert.deepEqual(await footer.boundingBox(),beforeFooter,'notice consumes content height');
+            if(process.env.UI_SCREENSHOT_DIR) {
+                await scroll.evaluate(el=>el.scrollTop=0);
+                await page.screenshot({path:path.join(process.env.UI_SCREENSHOT_DIR,`rules-${width}-${layout}.png`)});
+            }
+        } finally {await page.close();}
+    });
+}
+for(const [width,height] of [[390,900],[800,900],[1440,550]]) test(`${width}x${height}: rules retain page scrolling and reachable rule test`,async()=>{
+    const page=await open('autokat_regeln.php?layout=touch#test-ergebnis',width,{action:'test',test_text:'Beispieltext'});
+    try {
+        await page.setViewportSize({width,height});
+        assert.equal(await page.locator('textarea[name="test_text"]').inputValue(),'Beispieltext');
+        assert.match(await page.locator('.ea-test-result').innerText(),/Keine passende AutoKat-Regel/);
+        assert.equal(await page.locator('.ea-autokat-scroll').evaluate(el=>getComputedStyle(el).overflowY),'visible');
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight),'small window scrolls normally');
+        await page.locator('textarea[name="test_text"]').scrollIntoViewIfNeeded();
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal overflow');
+    } finally {await page.close();}
+});
+
+for(const layout of ['touch','desktop']) test(`${layout}: rule test results and inline status changes remain usable in the workspace`,async()=>{
+    const page=await open('autokat_regeln.php?layout='+layout+'#test-ergebnis',layout==='desktop'?1920:1440,{action:'test',test_text:'Beispieltext'});
+    try {
+        assert.match(await page.locator('.ea-test-result').innerText(),/Keine passende AutoKat-Regel/);
+        await page.locator('.ea-test-result').scrollIntoViewIfNeeded();
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1));
+        const scroll=page.locator('.ea-autokat-scroll');
+        await scroll.evaluate(el=>el.scrollTop=0);
+        const toggle=page.locator('.ea-rule-status').first();
+        const urlBefore=page.url();
+        await page.route('**/autokat_regeln.php**',route=>route.fulfill({json:{ok:true,active:false}}));
+        await toggle.click();
+        await page.waitForFunction(()=>document.querySelector('.ea-rule-status').textContent.includes('inaktiv'));
+        assert.equal(page.url(),urlBefore,'status changes without navigation');
+        assert.equal(await toggle.getAttribute('aria-label'),'Regel aktivieren');
+    } finally {await page.close();}
+});
+
+for(const [width,layout,touch] of [[900,'touch',false],[1440,'touch',false],[1920,'desktop',false],[1200,'touch',true]]) {
+    for(const query of ['', '&regel=R0001']) test(`${width}px ${layout}: ${query?'existing':'new'} rule editor has fixed title and save actions`,async()=>{
+        const page=await open('autokat_regel_bearbeiten.php?layout='+layout+query,width,null,touch);
+        try {
+            const heading=page.locator('.ea-rule-editor-heading'),footer=page.locator('.ea-rule-editor-footer');
+            const scroll=page.locator('.ea-rule-editor-scroll');
+            const beforeHeading=await heading.boundingBox(),beforeFooter=await footer.boundingBox();
+            const reference=await open('einstellungen.php?layout='+layout,width,null,touch);
+            const referenceHeight=(await reference.locator('.ea-settings-panel > .panel-heading').boundingBox()).height;
+            await reference.close();
+            assert.ok(Math.abs(beforeHeading.height-referenceHeight)<1,'editor uses the actual administration title height');
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),'outer page fits');
+            assert.ok(await scroll.evaluate(el=>el.scrollHeight>el.clientHeight),'form has an internal scroll area');
+            await page.locator('#Bezeichnung').fill('Neue Regelbezeichnung');
+            await page.locator('#Suchbegriffe').fill('Versicherung');
+            await scroll.evaluate(el=>el.scrollTop=el.scrollHeight);
+            assert.deepEqual(await heading.boundingBox(),beforeHeading);
+            assert.deepEqual(await footer.boundingBox(),beforeFooter);
+            assert.equal(await footer.getByRole('link',{name:'Abbrechen'}).getAttribute('href'),'autokat_regeln.php');
+            assert.equal(await footer.getByRole('button',{name:'Speichern'}).isVisible(),true);
+            const data=await page.locator('.ea-rule-editor-form').evaluate(form=>Object.fromEntries(new FormData(form)));
+            assert.equal(data.Bezeichnung,'Neue Regelbezeichnung');assert.equal(data.Suchbegriffe,'Versicherung');
+            assert.equal(data.is_new,query?'0':'1');assert.ok(data.aktion_token);
+            await page.getByRole('button',{name:'Nummernerkennung hinzufügen'}).click();
+            assert.equal(await page.locator('[data-rule-number-rows] fieldset').count(),1);
+            await page.locator('.ea-admin-notices').evaluate(el=>el.innerHTML='<div class="alert alert-danger">Bitte Eingabe prüfen.</div>');
+            assert.deepEqual(await footer.boundingBox(),beforeFooter,'notice preserves footer position');
+            if(process.env.UI_SCREENSHOT_DIR) {
+                await scroll.evaluate(el=>el.scrollTop=0);
+                await page.screenshot({path:path.join(process.env.UI_SCREENSHOT_DIR,`rule-editor-${width}-${layout}-${query?'edit':'new'}.png`)});
+            }
+        } finally {await page.close();}
+    });
+}
+for(const [width,height] of [[390,900],[800,900],[1440,550]]) test(`${width}x${height}: rule editor keeps page scrolling and invalid inputs`,async()=>{
+    const page=await open('autokat_regel_bearbeiten.php?layout=touch',width,{is_new:'1',regel_id:'R0003',Bezeichnung:'Ungespeicherte Regel',Suchbegriffe:'',number_rules_json:'[]'});
+    try {
+        await page.setViewportSize({width,height});
+        assert.equal(await page.locator('#Bezeichnung').inputValue(),'Ungespeicherte Regel');
+        assert.match(await page.locator('.ea-admin-notices').innerText(),/Mindestens ein Suchbegriff/);
+        assert.equal(await page.locator('.ea-rule-editor-scroll').evaluate(el=>getComputedStyle(el).overflowY),'visible');
+        await page.locator('.ea-rule-editor-footer').scrollIntoViewIfNeeded();
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight));
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    } finally {await page.close();}
+});
+
+for(const [width,layout,touch] of [[900,'touch',false],[1440,'touch',false],[1920,'desktop',false],[1200,'touch',true]]) test(`${width}px ${layout}: event history keeps title, paging and return visible`,async()=>{
+    const back='bearbeiten.php?dokid=1';
+    const page=await open('protokoll.php?fixture_count=150&seite=2&dokid=1&ereignis=metadaten_geaendert&regel=R0001&return='+encodeURIComponent(back)+'&layout='+layout,width,null,touch);
+    try {
+        const scroll=page.locator('.ea-history-scroll'),heading=page.locator('.ea-history-heading'),footer=page.locator('.ea-history-footer');
+        await scroll.locator('.ea-group-details').first().locator('.ea-result-date').click();
+        assert.match(await scroll.locator('.ea-group-details').first().innerText(),/Alt <script>/);
+        assert.equal(await scroll.locator('.ea-group-body script').count(),0);
+        await scroll.evaluate(el=>{const source=el.querySelector('details');for(let i=0;i<50;i++)el.append(source.cloneNode(true));});
+        const reference=await open('einstellungen.php?layout='+layout,width,null,touch);
+        const height=(await reference.locator('.ea-settings-panel > .panel-heading').boundingBox()).height;
+        await reference.close();
+        const titleBefore=await heading.boundingBox(),footerBefore=await footer.boundingBox();
+        assert.ok(Math.abs(titleBefore.height-height)<1,'same title height as settings');
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),'page fits viewport');
+        const panel=await page.locator('.ea-history-panel').boundingBox();
+        assert.ok(Math.abs(footerBefore.y+footerBefore.height-panel.y-panel.height+1)<2,'footer meets panel edge');
+        assert.match(await footer.innerText(),/150 Ereignisse.*Seite 2 von 3/);
+        assert.equal(await footer.getByRole('link',{name:'Zurück',exact:true}).getAttribute('href'),back);
+        if(width>=1200) {
+            const field=await page.locator('.ea-history-toolbar [name="dokid"]').boundingBox();
+            const button=await page.locator('.ea-history-toolbar button[type="submit"]').boundingBox();
+            assert.ok(Math.abs(field.y+field.height-button.y-button.height)<1,'filter controls align in both layouts');
+        }
+        const editLink = scroll.getByRole('link', {name:'Dokument bearbeiten'}).first();
+        const editUrl = new URL(await editLink.getAttribute('href'), page.url());
+        assert.equal(editUrl.pathname, '/bearbeiten.php');
+        const historyUrl = new URL(editUrl.searchParams.get('return'), page.url());
+        assert.equal(historyUrl.pathname, '/protokoll.php');
+        assert.deepEqual(Object.fromEntries(historyUrl.searchParams), {
+            dokid:'1', ereignis:'metadaten_geaendert', regel:'R0001', seite:'2', return:back
+        });
+        const formData=await page.locator('.ea-history-toolbar').evaluate(form=>Object.fromEntries(new FormData(form)));
+        assert.equal(formData.dokid,'1');assert.equal(formData.ereignis,'metadaten_geaendert');assert.equal(formData.regel,'R0001');assert.equal(formData.return,back);
+        for(const label of ['Neuere Ereignisse','Ältere Ereignisse']) {
+            const params=new URL(await footer.getByRole('link',{name:label}).getAttribute('href'),'http://eablage.test').searchParams;
+            assert.equal(params.get('dokid'),'1');assert.equal(params.get('ereignis'),'metadaten_geaendert');
+            assert.equal(params.get('regel'),'R0001');assert.equal(params.get('return'),back);
+        }
+        await scroll.evaluate(el=>el.scrollTop=el.scrollHeight);
+        assert.ok(await scroll.evaluate(el=>el.scrollTop>0));
+        assert.deepEqual(await heading.boundingBox(),titleBefore);assert.deepEqual(await footer.boundingBox(),footerBefore);
+        if(process.env.UI_SCREENSHOT_DIR) {
+            await scroll.evaluate(el=>el.scrollTop=0);
+            await page.screenshot({path:path.join(process.env.UI_SCREENSHOT_DIR,`history-${width}-${layout}.png`)});
+        }
+    } finally {await page.close();}
+});
+for(const [width,height] of [[390,900],[800,900],[1440,550]]) test(`${width}x${height}: event history retains page scrolling`,async()=>{
+    const page=await open('protokoll.php?layout=touch',width);
+    try {
+        await page.setViewportSize({width,height});
+        await page.locator('.ea-history-scroll').evaluate(el=>{const source=el.querySelector('details');for(let i=0;i<20;i++)el.append(source.cloneNode(true));});
+        assert.equal(await page.locator('.ea-history-scroll').evaluate(el=>getComputedStyle(el).overflowY),'visible');
+        await page.locator('.ea-history-footer').scrollIntoViewIfNeeded();
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight));
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    } finally {await page.close();}
+});
+for(const [query,expected] of [['fixture_count=0','Keine Ereignisse'],['dokid=ungueltig','gültige DokID']]) test(`event history: empty or invalid filter ${query} keeps return accessible`,async()=>{
+    const page=await open('protokoll.php?layout=desktop&'+query,1920);
+    try {
+        assert.match(await page.locator('.ea-history-scroll').innerText(),new RegExp(expected));
+        assert.equal(await page.locator('.ea-history-footer').getByRole('link',{name:'Zurück',exact:true}).isVisible(),true);
+        assert.equal(await page.locator('.ea-history-footer').getByRole('link',{name:'Ältere Ereignisse'}).count(),0);
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1));
+    } finally {await page.close();}
+});
+
+test('trash wraps long subjects inside the panel on small and wide screens', async () => {
+    for (const [width,layout] of [[390,'touch'],[1440,'touch'],[1440,'desktop']]) {
+        const page = await open('papierkorb.php?layout='+layout, width);
+        try {
+            const row = page.locator('.ea-trash-entry');
+            const subject = row.locator('.ea-inbox-filename');
+            const textFits = await subject.evaluate(el => el.scrollWidth <= el.clientWidth+1);
+            assert.ok(textFits, 'long subject wraps without clipping');
+            const bounds = await row.boundingBox();
+            for (const control of await row.locator('button, input[required]').all()) {
+                const box = await control.boundingBox();
+                assert.ok(box.x >= bounds.x && box.x + box.width <= bounds.x + bounds.width + 1);
+            }
+        } finally { await page.close(); }
+    }
+});
+
+test('case help in document editing opens on focus and closes with Escape', async () => {
+    const page = await open('bearbeiten.php?dokid=1&layout=desktop');
+    try {
+        const help = page.getByRole('button', {name:'Hinweis zu Vorgängen'});
+        const tooltip = page.getByRole('tooltip');
+        await help.scrollIntoViewIfNeeded();
+        await help.focus();
+        await tooltip.waitFor({state:'visible'});
+        assert.match(await tooltip.textContent(), /Zuordnung wird mit dem Dokument gespeichert/);
+        await help.press('Escape');
+        await tooltip.waitFor({state:'hidden'});
+        assert.equal(await help.getAttribute('aria-expanded'), 'false');
+    } finally { await page.close(); }
+});
+
+test('trash and export scroll inside the workspace on large screens', async () => {
+    for (const [width, layout] of [[900, 'touch'], [1440, 'desktop']]) {
+        for (const route of ['papierkorb.php?', 'gesamtexport.php?bereich=archiv&']) {
+            const page = await open(route + 'layout=' + layout, width);
+            try {
+                const scroll = page.locator('.ea-admin-workspace-scroll');
+                const heading = page.locator('.ea-admin-workspace-panel > .panel-heading');
+                const tabs = page.locator('.ea-admin-workspace-tabs');
+                const headingBefore = await heading.boundingBox();
+                const tabsBefore = await tabs.count() ? await tabs.boundingBox() : null;
+                await scroll.evaluate(el => {
+                    const row = el.firstElementChild;
+                    for (let i = 0; i < 20; i++) el.append(row.cloneNode(true));
+                    el.scrollTop = el.scrollHeight;
+                });
+                assert.ok(await scroll.evaluate(el => el.scrollTop > 0));
+                assert.ok(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1));
+                assert.deepEqual(await heading.boundingBox(), headingBefore);
+                if (tabsBefore) assert.deepEqual(await tabs.boundingBox(), tabsBefore);
+            } finally { await page.close(); }
+        }
+    }
+});
+
+test('export areas keep actions and POST results together', async () => {
+    for (const [area, name, action, button, message] of [
+        ['export', 'Gesamtexport', 'export', 'Gesamtexport starten', 'noch kein Zielverzeichnis'],
+        ['sicherung', 'Datensicherung', 'backup', 'Datenbanksicherung erstellen', 'noch kein Zielverzeichnis'],
+        ['archiv', 'Archivprüfung', 'archive_audit', 'Archiv prüfen', 'Keine Abweichungen gefunden'],
+    ]) {
+        const page = await open('gesamtexport.php?layout=touch', 390, {action});
+        try {
+            const tabs = page.getByRole('navigation', {name: 'Export und Datensicherung'});
+            assert.equal(await tabs.locator('[aria-current=page]').innerText(), name);
+            assert.equal(await tabs.getByRole('link', {name, exact:true}).getAttribute('href'), 'gesamtexport.php?bereich='+area);
+            const region = page.getByRole('region', {name, exact:true});
+            assert.equal(await region.getByRole('button', {name:button}).count(), 1);
+            assert.equal(await region.locator('form').count(), 1);
+            assert.ok((await region.innerText()).includes(message));
+            assert.equal(await region.evaluate(el => getComputedStyle(el).overflowY), 'visible');
+        } finally { await page.close(); }
+    }
+});
+
+test('case overview exposes sorting and retains search and order across pages', async () => {
+    const page = await open('vorgaenge.php?q=Heizung&sort=date&fixture_count=52');
+    try {
+        const list = page.getByRole('table', {name:'Vorgänge'});
+        assert.equal(await list.locator('time').innerText(), '10.11.2026');
+        const dateHeader = list.getByRole('columnheader', {name:'Angelegt am'});
+        assert.equal(await dateHeader.getAttribute('aria-sort'), 'descending');
+        const query = async link => new URL(await link.getAttribute('href'), page.url()).searchParams;
+        const reverse = await query(dateHeader.getByRole('link'));
+        assert.equal(reverse.get('sort'), 'date-asc');
+        assert.equal(reverse.get('q'), 'Heizung');
+        assert.equal(reverse.get('page'), '1');
+        const next = await query(page.getByRole('link', {name:'Nächste »'}));
+        assert.equal(next.get('sort'), 'date');
+        assert.equal(next.get('q'), 'Heizung');
+        assert.equal(next.get('page'), '2');
+        assert.equal(await page.locator('.ea-vorgang-search [name="sort"]').inputValue(), 'date');
+        await page.setViewportSize({width:390,height:900});
+        assert.equal(await dateHeader.isVisible(), false);
+        assert.equal(await page.getByLabel('Sortieren nach').inputValue(), 'date');
+        assert.equal(await page.getByRole('button', {name:'Sortieren',exact:true}).isVisible(), true);
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    } finally { await page.close(); }
+});

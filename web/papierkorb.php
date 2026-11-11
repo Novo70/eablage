@@ -61,24 +61,38 @@ try {
     <link rel="stylesheet" href="app.css?v=<?= filemtime(__DIR__ . '/app.css') ?>">
 </head>
 
-<body><?php require 'navbar.php'; ?><main class="container">
-        <?= eablage_render_flash($flash) ?>
-        <?php if ($error !== ''): ?><?= eablage_render_message('danger', $error) ?><?php endif; ?>
-        <div class="panel panel-primary">
-            <div class="panel-heading"><?=eablage_icon('trash')?>Papierkorb (<?= count($documents) ?> Dokumente)</div>
-            <div class="panel-body">
+<body><?php require 'navbar.php'; ?><main class="container ea-admin-workspace">
+        <section class="panel panel-primary ea-admin-workspace-panel" aria-labelledby="trash-heading">
+            <div class="panel-heading" id="trash-heading"><?=eablage_icon('trash')?>Papierkorb (<?= count($documents) ?> <?=count($documents) === 1 ? 'Dokument' : 'Dokumente'?>)</div>
+            <div class="panel-body ea-admin-workspace-scroll" tabindex="0" role="region" aria-label="Gelöschte Dokumente">
+                <?= eablage_render_flash($flash) ?>
+                <?php if ($error !== ''): ?><?= eablage_render_message('danger', $error) ?><?php endif; ?>
                 <p>Die PDF und die Metadatei bleiben bis zum endgültigen Löschen im Archiv. Wiederherstellen macht das Dokument erneut sichtbar.</p>
                 <?php if (!$error): ?><p><?= h($deletionNotice) ?></p><?php endif; ?>
                 <?php if (!$documents): ?><p>Der Papierkorb ist leer.</p><?php endif; ?>
                 <?php foreach ($documents as $document): $id = (int)$document['DokID']; ?>
-                    <div class="ea-inbox-entry" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-                        <span><strong>DokID <?= h($id) ?></strong> · <?= h($document['Datum'] ?? '') ?> · <?= h($document['Partner'] ?? '') ?> · <?= h($document['Betreff'] ?? '') ?> <small>(seit <?= h($document['GeloeschtAm']) ?>)</small></span>
-                        <form method="post"><input type="hidden" name="aktion_token" value="<?= h($token) ?>"><input type="hidden" name="dokid" value="<?= h($id) ?>"><input type="hidden" name="action" value="restore"><button class="btn btn-default btn-sm"><?=eablage_icon('refresh')?>Wiederherstellen</button></form>
-                        <form method="post" onsubmit="return confirm(<?= h(json_encode('Dokument ' . $id . ' samt PDF, Metadatei und Dokumentdatensatz endgültig löschen? ' . $deletionNotice, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)) ?>);"><input type="hidden" name="aktion_token" value="<?= h($token) ?>"><input type="hidden" name="dokid" value="<?= h($id) ?>"><input type="hidden" name="action" value="purge"><input type="hidden" name="retain_history_details" value="<?= $retainDetails ? '1' : '0' ?>"><label>DokID bestätigen: <input name="confirm_id" size="7" inputmode="numeric" required></label> <button class="btn btn-danger btn-sm"><?=eablage_icon('trash')?>Endgültig löschen</button></form>
+                    <div class="ea-inbox-entry ea-trash-entry">
+                        <span class="ea-inbox-filename"><strong>DokID <?= h($id) ?></strong> · <?= h($document['Datum'] ?? '') ?> · <?= h($document['Partner'] ?? '') ?> · <?= h($document['Betreff'] ?? '') ?> <small>(seit <?= h($document['GeloeschtAm']) ?>)</small></span>
+                        <div class="ea-trash-actions">
+                            <form method="post">
+                                <input type="hidden" name="aktion_token" value="<?= h($token) ?>">
+                                <input type="hidden" name="dokid" value="<?= h($id) ?>">
+                                <input type="hidden" name="action" value="restore">
+                                <button class="btn btn-default btn-sm"><?=eablage_icon('refresh')?>Wiederherstellen</button>
+                            </form>
+                            <form method="post" onsubmit="return confirm(<?= h(json_encode('Dokument ' . $id . ' samt PDF, Metadatei und Dokumentdatensatz endgültig löschen? ' . $deletionNotice, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)) ?>);">
+                                <input type="hidden" name="aktion_token" value="<?= h($token) ?>">
+                                <input type="hidden" name="dokid" value="<?= h($id) ?>">
+                                <input type="hidden" name="action" value="purge">
+                                <input type="hidden" name="retain_history_details" value="<?= $retainDetails ? '1' : '0' ?>">
+                                <label>DokID bestätigen: <input class="form-control" name="confirm_id" inputmode="numeric" required></label>
+                                <button class="btn btn-danger btn-sm"><?=eablage_icon('trash')?>Endgültig löschen</button>
+                            </form>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>
-        </div>
+        </section>
     </main>
 </body>
 

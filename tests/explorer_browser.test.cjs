@@ -186,7 +186,9 @@ test('preview controls stay on the right while the metadata action uses the left
         const work = page.locator('#explorer-items button').filter({hasText: 'Arbeit und Beruf'});
         const heading = page.locator('.ea-pdf-panel > .panel-heading');
         const initialHeadingHeight = (await heading.boundingBox()).height;
-        assert.equal(initialHeadingHeight,60,'preview shares the common title height');
+        const listMinHeight = await page.locator('#explorer-list-heading').evaluate(el => getComputedStyle(el).minHeight);
+        assert.equal(await heading.evaluate(el => getComputedStyle(el).minHeight), listMinHeight,
+            'preview shares the list title minimum height');
         assert.match(await work.textContent(), /Arbeit und Beruf \(2 Dokumente\)/);
         assert.equal(await work.locator('small').count(), 0);
         assert.match(await page.locator('#explorer-items button').filter({hasText: 'Einzeln'}).textContent(), /\(1 Dokument\)/);

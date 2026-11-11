@@ -2,6 +2,7 @@
 Run with a disposable MariaDB on 127.0.0.1 and EABLAGE_TEST_DB_PORT set.
 Needs mysql-connector-python and PHP 8.3 with pdo_mysql; PHP_BIN can select PHP.
 """
+from web_fixture import copy_web
 import json
 import http.cookiejar
 import re
@@ -159,8 +160,7 @@ try:
         print('Parallel archive requests: PASS')
         # Exercise the real POST parsing in bearbeiten.php via PHP's HTTP server.
         web=base/'web'; web.mkdir()
-        for file in (ROOT/'web').iterdir():
-            if file.suffix in ('.php', '.js', '.sql', '.svg'): shutil.copy2(file,web/file.name)
+        copy_web(web)
         shutil.copy2(base/'konfiguration.php',web/'konfiguration.php')
         shutil.copy2(ROOT/'web/app.css',web/'app.css')
         with socket.socket() as listener:
@@ -298,7 +298,8 @@ try:
             cursor.execute(f'SELECT COUNT(*) FROM `{table}`')
             auxiliary_count += cursor.fetchone()[0]
         assert backup['tables']==11 and backup['rows']==2+event_count+auxiliary_count,backup
-        assert Path(backup['path']).read_text().startswith('-- e_ablage MariaDB-Datensicherung; Version: 4.6.0\n')
+        version = json.loads((Path(__file__).resolve().parents[1] / 'release.json').read_text())['version']
+        assert Path(backup['path']).read_text().startswith(f'-- e_ablage MariaDB-Datensicherung; Version: {version}\n')
         # Let PDO execute the generated SQL, preserving quoted strings/semicolons.
         restore_runner=base/'restore.php'
         restore_runner.write_text("<?php require 'konfiguration.php'; $db_config->exec('USE " + restore + "'); $db_config->exec(file_get_contents(" + json.dumps(backup['path']) + '));')

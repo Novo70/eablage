@@ -1,6 +1,6 @@
 <?php
 
-const EABLAGE_WEB_VERSION = '4.6.0';
+require_once __DIR__ . '/release.php';
 
 function eablage_pdfjs_version(string $source): ?string
 {

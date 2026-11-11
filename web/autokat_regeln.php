@@ -129,9 +129,6 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $regeln = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$ersteRegel = $anzahlRegeln === 0 ? 0 : $offset + 1;
-$letzteRegel = min($offset + $regelnProSeite, $anzahlRegeln);
-
 function rule_ref_text($ref): string
 {
     if (!is_array($ref)) return '';
@@ -222,6 +219,7 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
     <style>
         .ea-autokat-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:15px; }
         .ea-autokat-toolbar .form-group { margin-bottom:0; }
+        .ea-autokat-title { margin:0; font:inherit; }
         .ea-autokat-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; }
         .ea-autokat-table td { vertical-align:middle !important; }
         .ea-rule-main { width: 18%; min-width:190px; }
@@ -290,17 +288,19 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
 <body>
 <?php require_once 'navbar.php'; ?>
 <div class="ea-main-container">
-<div class="container">
+<div class="container ea-autokat-container">
+    <div class="ea-admin-notices">
     <?php if ($meldung !== ''): ?>
         <?=eablage_render_message($meldungTyp, $meldung)?>
     <?php endif; ?>
 
-    <div class="panel panel-primary">
+    </div>
+    <div class="panel panel-primary ea-autokat-panel">
         <div class="panel-heading ea-autokat-heading">
-            <span><?=eablage_icon('rules')?>Klassifizierungsregeln</span>
-            <a href="autokat_regel_bearbeiten.php" class="btn btn-default ea-heading-btn"><?=eablage_icon('plus')?>Neue Regel</a>
+            <h1 class="ea-autokat-title"><?=eablage_icon('rules')?>Klassifizierungsregeln</h1>
         </div>
-        <div class="panel-body">
+        <div class="panel-body ea-autokat-body">
+            <div class="ea-autokat-scroll">
             <form method="get" class="ea-autokat-toolbar">
                 <div class="form-group" style="min-width:280px; flex:1;">
                     <label for="q">Suche</label>
@@ -334,16 +334,8 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                 <a href="autokat_regeln.php" class="btn btn-link">Zurücksetzen</a>
             </form>
 
-            <div class="search-summary">
-                <strong><?=h($anzahlRegeln)?></strong> Regeln gefunden
-                <?php if ($anzahlRegeln > 0): ?>
-                    — angezeigt werden <?=h($ersteRegel)?> bis <?=h($letzteRegel)?>
-                    — Seite <?=h($seite)?> von <?=h($anzahlSeiten)?>
-                <?php endif; ?>
-            </div>
-
             <?php if ($anzahlRegeln > 0): ?>
-                <div class="pagination-wrapper">
+                <div class="pagination-wrapper ea-autokat-pagination-top">
                     <div>
                         <?php if ($seite > 1): ?>
                             <a class="btn btn-default btn-sm" href="<?=h(pagination_url($seite - 1, $filterText, $filterTyp, $filterAktiv, $filterNutzung))?>">&laquo; Vorherige</a>
@@ -367,7 +359,7 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                         <tr>
                             <th class="ea-rule-main">Regel / Bezeichnung</th>
                             <th>Typ</th>
-                            <th>Rang</th>
+                            <th class="ea-rule-rank">Rang</th>
                             <th>Suchbegriffe / Ergebnis</th>
                             <th>Nutzung</th>
                             <th>Status</th>
@@ -442,28 +434,7 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                 </table>
             </div>
 
-            <?php if ($anzahlRegeln > 0): ?>
-                <div class="pagination-wrapper">
-                    <div>
-                        <?php if ($seite > 1): ?>
-                            <a class="btn btn-default btn-sm" href="<?=h(pagination_url($seite - 1, $filterText, $filterTyp, $filterAktiv, $filterNutzung))?>">&laquo; Vorherige</a>
-                        <?php else: ?>
-                            <button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button>
-                        <?php endif; ?>
-
-                        <?php if ($seite < $anzahlSeiten): ?>
-                            <a class="btn btn-default btn-sm" href="<?=h(pagination_url($seite + 1, $filterText, $filterTyp, $filterAktiv, $filterNutzung))?>">Nächste &raquo;</a>
-                        <?php else: ?>
-                            <button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button>
-                        <?php endif; ?>
-                    </div>
-                    <div class="ea-pagination-info">Seite <?=h($seite)?> von <?=h($anzahlSeiten)?></div>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <div class="panel panel-default">
+    <div class="panel panel-default ea-autokat-test-panel">
         <div class="panel-heading"><h3 class="panel-title">🧪 AutoKat testen</h3></div>
         <div class="panel-body">
             <p class="text-muted">Der Beispieltext wird gegen den aktuell gespeicherten und aktiven Regelbestand im Python-Dienst getestet. Änderungen müssen daher vorher gespeichert sein.</p>
@@ -538,6 +509,33 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                     </table>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+            </div>
+            <footer class="ea-autokat-footer ea-search-footer">
+                <span><strong><?=h($anzahlRegeln)?></strong> Regeln gefunden</span>
+                <div class="ea-search-actions">
+            <?php if ($anzahlRegeln > 0): ?>
+                <div class="pagination-wrapper">
+                    <div>
+                        <?php if ($seite > 1): ?>
+                            <a class="btn btn-default btn-sm" href="<?=h(pagination_url($seite - 1, $filterText, $filterTyp, $filterAktiv, $filterNutzung))?>">&laquo; Vorherige</a>
+                        <?php else: ?>
+                            <button class="btn btn-default btn-sm" disabled>&laquo; Vorherige</button>
+                        <?php endif; ?>
+
+                        <?php if ($seite < $anzahlSeiten): ?>
+                            <a class="btn btn-default btn-sm" href="<?=h(pagination_url($seite + 1, $filterText, $filterTyp, $filterAktiv, $filterNutzung))?>">Nächste &raquo;</a>
+                        <?php else: ?>
+                            <button class="btn btn-default btn-sm" disabled>Nächste &raquo;</button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="ea-pagination-info">Seite <?=h($seite)?> von <?=h($anzahlSeiten)?></div>
+                </div>
+            <?php endif; ?>
+                    <a href="autokat_regel_bearbeiten.php" class="btn btn-primary"><?=eablage_icon('plus')?>Neue Regel</a>
+                </div>
+            </footer>
         </div>
     </div>
 </div>
