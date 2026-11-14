@@ -34,13 +34,12 @@ Ansicht dem Dokument und hebt den Filter auf.
 
 Ein Dokument auswählen, um rechts das Original-PDF anzuzeigen. Die ausgewählte
 Dokumentkachel bleibt links blau markiert und wird über der Vorschau nicht wiederholt.
-**PDF öffnen**
-steht in der Kopfzeile der Vorschau. **Metadaten bearbeiten** befindet sich unter der Dokumentliste.
-**PDF öffnen** öffnet es in einem neuen Tab, auch wenn der Browser keine eingebettete Vorschau
-unterstützt. **Metadaten bearbeiten** führt zur bestehenden Bearbeitungsseite.
-Nach dem Speichern dort **Zurück** wählen: Der Explorer lädt den aktuellen
-Bestand neu und wählt das Dokument wieder aus. Nach Änderung von Kategorie,
-Partner oder Datum erscheint es entsprechend im neuen virtuellen Ordner.
+**PDF öffnen** in der Kopfzeile der Vorschau öffnet das Original in einem neuen Tab.
+**Metadaten anzeigen** unter der Dokumentliste öffnet die Dokumentansicht.
+Dort ist bei Bedarf **Metadaten bearbeiten** verfügbar. Nach dem Speichern führt
+**Zurück** zuerst zur Dokumentansicht. **Zurück zur Ablage** lädt den aktuellen
+Bestand und stellt Ordner, Filter und Dokumentauswahl wieder her. Hat sich der
+virtuelle Pfad geändert, öffnet die Ablage den aktuellen Ordner des Dokuments.
 
 Die Exportstruktur lässt sich über **Einstellungen** im Menü ändern. Neuladen
 im Browser übernimmt zwischenzeitliche Änderungen. Der Kopfbereich enthält nur
@@ -66,7 +65,7 @@ PHP prüft den aktiven Datenbankeintrag, bildet `<DokID>dok.pdf` aus seiner
 DokID und prüft das Ziel im konfigurierten Archiv.
 Es gibt keinen Rückgriff auf Inbox- oder Exportkopien. Fehlende/unlesbare PDFs
 liefern eine verständliche Meldung; Links aus dem Archiv auf externe Dateien
-werden abgelehnt. Die Metadaten können weiterhin über die bestehende Bearbeitung
+werden abgelehnt. Die Metadaten können weiterhin in der Dokumentansicht
 geöffnet werden, auch wenn das PDF fehlt.
 
 Die URL speichert virtuelle Ordnerbezeichnungen, die DokID und den Dokumentfilter.

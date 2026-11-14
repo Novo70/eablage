@@ -68,7 +68,7 @@ try {
                     </div>
                 </div>
                 <div class="ea-workspace-footer" id="explorer-actions" hidden>
-                    <a class="btn btn-primary" id="explorer-edit"><?=eablage_icon('edit')?>Metadaten bearbeiten</a>
+                    <a class="btn btn-primary" id="explorer-view"><?=eablage_icon('document')?>Metadaten anzeigen</a>
                 </div>
             </section>
             <?php eablage_dokumentvorschau('', '', ['pdf_id'=>'explorer-pdf', 'open_id'=>'explorer-open', 'empty_id'=>'explorer-selection', 'heading_id'=>'explorer-preview-heading', 'class'=>'ea-explorer-preview']); ?>

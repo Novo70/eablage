@@ -1,15 +1,15 @@
 # Drittkomponenten und Lizenzen
 
-Diese Übersicht beschreibt die wesentlichen Abhängigkeiten des eAblage-Quellprojekts 4.6.1. Die dokumentierte Paketinventur stammt aus dem Stand 4.2.0; die Erweiterungen bis 4.5.0 führen keine neuen Laufzeitabhängigkeiten ein. Version 4.6.1 führt keine neuen Laufzeitabhängigkeiten ein. Seit 4.6.0 gehört PDF.js als lokale JavaScript-Abhängigkeit zur PDF-Vorschau. Ollama ist ein optionaler externer Dienst; Modell und Modelllizenz werden getrennt gewählt. Neu gebaute Images müssen weiterhin anhand ihrer tatsächlichen Pakete geprüft werden. Sie ersetzt **keine** vollständige Software Bill of Materials (SBOM) oder die Lizenzinventur eines gebauten Containerimages. Maßgeblich sind die jeweils tatsächlich installierten Versionen und die mitgelieferten Lizenztexte.
+Diese Übersicht beschreibt die wesentlichen Abhängigkeiten von eAblage 4.6.2. Die Python-Paketliste stammt aus dem aktuellen Lockfile. Maßgeblich für eine Inventur der Container sind die tatsächlich installierten Pakete und Lizenztexte. PDF.js wird lokal ausgeliefert. Ollama ist ein optionaler externer Dienst. Das Modell und seine Lizenz richten sich nach der jeweiligen Installation.
 
 | Komponente | Verwendung | Lizenz / Hinweis |
 | --- | --- | --- |
 | FastAPI | Python-HTTP-API | MIT |
 | Uvicorn | ASGI-Server | BSD-3-Clause |
 | python-dotenv | Konfiguration | BSD-3-Clause |
-| MySQL Connector/Python 26.7.0 | Datenbankzugriff im Backend | GPL-2.0 mit Oracle Universal FOSS Exception 1.0; siehe unten |
+| MySQL Connector/Python 26.10.0 | Datenbankzugriff im Backend | GPL-2.0 mit Oracle Universal FOSS Exception 1.0; siehe unten |
 | PDF.js 6.5.438 | Lokaler PDF-Viewer im Browser | Apache License 2.0; zusätzliche Lizenztexte der mitgelieferten Ressourcen in `web/vendor/pdfjs/`; siehe [PDF-Vorschau](PDF_VORSCHAU.md) |
-| PHP 8.3 | Weboberfläche | PHP License 3.01 |
+| PHP 8.5 | Weboberfläche | PHP License 3.01 |
 | Apache HTTP Server | Webserver | Apache License 2.0 |
 | Python 3.11 | Backend-Laufzeit | Python Software Foundation License |
 | MariaDB | Datenbankserver, bei integrierter Datenbank als eigener Dienst | GPL-2.0 |
@@ -36,9 +36,9 @@ Die Dockerfiles installieren zusätzlich Pakete des Basisbetriebssystems. Bei Ve
 
 Diese Übersicht erhebt keinen Anspruch auf verbindliche Rechtsberatung.
 
-## Vollständige Python-Paketliste für eAblage 4.6.1
+## Vollständige Python-Paketliste für eAblage 4.6.2
 
-Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches extrahiert und umfasst **sämtliche 15 festgeschriebenen Python-Pakete**, einschließlich transitiver Abhängigkeiten. Die Lizenzspalte nennt die übliche Projektlizenz, nicht eine unabhängig geprüfte Lizenzdatei jedes konkreten Wheels.
+Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches extrahiert und umfasst **sämtliche 16 festgeschriebenen Python-Pakete**, einschließlich transitiver Abhängigkeiten. Die Lizenzspalte nennt die übliche Projektlizenz, nicht eine unabhängig geprüfte Lizenzdatei jedes konkreten Wheels.
 
 | Paket | Version | Übliche Lizenz |
 | --- | --- | --- |
@@ -46,17 +46,18 @@ Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches ex
 | annotated-types | 0.8.0 | MIT |
 | anyio | 4.15.1 | MIT |
 | click | 8.5.0 | BSD-3-Clause |
-| fastapi | 0.141.1 | MIT |
+| fastapi | 0.162.4 | MIT |
 | h11 | 0.16.0 | MIT |
 | idna | 3.19 | BSD-3-Clause |
-| mysql-connector-python | 26.7.0 | GPL-2.0 mit Universal FOSS Exception |
+| mysql-connector-python | 26.10.0 | GPL-2.0 mit Universal FOSS Exception |
+| opentelemetry-api | 1.45.2 | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-python/blob/main/opentelemetry-api/LICENSE) |
 | pydantic | 2.13.5 | MIT |
 | pydantic-core | 2.46.5 | MIT |
 | python-dotenv | 1.2.3 | BSD-3-Clause |
 | starlette | 1.6.0 | BSD-3-Clause |
 | typing-extensions | 4.16.0 | PSF-2.0 |
 | typing-inspection | 0.4.4 | MIT |
-| uvicorn | 0.52.4 | BSD-3-Clause |
+| uvicorn | 0.54.0 | BSD-3-Clause |
 
 Vor der Bezeichnung als abschließend geprüfte Lizenzinventur müssen die Lizenzdateien und Paketmetadaten der tatsächlich installierten Distributionen überprüft werden.
 

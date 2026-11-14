@@ -44,7 +44,7 @@ async function open(items, query = '', viewport = {width: 1440, height: 1000}) {
     return {page, failures};
 }
 
-test('drill down, preview original by ID, edit return, browser Back and clearing selection', async () => {
+test('drill down, preview original by ID, metadata return, browser Back and clearing selection', async () => {
     const {page, failures} = await open([item(1, ['Haus', '2026', '09 - September']), item(2, [])]);
     try {
         await page.locator('#explorer-items button').filter({hasText: 'Haus'}).click();
@@ -53,8 +53,9 @@ test('drill down, preview original by ID, edit return, browser Back and clearing
         await page.locator('[data-dokid="1"]').click();
         assert.equal(await page.locator('#explorer-pdf iframe').getAttribute('src'), require('../web/dokumentvorschau.js').previewUrl('archiv_pdf.php?dokid=1',await page.locator('[data-document-preview]').getAttribute('data-preview-version')));
         if (process.env.EXPLORER_SCREENSHOT_DIR) await page.screenshot({path: path.join(process.env.EXPLORER_SCREENSHOT_DIR, 'explorer-desktop.png'), fullPage: true});
-        const link = new URL(await page.locator('#explorer-edit').getAttribute('href'), page.url());
+        const link = new URL(await page.locator('#explorer-view').getAttribute('href'), page.url());
         const back = new URL(link.searchParams.get('return'), page.url());
+        assert.equal(link.pathname, '/app/ansehen.php');
         assert.equal(back.searchParams.get('dokid'), '1');
         assert.deepEqual(JSON.parse(back.searchParams.get('folder')), ['Haus', '2026', '09 - September']);
         await page.goBack();
@@ -157,8 +158,8 @@ test('scoped filter, descendant path, preview, reload, clear and breadcrumb navi
         assert.equal(await page.locator('#explorer-items button').count(), 2);
         assert.match(await page.locator('[data-dokid="2"]').textContent(), /Ordner: September/);
         await page.locator('[data-dokid="2"]').click();
-        const edit = new URL(await page.locator('#explorer-edit').getAttribute('href'), page.url());
-        const back = new URL(edit.searchParams.get('return'), page.url());
+        const view = new URL(await page.locator('#explorer-view').getAttribute('href'), page.url());
+        const back = new URL(view.searchParams.get('return'), page.url());
         assert.equal(back.searchParams.get('q'), 'AB123');
         assert.deepEqual(JSON.parse(back.searchParams.get('folder')), ['Kontoauszüge', '2025']);
         await page.reload();
@@ -199,7 +200,7 @@ test('preview controls stay on the right while the metadata action uses the left
         assert.equal((await heading.boundingBox()).height, initialHeadingHeight, 'showing preview actions does not enlarge the title bar');
         assert.equal((await heading.locator('#explorer-open').boundingBox()).height, 34);
         assert.equal(await heading.locator('#explorer-open').isVisible(), true);
-        assert.equal(await page.locator('.ea-workspace-footer #explorer-edit').isVisible(), true);
+        assert.equal(await page.locator('.ea-workspace-footer #explorer-view').isVisible(), true);
         assert.equal(await heading.locator('#explorer-open').getAttribute('href'), 'archiv_pdf.php?dokid=1');
         assert.deepEqual(failures, []);
     } finally { await page.close(); }
@@ -232,7 +233,7 @@ test('metadata footer stays reachable while the document list scrolls',async()=>
         const footer=page.locator('.ea-workspace-footer'), before=await footer.boundingBox();
         await page.locator('.ea-explorer-documents > .panel-body').evaluate(el=>{el.scrollTop=el.scrollHeight;});
         assert.equal((await footer.boundingBox()).y,before.y);
-        assert.equal(await footer.locator('#explorer-edit').isVisible(),true);
+        assert.equal(await footer.locator('#explorer-view').isVisible(),true);
         const frame=await page.locator('#explorer-pdf iframe').elementHandle();
         await page.setViewportSize({width:390,height:844});
         assert.equal(await footer.evaluate(el=>getComputedStyle(el).position),'static');

@@ -18,8 +18,15 @@ function h($value): string { return htmlspecialchars((string)$value, ENT_QUOTES 
 function display_value($value): string { return trim((string)$value) !== '' ? h($value) : '—'; }
 
 $returnUrl = valid_return_url(is_string($_GET['return'] ?? null) ? $_GET['return'] : null);
-// This screen is entered from search; keep one return level when switching to editing.
-if (parse_url($returnUrl, PHP_URL_PATH) !== 'dokumente.php') $returnUrl = 'dokumente.php';
+$returnPath = parse_url($returnUrl, PHP_URL_PATH);
+$returnLabel = match ($returnPath) {
+    'vorgaenge.php' => 'Zurück zum Vorgang',
+    'explorer.php' => 'Zurück zur Ablage',
+    default => 'Zurück zur Suche',
+};
+if (!in_array($returnPath, ['dokumente.php', 'explorer.php', 'vorgaenge.php'], true)) {
+    $returnUrl = 'dokumente.php';
+}
 $viewUrl = 'ansehen.php?' . http_build_query(['dokid' => $dokId, 'return' => $returnUrl]);
 $editUrl = 'bearbeiten.php?' . http_build_query(['dokid' => $dokId, 'return' => $viewUrl]);
 $pdfUrl = 'archiv_pdf.php?dokid=' . rawurlencode((string)$dokId);
@@ -86,7 +93,7 @@ try {
                     </details>
                 </div>
                 <div class="ea-document-actions">
-                    <a href="<?=h($returnUrl)?>" class="btn btn-default">Zurück zur Suche</a>
+                    <a href="<?=h($returnUrl)?>" class="btn btn-default"><?=h($returnLabel)?></a>
                     <div>
                         <a href="<?=h($editUrl)?>" class="btn btn-primary"><?=eablage_icon('edit')?>Metadaten bearbeiten</a>
                     </div>

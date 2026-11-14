@@ -82,7 +82,7 @@ try {
         }
     }
 
-    $search = function (string $term, array $expected, array $filters = [], ?int $total = null) use ($directory): void {
+    $search = function (string $term, array $expected, array $filters = [], ?int $total = null, bool $checkOrder = false) use ($directory): void {
         $query = http_build_query(['Suchbegriff' => $term] + $filters);
         $process = proc_open([PHP_BINARY, "$directory/run.php", $query],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
@@ -92,7 +92,10 @@ try {
         if (proc_close($process) !== 0 || $errors !== '') throw new RuntimeException($errors);
         preg_match_all('/href="ansehen\.php\?dokid=(\d+)&amp;return=[^"]*"/', $html, $matches);
         $actual = array_map('intval', $matches[1]);
-        sort($actual); sort($expected);
+        if (!$checkOrder) {
+            sort($actual);
+            sort($expected);
+        }
         if ($actual !== $expected) throw new RuntimeException($query . ': ' . json_encode($actual));
         $total = $total ?? count($expected);
         if (!str_contains($html, '<strong>' . $total . '</strong> Treffer gefunden')) {
@@ -100,6 +103,7 @@ try {
         }
     };
     $search('VER-987/65', [4]);
+    $search('AB12345', [1, 2, 3, 5, 10], ['Vorgang' => ['invalid'], 'Volltextsuche' => ['invalid']]);
     $search('AB-123/45', [1, 2, 3, 4, 10]);
     $search('AB-123/45', [1, 4], ['Vorgang' => '1']);
     $search('AB-123/45', [], ['Vorgang' => '999']);
@@ -117,6 +121,14 @@ try {
     $search('()', []);
     $search('AB%unbekannt', []);
     $search('AB_unbekannt', []);
+    $search('AB12345', [10, 5, 3, 2, 1], checkOrder: true);
+    $search('AB12345', [5, 10, 3, 2, 1], ['sort' => 'subject-asc'], checkOrder: true);
+    $search('AB12345', [10, 3, 2, 1, 5], ['sort' => 'partner-asc'], checkOrder: true);
+    $search('AB12345', [1, 2, 3, 5, 10], ['sort' => 'date-asc'], checkOrder: true);
+    $numberFilters = ['Datumvon' => '2026-01-08', 'Datumbis' => '2026-01-09'];
+    $search('12345', [8, 9], $numberFilters + ['sort' => 'number-asc'], checkOrder: true);
+    $search('12345', [9, 8], $numberFilters + ['sort' => 'number-desc'], checkOrder: true);
+    $search('AB12345', [10, 5, 3, 2, 1], ['sort' => ['invalid']], checkOrder: true);
     foreach (range(100, 154) as $id) {
         $date = (new DateTimeImmutable('2026-02-01'))->modify('+' . ($id - 100) . ' days')->format('Y-m-d');
         $insert->execute([$id, $date, '', '', 'PAGE-123/45', '', '', null, 1, 1, null]);
@@ -124,6 +136,7 @@ try {
     }
     $search('PAGE12345', [], ['page' => '2', 'Kategorie' => '2']);
     $search('PAGE12345', [100, 101, 102, 103, 104], ['page' => '2'], 55);
+    $search('PAGE12345', range(150, 154), ['sort' => 'date-asc', 'page' => '2'], 55, true);
     if ($db->query('SELECT Nummer FROM dokumente WHERE DokID=2')->fetchColumn() !== 'ab-123/45') {
         throw new RuntimeException('Original number changed');
     }

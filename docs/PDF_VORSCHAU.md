@@ -53,8 +53,7 @@ liegen. Das Integrationsskript ist vor dem Viewer initialisiert.
 Die PDF/Text-Umschaltung und die Breitenwahl laden den Viewer nicht neu.
 Die Vorschau heißt überall **Dokumentvorschau**. **PDF öffnen**, **PDF/Text** und
 die optionale Breitenwahl stehen rechts in derselben Werkzeugleiste.
-**Metadaten bearbeiten** und die dokumentbezogene Aktion **Zuordnung entfernen**
-stehen links unten außerhalb des scrollenden Inhalts. Der Text wird in Explorer
+**Metadaten anzeigen** steht in Ablage und Vorgängen links unten. In der Dokumentansicht steht dort **Metadaten bearbeiten**. **Zuordnung entfernen** gehört zur Vorgangsansicht. Der Text wird in Explorer
 und Vorgängen erst beim ersten Umschalten geladen; Dokumentwechsel brechen
 laufende Textabfragen ab. Alte Antworten können die neue Auswahl nicht ersetzen.
 Klassifizierung und Bearbeitung verwenden weiterhin den aktuellen Formular-/OCR-Text.

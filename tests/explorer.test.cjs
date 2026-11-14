@@ -37,9 +37,10 @@ test('URL round trip preserves special characters and only DokID selects the PDF
     assert.equal(restored.document, doc);
     const links = explorer.documentLinks(doc.node, doc);
     assert.equal(links.pdf, 'archiv_pdf.php?dokid=17');
-    const edit = new URL(links.edit, 'http://nas/app/');
-    assert.equal(edit.searchParams.get('return'), url);
-    assert.equal(edit.searchParams.get('dokid'), '17');
+    const view = new URL(links.view, 'http://nas/app/');
+    assert.equal(view.pathname, '/app/ansehen.php');
+    assert.equal(view.searchParams.get('return'), url);
+    assert.equal(view.searchParams.get('dokid'), '17');
 });
 
 test('after editing or settings changes selected document follows its current folder', () => {
@@ -97,7 +98,7 @@ test('filtered selection round trip keeps scope, but follows a renamed document'
     const scope = model.tree.children.get('Konto').children.get('2025');
     const doc = model.documents.get(1);
     const links = explorer.documentLinks(scope, doc, 'ab123');
-    const back = new URL(links.edit, 'http://nas/').searchParams.get('return');
+    const back = new URL(links.view, 'http://nas/').searchParams.get('return');
     const state = explorer.selectionFromUrl(model, 'http://nas/' + back);
     assert.equal(state.node, scope);
     assert.equal(state.query, 'ab123');

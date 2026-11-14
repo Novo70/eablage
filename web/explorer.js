@@ -83,7 +83,7 @@
     function documentLinks(node, document, query = '') {
         const id = encodeURIComponent(String(document.dok_id));
         return {pdf: 'archiv_pdf.php?dokid=' + id,
-            edit: 'bearbeiten.php?dokid=' + id + '&return=' + encodeURIComponent(viewUrl(node, document, query))};
+            view: 'ansehen.php?dokid=' + id + '&return=' + encodeURIComponent(viewUrl(node, document, query))};
     }
 
     function sortedChildren(node) {
@@ -211,11 +211,11 @@
             const panel = get('pdf').closest('[data-document-preview]');
             if (!selected) {
                 root.eablageSelectDocumentPreview(panel, null);
-                get('edit').removeAttribute('href');
+                get('view').removeAttribute('href');
                 return;
             }
             const links = documentLinks(current, selected, query);
-            get('edit').href = links.edit;
+            get('view').href = links.view;
             root.eablageSelectDocumentPreview(panel, {
                 pdfUrl: links.pdf,
                 textUrl: 'dokument_text.php?dokid=' + encodeURIComponent(selected.dok_id),

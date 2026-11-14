@@ -64,6 +64,42 @@ function eablage_vorgang_anlegen(PDO $db, $name, $description = ''): int
     return (int)$db->lastInsertId();
 }
 
+/** Create the case and all document links in one transaction. */
+function eablage_vorgang_aus_dokumenten_anlegen(PDO $db, string $name, $description, $raw): int
+{
+    if (!is_string($raw) || strlen($raw) > 20000) throw new RuntimeException('Ungültige Dokumentauswahl.');
+    $ids = json_decode($raw, false, 8, JSON_THROW_ON_ERROR);
+    if (!is_array($ids) || !array_is_list($ids) || !$ids || count($ids) > 1000) {
+        throw new RuntimeException('Bitte 1 bis 1.000 Dokumente auswählen.');
+    }
+    $ids = array_values(array_unique(array_map('eablage_vorgang_id', $ids)));
+    sort($ids, SORT_NUMERIC);
+
+    $db->beginTransaction();
+    try {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $db->prepare("SELECT DokID FROM dokumente WHERE DokID IN ($placeholders) AND GeloeschtAm IS NULL ORDER BY DokID FOR UPDATE");
+        $stmt->execute($ids);
+        if (array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN)) !== $ids) {
+            throw new RuntimeException('Mindestens ein ausgewähltes Dokument ist nicht mehr verfügbar. Bitte die Suche neu laden und die Auswahl prüfen.');
+        }
+        $id = eablage_vorgang_anlegen($db, $name, $description);
+        $insert = $db->prepare('INSERT INTO dokument_vorgang (DokumentID,VorgangID) VALUES (?,?)');
+        foreach ($ids as $dokId) {
+            $before = eablage_vorgaenge_laden($db, $dokId);
+            $after = [...$before, $id];
+            sort($after, SORT_NUMERIC);
+            $insert->execute([$dokId, $id]);
+            eablage_protokoll($db, $dokId, 'vorgaenge_geaendert', ['vorgaenge_vorher'=>$before, 'vorgaenge_nachher'=>$after]);
+        }
+        $db->commit();
+        return $id;
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        throw $e;
+    }
+}
+
 function eablage_vorgang_revision(array $row): string
 {
     return hash('sha256', json_encode([$row['Bezeichnung'], $row['Beschreibung']], JSON_THROW_ON_ERROR));

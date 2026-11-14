@@ -59,6 +59,9 @@
                         <ul data-archive-results></ul>
                     <?php endif; ?>
                 </form>
+                <?php if ($archiveReport['repairable'] > 0): ?>
+                    <script src="archiv_wartung.js?v=<?=filemtime(__DIR__ . '/archiv_wartung.js')?>" defer></script>
+                <?php endif; ?>
             <?php endif; ?>
         <?php endif; ?>
     </div>

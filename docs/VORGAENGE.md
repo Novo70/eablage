@@ -11,15 +11,26 @@ Kategorien und Dokumenttypen behalten ihre bisherige Bedeutung.
 ## Vorgänge verwalten
 
 Im Hauptmenü **Vorgänge** öffnen. Die Übersicht durchsucht Bezeichnungen und
-Beschreibungen und zeigt die Zahl der zugeordneten Dokumente außerhalb des
-Papierkorbs. Über **Neuen Vorgang anlegen** eine Bezeichnung und optional eine
-Beschreibung erfassen. Gleichlautende Bezeichnungen sind erlaubt; für die
-Unterscheidung möglichst aussagekräftige Namen verwenden.
+Beschreibungen. Sie zeigt das Anlagedatum und die Zahl der zugeordneten Dokumente
+außerhalb des Papierkorbs. Die Spalten **Bezeichnung** und **Angelegt am**
+lassen sich sortieren. Mobil erfolgt die Sortierung über ein Auswahlfeld.
 
-Ein Klick auf die Bezeichnung öffnet die Detailansicht mit der Dokumentliste links und einer PDF-Vorschau rechts. Ein Dokument in der Liste auswählen, um es rechts anzuzeigen. Über **PDF öffnen** lässt es sich separat öffnen; **Metadaten bearbeiten** führt zum Dokumentformular. Auf schmalen Bildschirmen steht die eingebettete [PDF.js-Vorschau](PDF_VORSCHAU.md) unter der Dokumentliste. Unter **Vorgang bearbeiten**
-lassen sich Bezeichnung und Beschreibung ändern. Die Dokumente bleiben dabei
-zugeordnet. **Vorgang löschen** entfernt nach Bestätigung den Vorgang und dessen
-Zuordnungen. Es löscht keine Dokumente, auch keine Dokumente im Papierkorb.
+**Neuen Vorgang anlegen** in der Fußleiste öffnet einen Dialog für die Bezeichnung
+und eine optionale Beschreibung. Nach dem Speichern öffnet sich der Vorgang.
+Gleichlautende Bezeichnungen sind erlaubt.
+
+Ein Klick auf eine Zeile öffnet den Vorgang mit Dokumentliste und PDF-Vorschau.
+Auf schmalen Bildschirmen steht die [PDF.js-Vorschau](PDF_VORSCHAU.md) unter
+der Dokumentliste. Bei ausgewähltem Dokument sind **Metadaten anzeigen** und
+**Zuordnung entfernen** in der Fußleiste verfügbar. Die Metadaten öffnen sich
+in der Leseansicht. Dort ist bei Bedarf **Metadaten bearbeiten** verfügbar.
+**Zurück zum Vorgang** stellt die Listenseite und die Dokumentauswahl wieder her,
+sofern das Dokument weiterhin auf dieser Seite steht.
+
+Unterhalb der Liste befinden sich die aufklappbaren Bereiche **Vorhandenes
+Dokument zuordnen** und **Vorgang bearbeiten**. Im zweiten lassen sich
+Bezeichnung und Beschreibung ändern. **Vorgang löschen** entfernt nach
+Bestätigung den Vorgang und seine Zuordnungen. Die Dokumente bleiben erhalten.
 
 ## Dokumente zuordnen
 
@@ -45,8 +56,7 @@ beim Speichern erkannt, damit ein veraltetes Formular sie nicht überschreibt.
 
 Alternativ im Vorgang **Vorhandenes Dokument zuordnen** öffnen und nach Partner,
 Betreff oder Nummer suchen. **Zuordnen** übernimmt ein Dokument sofort. In der
-Dokumentliste zunächst ein Dokument auswählen. **Zuordnung entfernen** rechts in
-der Überschrift löst dann nur dessen Verknüpfung zum aktuellen Vorgang sofort.
+Dokumentliste zunächst ein Dokument auswählen. **Zuordnung entfernen** in der Fußleiste löst die Verknüpfung zum aktuellen Vorgang sofort.
 Ohne Auswahl ist die Schaltfläche deaktiviert.
 
 ## Suche und Papierkorb
@@ -54,6 +64,12 @@ Ohne Auswahl ist die Schaltfläche deaktiviert.
 Die vorhandene Dokumentensuche enthält einen zusätzlichen Filter **Vorgang**.
 Aus der Vorgangsansicht führt **Dokumente in der Suche anzeigen** zur gefilterten
 Suche; dort lassen sich weitere Suchkriterien kombinieren.
+
+In der Trefferliste können Dokumente auf mehreren Seiten ausgewählt werden.
+**Vorgang anlegen** öffnet bei mindestens einer Auswahl den Dialog. Erst
+**Vorgang speichern** legt den Vorgang mit sämtlichen markierten Dokumenten
+gemeinsam an. Abbrechen erhält die Auswahl. Nach erfolgreichem Speichern
+öffnet sich der neue Vorgang.
 
 Dokumente im Papierkorb werden nicht in der Vorgangsliste mitgezählt oder als
 reguläre Treffer angeboten. Ihre Verknüpfungen bleiben bestehen und sind nach der

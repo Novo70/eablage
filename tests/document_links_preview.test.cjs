@@ -5,8 +5,8 @@ const path=require('node:path');
 const {JSDOM}=require('jsdom');
 const {execFileSync}=require('node:child_process');
 const component=execFileSync(process.env.PHP_BIN||'php',['-r',`require $argv[1]; eablage_dokumentvorschau('', '', ['pdf_id'=>'vorgang-preview-pdf','open_id'=>'vorgang-preview-open','empty_id'=>'vorgang-preview-empty']);`,path.join(__dirname,'../web/dokumentvorschau.php')],{encoding:'utf8'});
-function fixture() {
- const dom=new JSDOM(`<div data-vorgang-workspace><a data-case-preview data-document-id="1" data-edit-url="bearbeiten.php?dokid=1&return=vorgaenge.php%3Fid%3D4" href="archiv_pdf.php?dokid=1">One</a><a data-case-preview data-document-id="2" data-edit-url="bearbeiten.php?dokid=2" href="archiv_pdf.php?dokid=2">Two</a><form id="vorgang-detach-form"><input type="hidden" name="document_id" id="vorgang-detach-document"><button id="vorgang-detach" type="submit" disabled>Entfernen</button></form><div id="vorgang-preview-actions" hidden><a id="vorgang-preview-edit"></a></div>${component}</div>`,{url:'http://localhost/vorgaenge.php?id=4',runScripts:'outside-only'});
+function fixture(query = 'id=4') {
+ const dom=new JSDOM(`<div data-vorgang-workspace><a data-case-preview data-document-id="1" data-view-url="ansehen.php?dokid=1&return=vorgaenge.php%3Fid%3D4" href="archiv_pdf.php?dokid=1">One</a><a data-case-preview data-document-id="2" data-view-url="ansehen.php?dokid=2" href="archiv_pdf.php?dokid=2">Two</a><form id="vorgang-detach-form"><input type="hidden" name="document_id" id="vorgang-detach-document"><button id="vorgang-detach" type="submit" disabled>Entfernen</button></form><a id="vorgang-preview-view" role="link" aria-disabled="true">Metadaten anzeigen</a>${component}</div>`,{url:'http://localhost/vorgaenge.php?'+query,runScripts:'outside-only'});
  const w=dom.window,d=w.document;
  let submits=0;d.querySelector('form').addEventListener('submit',e=>{e.preventDefault();submits++;});
  w.eval(fs.readFileSync(path.join(__dirname,'../web/dokumentvorschau.js'),'utf8'));
@@ -15,15 +15,19 @@ function fixture() {
 }
 test('case document selection updates PDF and actions without leaving or submitting',()=>{
  const f=fixture(),{d,w,links}=f;
+ const view=d.getElementById('vorgang-preview-view');
  assert.equal(d.querySelector('iframe'),null);
+ assert.equal(view.hasAttribute('href'),false);
+ assert.equal(view.getAttribute('aria-disabled'),'true');
  assert.equal(d.getElementById('vorgang-detach').disabled,true);
  links[0].click();const frame=d.querySelector('iframe');
  assert.equal(frame.getAttribute('src'),require('../web/dokumentvorschau.js').previewUrl('archiv_pdf.php?dokid=1',d.querySelector('[data-document-preview]').dataset.previewVersion));
  assert.equal(frame.title,'PDF-Vorschau');
- assert.equal(d.getElementById('vorgang-preview-actions').hidden,false);
+ assert.equal(view.hasAttribute('aria-disabled'),false);
  assert.equal(d.getElementById('vorgang-preview-empty').hidden,true);
  assert.equal(links[0].getAttribute('aria-current'),'true');
- assert.match(d.getElementById('vorgang-preview-edit').href,/return=vorgaenge/);
+ assert.equal(new URL(view.href).pathname,'/ansehen.php');
+ assert.match(view.href,/return=vorgaenge/);
  links[0].click();assert.equal(d.querySelector('iframe'),frame);
  links[1].click();assert.equal(d.querySelector('iframe').getAttribute('src'),require('../web/dokumentvorschau.js').previewUrl('archiv_pdf.php?dokid=2',d.querySelector('[data-document-preview]').dataset.previewVersion));
  assert.equal(links[0].hasAttribute('aria-current'),false);
@@ -42,4 +46,16 @@ test('one header action submits the current selection and stays disabled without
  assert.equal(f.submits(),1);
  assert.equal(new w.FormData(d.getElementById('vorgang-detach-form')).get('document_id'),'2');
  w.close();
+});
+
+test('return to a case restores only a document listed on the page',()=>{
+ const restored=fixture('id=4&selected=2');
+ assert.equal(restored.links[1].getAttribute('aria-current'),'true');
+ assert.equal(restored.d.getElementById('vorgang-detach-document').value,'2');
+ assert.match(restored.d.getElementById('vorgang-preview-view').href,/ansehen\.php\?dokid=2/);
+ restored.w.close();
+ const missing=fixture('id=4&selected=999');
+ assert.equal(missing.d.querySelector('iframe'),null);
+ assert.equal(missing.d.getElementById('vorgang-detach').disabled,true);
+ missing.w.close();
 });

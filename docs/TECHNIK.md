@@ -19,7 +19,7 @@ Die Datenbank ist maßgeblich für JSON-Reparatur und Exportdarstellung. Begleit
 
 ## Container und Netze
 
-`web/Dockerfile` verwendet PHP 8.3 mit Apache auf Bookworm und installiert die deutsche Locale sowie MySQL-Erweiterungen. `backend/Dockerfile` verwendet Python 3.11 auf Bookworm, installiert Poppler/Tesseract und startet Uvicorn auf Port 8000. Der Worker verwendet denselben Build mit `python worker.py` und öffnet keinen Port. Die Dockerfiles kopieren den jeweiligen Code beim Build ins Image.
+`web/Dockerfile` verwendet PHP 8.5 mit Apache auf Bookworm und installiert die deutsche Locale sowie MySQL-Erweiterungen. `backend/Dockerfile` verwendet Python 3.11 auf Bookworm, installiert Poppler/Tesseract und startet Uvicorn auf Port 8000. Der Worker verwendet denselben Build mit `python worker.py` und öffnet keinen Port. Die Dockerfiles kopieren den jeweiligen Code beim Build ins Image.
 
 `compose.yaml` erstellt ein projektspezifisches App-Netz und nutzt das externe Netzwerk `database` für eine separate MariaDB. Der Backendalias `backend` gehört zum jeweiligen App-Netz. `compose.fresh.yaml` besitzt zusätzlich eine eigene MariaDB mit eigenem Volume und projektspezifischem Datenbanknetz; die Datei setzt derzeit `mariadb:11.4` ein.
 

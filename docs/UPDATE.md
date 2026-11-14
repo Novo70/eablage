@@ -2,6 +2,15 @@
 
 Web, Backend und Worker werden zusammen aus einem vollständigen Projektstand aktualisiert. Vorhandene lokale Konfigurationen und Dokumentdaten müssen dabei erhalten bleiben.
 
+## Aktualisierung von 4.6.1 auf 4.6.2
+
+Für eine vollständig aktualisierte 4.6.1-Installation sind keine SQL-Skripte erforderlich. Bei einem älteren Ausgangsstand zuerst die noch fehlenden Migrationen und Datenupdates in den folgenden Abschnitten anwenden. Anschließend genügt es, die Dienste einmal aus dem vollständigen Stand 4.6.2 zu bauen.
+
+1. Datenbank, PDFs, JSON-Metadaten und Konfiguration sichern. Offene Dokumentformulare schließen.
+2. Den vollständigen Stand 4.6.2 übernehmen und Web, Backend und Worker [gemeinsam neu bauen und erstellen](#gemeinsam-bauen-und-starten). Das Webimage verwendet jetzt PHP 8.5, das gemeinsame Backend-/Worker-Image Python 3.11 mit aktualisierten Python-Paketen. Lokale Konfiguration und Datenpfade erhalten.
+3. Browserseite neu laden und die Version unter **Einstellungen → Aktualisierung** und über `GET /health` prüfen. Treffer sortieren, Dokumente auf mehreren Seiten auswählen, daraus einen Vorgang anlegen, Metadaten öffnen und zum ausgewählten Dokument zurückkehren. In der Archivprüfung die Sammelauswahl kontrollieren.
+4. Neue SQL-Sicherung erzeugen und in einer getrennten leeren Testinstallation prüfen. Sie trägt die Kennung `4.6.2`. Unterstützte Sicherungen bis einschließlich 4.6.1 bleiben in 4.6.2 importierbar.
+
 ## Aktualisierung von 4.6.0 auf 4.6.1
 
 1. Datenbank, PDF-Archiv, JSON-Metadaten und lokale Konfiguration zusammen sichern. Offene Formulare schließen und Web, Backend und Worker für die Aktualisierung stoppen; die Datenbank bleibt für die SQL-Updates erreichbar.
@@ -43,7 +52,7 @@ Die [PDF-Vorschau](PDF_VORSCHAU.md) wird mit der Anwendung ausgeliefert. Bei ein
 5. Suche → Dokumentansicht → Bearbeiten → Ansicht → Suche mit Filtern und Ergebnisseite prüfen. Vorgang anlegen, ein Dokument mehreren Vorgängen zuordnen und eine Zuordnung entfernen. Klassifizierung/Bearbeitung am Desktop mit langen Inhalten und Meldungen sowie mobil prüfen. PDF-/Textvorschau und KI-Diagnose mit einem echten Dokument testen.
 6. Neue SQL-Sicherung erstellen und in einer **getrennten leeren Testinstallation** rücksichern. Dokumente, Nummern, Historie, Vorgänge und Zuordnungen vergleichen. Die neue Sicherung trägt Version 4.5.0; unterstützte Sicherungen von 4.1.0 bis 4.4.0 bleiben importierbar. PDFs und JSON-Dateien separat erhalten. [Sicherungsanleitung](SICHERUNG.md).
 
-Für ältere Installationen zunächst die noch fehlenden Migrationen der folgenden Abschnitte ausführen und anschließend `update_document_links.sql`. Wer direkt auf 4.6.1 aktualisiert, führt danach auch die beiden 4.6.1-Datenupdates aus, startet die Dienste aus 4.6.1 und prüft die dort beschriebene Version. Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
+Für ältere Installationen zunächst die noch fehlenden Migrationen der folgenden Abschnitte ausführen und anschließend `update_document_links.sql`. Wer direkt auf 4.6.2 aktualisiert, führt danach auch die beiden 4.6.1-Datenupdates aus und folgt anschließend den [Schritten für 4.6.2](#aktualisierung-von-461-auf-462). Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
 
 ## Aktualisierung von 4.3.0 auf 4.4.0
 
@@ -188,7 +197,7 @@ Ein bloßer Containerneustart übernimmt geänderten Code nicht. Der Webdienst h
 
 ## Nachkontrolle
 
-Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.6.1`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
+Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.6.2`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
 
 Für Wartung PHP- und Backend-Datenbankidentität, Metadaten-Mount und UID/GID kontrollieren. Ein gemischter Web-/Backend-/Workerstand soll nicht zum Schreiben verwendet werden. JSON-Reparaturen werden ausschließlich ausdrücklich gestartet.
 

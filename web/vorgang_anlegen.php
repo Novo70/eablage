@@ -8,7 +8,10 @@ try {
     try { eablage_aktion_pruefen($_POST['aktion_token'] ?? null); }
     catch (RuntimeException $e) { http_response_code(403); throw $e; }
     $name = eablage_vorgang_text($_POST['name'] ?? '', 'Bezeichnung', 255, true);
-    $id = eablage_vorgang_anlegen($db_config, $name, $_POST['description'] ?? '');
+    $description = $_POST['description'] ?? '';
+    $id = array_key_exists('document_ids', $_POST)
+        ? eablage_vorgang_aus_dokumenten_anlegen($db_config, $name, $description, $_POST['document_ids'])
+        : eablage_vorgang_anlegen($db_config, $name, $description);
     echo json_encode(['ok'=>true, 'id'=>$id, 'name'=>$name], JSON_THROW_ON_ERROR);
 } catch (Throwable $e) {
     if (http_response_code() < 400) http_response_code(400);

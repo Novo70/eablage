@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.6.2 – Suche, Vorgänge und Wartung – 14.11.2026
+
+- Suchtreffer lassen sich nach Betreff, Partner, Datum und Nummer sortieren. Ein Klick auf eine Zeile öffnet die Dokumentansicht. Kontrollkästchen bleiben unabhängig davon bedienbar.
+- Aus markierten Suchtreffern lässt sich über mehrere Ergebnisseiten hinweg ein Vorgang anlegen. Die Auswahlaktionen behalten in der Fußleiste ihren Platz und werden bei Bedarf aktiviert.
+- Die Vorgangsübersicht übernimmt das Listenlayout der Suche. Neue Vorgänge werden im Dialog angelegt. Im Vorgang öffnet **Metadaten anzeigen** die Leseansicht und der Rücksprung stellt die Dokumentauswahl wieder her. Zuordnung und Vorgangsbearbeitung stehen aufklappbar unter der Dokumentliste.
+- Der Ablage-Explorer öffnet Metadaten über die Leseansicht. Der Rücksprung stellt Ordner, Filter und Dokumentauswahl wieder her.
+- In der Archivprüfung lassen sich alle reparierbaren Einträge auf einmal markieren.
+- Der Vorgangsfilter kennzeichnet die ungefilterte Auswahl als „Alle Dokumente“. Ungültige mehrteilige Suchparameter werden ignoriert.
+- Das Webimage verwendet PHP 8.5. FastAPI, Uvicorn und MySQL Connector/Python wurden aktualisiert. Backend und Worker verwenden Python 3.11. GitHub Actions baut das gemeinsame Image und prüft darin den Import von `pydantic_core`.
+- Für das Update von 4.6.1 sind keine SQL-Skripte erforderlich. Neue SQL-Sicherungen tragen die Kennung 4.6.2. Siehe [Updateanleitung](docs/UPDATE.md#aktualisierung-von-461-auf-462).
+
 ## 4.6.1 – Einheitliche Verwaltungsfenster und Wartung – 10.11.2026
 
 ### Oberfläche und Bedienung

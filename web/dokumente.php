@@ -4,6 +4,7 @@ require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'vorgaenge_funktionen.php';
+require_once 'csrf.php';
 $db = $db_config;
 
 function h($value): string
@@ -12,7 +13,8 @@ function h($value): string
 }
 function request_value(string $name, string $default = ''): string
 {
-    return isset($_REQUEST[$name]) ? trim((string)$_REQUEST[$name]) : $default;
+    $value = $_REQUEST[$name] ?? null;
+    return is_string($value) ? trim($value) : $default;
 }
 function selected_value(string $current, string $value): string
 {
@@ -47,7 +49,7 @@ function highlight_text($text, array $terms): string
 $kategorien = eablage_lade_kategorien($db);
 $dokumenttypen = eablage_lade_dokumenttypen($db);
 $suchbegriff = request_value('Suchbegriff');
-$volltextsuche = isset($_REQUEST['Volltextsuche']) && $_REQUEST['Volltextsuche'] !== '';
+$volltextsuche = request_value('Volltextsuche') !== '';
 $datumvon = request_value('Datumvon');
 $datumbis = request_value('Datumbis');
 $kategorie = request_value('Kategorie', '0');
@@ -55,6 +57,19 @@ $dokumenttyp = request_value('Dokumententyp', '0');
 $nummer = request_value('Nummer', '0');
 $vorgang = request_value('Vorgang', '0');
 $vorgaenge = $db->query('SELECT ID,Bezeichnung FROM vorgang ORDER BY Bezeichnung,ID')->fetchAll(PDO::FETCH_KEY_PAIR);
+$sortColumns = [
+    'subject' => ['Betreff', "NULLIF(TRIM(dokumente.Betreff), '')"],
+    'partner' => ['Partner', "NULLIF(TRIM(dokumente.Partner), '')"],
+    'date' => ['Datum', 'dokumente.Datum'],
+    'number' => ['Nummer', "NULLIF(TRIM(dokumente.Nummer), '')"],
+];
+$sortOptions = [];
+foreach ($sortColumns as $key => [$label, $expression]) {
+    $sortOptions[$key . '-asc'] = [$label . ' aufsteigend', $expression . ' IS NULL, ' . $expression . ' ASC'];
+    $sortOptions[$key . '-desc'] = [$label . ' absteigend', $expression . ' DESC'];
+}
+$requestedSort = $_POST['sort'] ?? $_GET['sort'] ?? '';
+$sort = is_string($requestedSort) && isset($sortOptions[$requestedSort]) ? $requestedSort : 'date-desc';
 $page = max(1, (int)request_value('page', '1'));
 $perPage = 50;
 $offset = ($page - 1) * $perPage;
@@ -121,7 +136,8 @@ try {
         $page = $totalPages;
         $offset = ($page - 1) * $perPage;
     }
-    $dataSql = 'SELECT dokumente.DokID, dokumente.Datum, dokumente.Partner, dokumente.Betreff, dokumente.Nummer, kategorie.katBez, doktyp.doktypBez ' . $joinSql . ' ' . $whereSql . ' ORDER BY dokumente.Datum DESC LIMIT ? OFFSET ?';
+    $dataSql = 'SELECT dokumente.DokID, dokumente.Datum, dokumente.Partner, dokumente.Betreff, dokumente.Nummer, kategorie.katBez, doktyp.doktypBez '
+        . $joinSql . ' ' . $whereSql . ' ORDER BY ' . $sortOptions[$sort][1] . ', dokumente.DokID DESC LIMIT ? OFFSET ?';
     $dataStmt = $db->prepare($dataSql);
     $position = 1;
     foreach ($params as $index => $value) {
@@ -139,8 +155,14 @@ try {
 }
 $firstHit = $totalRows === 0 ? 0 : $offset + 1;
 $lastHit = min($offset + $perPage, $totalRows);
+// Same selection for all pages of the same search, including GET/POST entry points.
+$selectionKey = hash('sha256', serialize([
+    $suchbegriff, $volltextsuche, $datumvon, $datumbis, $kategorie, $dokumenttyp, $nummer, $vorgang,
+]));
+$aktionToken = $documents ? eablage_aktion_token() : '';
 $returnQuery = build_query([]);
 $returnUrl = 'dokumente.php' . ($returnQuery !== '' ? '?' . $returnQuery : '');
+$resultColumns = ['subject', 'partner', 'date', 'classification', 'number'];
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -166,7 +188,8 @@ $returnUrl = 'dokumente.php' . ($returnQuery !== '' ? '?' . $returnQuery : '');
                 <summary class="ea-filter-summary ea-search-filter-summary"><?=eablage_icon('search')?>Suche verfeinern</summary>
                 <div class="panel-body ea-filter-body">
                     <form method="GET" action="dokumente.php" accept-charset="UTF-8" id="search-refine-form"><input type="hidden" name="page" value="1">
-                        <div class="form-group"><label for="Vorgang">Vorgang</label><select class="form-control" name="Vorgang" id="Vorgang"><option value="0">Alle Vorgänge / ohne Zuordnung</option><?php foreach ($vorgaenge as $id=>$name): ?><option value="<?=h($id)?>" <?=selected_value($vorgang,(string)$id)?>><?=h($name)?></option><?php endforeach; ?></select><?php if (isset($vorgaenge[$vorgang])): ?><a href="vorgaenge.php?id=<?=h($vorgang)?>">Vorgang öffnen</a><?php endif; ?></div>
+                        <?php if (!$documents): ?><input type="hidden" name="sort" value="<?=h($sort)?>"><?php endif; ?>
+                        <div class="form-group"><label for="Vorgang">Vorgang</label><select class="form-control" name="Vorgang" id="Vorgang"><option value="0">Alle Dokumente</option><?php foreach ($vorgaenge as $id=>$name): ?><option value="<?=h($id)?>" <?=selected_value($vorgang,(string)$id)?>><?=h($name)?></option><?php endforeach; ?></select><?php if (isset($vorgaenge[$vorgang])): ?><a href="vorgaenge.php?id=<?=h($vorgang)?>">Vorgang öffnen</a><?php endif; ?></div>
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group"><label for="Suchbegriff">Suchbegriff</label><input class="form-control" id="Suchbegriff" name="Suchbegriff" type="text" value="<?= h($suchbegriff) ?>"></div>
@@ -197,24 +220,55 @@ $returnUrl = 'dokumente.php' . ($returnQuery !== '' ? '?' . $returnQuery : '');
                 <?php if ($totalRows === 0): ?>
                     <div class="alert alert-warning">Keine Dokumente gefunden. Bitte Suchkriterien ändern.</div>
                 <?php else: ?>
-                    <table class="table table-striped table-hover ea-results-table">
+                    <div class="ea-list-mobile-sort">
+                        <label for="search-sort">Sortieren nach</label>
+                        <div>
+                            <select class="form-control" id="search-sort" name="sort" form="search-refine-form">
+                                <?php foreach ($sortOptions as $value => [$label]): ?>
+                                    <option value="<?=h($value)?>"<?=selected_value($sort, $value)?>><?=h($label)?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button class="btn btn-default" type="submit" form="search-refine-form">Sortieren</button>
+                        </div>
+                    </div>
+                    <label class="ea-search-page-selection" data-search-mobile-selection hidden>
+                        <input type="checkbox" data-search-page-checkbox> Alle auf dieser Seite auswählen
+                    </label>
+                    <table class="table table-striped ea-results-table" data-clickable-rows data-search-selection="<?=h($selectionKey)?>">
                         <thead>
                             <tr>
-                                <th>Datum / Kategorie</th>
-                                <th>Partner</th>
-                                <th>Betreff</th>
-                                <th>Nummer</th>
+                                <th scope="col" class="ea-search-selection-cell" hidden>
+                                    <input type="checkbox" data-search-page-checkbox aria-label="Alle auf dieser Seite auswählen">
+                                </th>
+                                <?php foreach ($resultColumns as $column): ?>
+                                    <?php if ($column === 'classification'): ?>
+                                        <th scope="col">Kategorie / Dokumenttyp</th>
+                                    <?php else:
+                                        $ascending = $sort === $column . '-asc';
+                                        $descending = $sort === $column . '-desc';
+                                        $nextDirection = $ascending || (!$descending && $column === 'date') ? 'desc' : 'asc';
+                                        $sortUrl = 'dokumente.php?' . build_query(['sort' => $column . '-' . $nextDirection, 'page' => 1]);
+                                    ?>
+                                        <th scope="col"<?=$ascending ? ' aria-sort="ascending"' : ($descending ? ' aria-sort="descending"' : '')?>>
+                                            <a href="<?=h($sortUrl)?>"><?=h($sortColumns[$column][0])?><?php if ($ascending || $descending): ?> <span aria-hidden="true"><?=$ascending ? '↑' : '↓'?></span><?php endif; ?></a>
+                                        </th>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($documents as $row):
                                 $link = 'ansehen.php?dokid=' . rawurlencode((string)$row['DokID']) . '&return=' . rawurlencode($returnUrl); ?>
                                 <tr>
-                                    <td class="ea-result-datecell">
-                                        <div class="ea-result-meta-row"><span class="ea-result-date"><?= h($row['Datum'] ?? '') ?></span><span class="ea-result-meta"><span class="ea-badge ea-badge-category"><?= h($row['katBez'] ?? '') ?></span><span class="ea-badge ea-badge-type"><?= h($row['doktypBez'] ?? '') ?></span></span></div>
+                                    <td class="ea-search-selection-cell" hidden>
+                                        <?php if ((int)$row['DokID'] > 0): ?>
+                                            <input type="checkbox" data-search-document="<?=h($row['DokID'])?>" aria-label="<?=h('Dokument ' . $row['DokID'] . ' auswählen')?>">
+                                        <?php endif; ?>
                                     </td>
+                                    <td class="ea-subject"><a href="<?= h($link) ?>" class="ea-document-link ea-list-title-link" data-row-link><?=eablage_icon('document')?><span><?= highlight_text(trim((string)($row['Betreff'] ?? '')) !== '' ? $row['Betreff'] : 'Dokument ' . $row['DokID'], $terms) ?></span></a></td>
                                     <td class="ea-partner"><?= highlight_text($row['Partner'] ?? '', $terms) ?></td>
-                                    <td class="ea-subject"><a href="<?= h($link) ?>" class="ea-document-link"><span class="ea-pdf-icon" aria-hidden="true"><?=eablage_icon('document')?></span><span class="ea-subject-text"><?= highlight_text(trim((string)($row['Betreff'] ?? '')) !== '' ? $row['Betreff'] : 'Dokument ' . $row['DokID'], $terms) ?></span></a></td>
+                                    <td class="ea-result-date"><?= h($row['Datum'] ?? '') ?></td>
+                                    <td class="ea-result-classification"><?php if (($row['katBez'] ?? '') !== ''): ?><span class="ea-badge ea-badge-category"><?= h($row['katBez']) ?></span><?php endif; ?><?php if (($row['doktypBez'] ?? '') !== ''): ?><span class="ea-badge ea-badge-type"><?= h($row['doktypBez']) ?></span><?php endif; ?></td>
                                     <td class="ea-number"><?= highlight_text($row['Nummer'] ?? '', $terms) ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -230,12 +284,41 @@ $returnUrl = 'dokumente.php' . ($returnQuery !== '' ? '?' . $returnQuery : '');
                 </nav>
                 <?php endif; ?>
                 <div class="ea-search-actions">
-                    <a class="btn btn-default" href="index.php">Neue Suche</a>
+                    <?php if ($documents): ?>
+                        <span id="search-selection-count" role="status">Dokumente auswählen</span>
+                        <button class="btn btn-default" type="button" id="search-selection-clear" disabled>Auswahl aufheben</button>
+                        <button class="btn btn-primary" type="button" id="search-case-open" disabled aria-haspopup="dialog">Vorgang anlegen</button>
+                    <?php endif; ?>
+                    <a class="btn btn-default" href="index.php" id="search-new">Neue Suche</a>
                     <button class="btn btn-primary" type="submit" form="search-refine-form">Suche aktualisieren</button>
                 </div>
             </footer>
         </section>
+        <?php if ($documents): ?>
+            <dialog id="search-case-dialog" class="ea-search-case-dialog" aria-labelledby="search-case-heading">
+                <form id="search-case-form" method="post" action="vorgang_anlegen.php">
+                    <h2 id="search-case-heading">Vorgang anlegen</h2>
+                    <p id="search-case-summary"></p>
+                    <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
+                    <input type="hidden" name="return" value="<?=h($returnUrl)?>">
+                    <div class="form-group">
+                        <label for="search-case-name">Bezeichnung</label>
+                        <input class="form-control" id="search-case-name" name="name" required maxlength="255" autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="search-case-description">Beschreibung (optional)</label>
+                        <textarea class="form-control" id="search-case-description" name="description" rows="3" maxlength="10000"></textarea>
+                    </div>
+                    <p class="alert alert-danger" id="search-case-error" role="alert" hidden></p>
+                    <div class="ea-search-actions">
+                        <button type="button" class="btn btn-default" id="search-case-cancel">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Vorgang speichern</button>
+                    </div>
+                </form>
+            </dialog>
+        <?php endif; ?>
     </main>
+    <script src="clickable_rows.js?v=<?=filemtime(__DIR__ . '/clickable_rows.js')?>" defer></script>
     <script src="search_results.js?v=<?=filemtime(__DIR__ . '/search_results.js')?>" defer></script>
 </body>
 

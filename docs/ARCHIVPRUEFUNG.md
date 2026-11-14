@@ -26,12 +26,12 @@ Fehlendes JSON wird auch bei vorhandenen alten TXT-Dateien als fehlend gemeldet.
 
 ## Reparatur
 
-Nach einer Prüfung reparierbare Metadateien auswählen und die Reparatur
-bestätigen. Es stehen mit JavaScript **Alle auswählen**,
-**Auswahl aufheben** und ein Auswahlzähler zur Verfügung. Große Auswahlen werden
-nacheinander in Paketen bis 100 Dateien verarbeitet; die Fortschrittsanzeige
-nennt die bearbeitete und erfolgreiche Anzahl. Ohne JavaScript bleibt das Limit
-von 100 Dateien pro Start bestehen. Es gibt keine automatische Auswahl oder Reparatur beim Prüfen.
+Nach einer Prüfung reparierbare Metadateien einzeln markieren. Mit JavaScript
+stehen auch **Alle auswählen**, **Auswahl aufheben** und ein Auswahlzähler zur
+Verfügung. Die Reparatur startet erst mit der Bestätigung. Große Auswahlen
+werden nacheinander in Paketen bis 100 Dateien verarbeitet. Die
+Fortschrittsanzeige nennt die bearbeitete und erfolgreiche Anzahl. Ohne
+JavaScript lassen sich bis zu 100 Dateien pro Start reparieren.
 Reparaturen schreiben ausschließlich JSON; vorhandene TXT-Dateien bleiben erhalten.
 Das Backend liest die Datenbankwerte vor jedem Schreiben erneut. Signierte
 Prüfnachweise verfallen nach 30 Minuten, bei Backend-Neustart oder Änderungen

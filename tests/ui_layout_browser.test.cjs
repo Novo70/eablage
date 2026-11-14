@@ -432,7 +432,20 @@ for (const [width,desktop] of [[390,false],[1440,false],[1920,true]]) {
             const page=await open(url,width);
             try {
                 if(base==='explorer.php') { await page.locator('#explorer-items button').first().click();await page.locator('[data-dokid="1"]').click(); }
-                if(base.startsWith('vorgaenge')) await page.locator('[data-case-preview]').first().click();
+                if(base.startsWith('vorgaenge')) {
+                    const view=page.getByRole('link',{name:'Metadaten anzeigen',exact:true});
+                    const detach=page.locator('#vorgang-detach');
+                    assert.equal(await view.isVisible(),true);
+                    assert.equal(await view.isDisabled(),true);
+                    assert.equal(await detach.isDisabled(),true);
+                    const position=await view.boundingBox();
+                    await page.locator('[data-case-preview]').first().click();
+                    assert.equal(await view.isEnabled(),true);
+                    assert.equal(await detach.isEnabled(),true);
+                    const after=await view.boundingBox();
+                    assert.equal(after.x,position.x);
+                    assert.equal(after.width,position.width);
+                }
                 const preview=page.locator('[data-document-preview]'), heading=preview.locator('> .panel-heading');
                 assert.equal((await heading.locator('> span').textContent()).trim(),'Dokumentvorschau');
                 const controls=await heading.locator('[data-preview-open], [data-preview-view]').allTextContents();
@@ -444,8 +457,8 @@ for (const [width,desktop] of [[390,false],[1440,false],[1920,true]]) {
                 assert.equal(await heading.getByRole('link',{name:'Metadaten bearbeiten',exact:true}).count(),0);
                 assert.equal(await page.locator('[data-preview-split-toggle]').isVisible(),desktop);
                 if(base.startsWith('ansehen')||base==='explorer.php'||base.startsWith('vorgaenge')) {
-                    const edit=page.getByRole('link',{name:'Metadaten bearbeiten',exact:true});
-                    assert.equal(await edit.evaluate(el=>Boolean(el.closest('.ea-workspace-footer, .ea-document-actions'))),true);
+                    const action=page.getByRole('link',{name:base.startsWith('ansehen')?'Metadaten bearbeiten':'Metadaten anzeigen',exact:true});
+                    assert.equal(await action.evaluate(el=>Boolean(el.closest('.ea-workspace-footer, .ea-document-actions'))),true);
                 }
                 if(base.startsWith('vorgaenge')) assert.equal(await page.locator('#vorgang-detach').evaluate(el=>Boolean(el.closest('.ea-workspace-footer'))),true);
                 const pdf=preview.locator('iframe'), frame=await pdf.elementHandle(), before=await pdf.boundingBox();
@@ -845,5 +858,143 @@ test('case overview exposes sorting and retains search and order across pages', 
         assert.equal(await page.getByLabel('Sortieren nach').inputValue(), 'date');
         assert.equal(await page.getByRole('button', {name:'Sortieren',exact:true}).isVisible(), true);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    } finally { await page.close(); }
+});
+
+test('case overview shares the result layout and opens the selected row', async () => {
+    const page = await open('vorgaenge.php?layout=desktop&fixture_count=52');
+    try {
+        await page.emulateMedia({reducedMotion:'reduce'});
+        const scroll = page.locator('.ea-results-scroll');
+        const row = scroll.locator('tbody tr');
+        const link = row.getByRole('link', {name:'Heizung 2026'});
+        const description = row.locator('.ea-vorgang-list-description span');
+        assert.equal(await link.locator('use').getAttribute('href'), 'icons.svg#link');
+        assert.equal(await scroll.evaluate(el => getComputedStyle(el).overflowY), 'auto');
+        assert.equal(await scroll.getByRole('columnheader', {name:'Bezeichnung'}).evaluate(el => getComputedStyle(el).position), 'sticky');
+        assert.equal(await page.locator('.ea-search-footer').getByRole('link', {name:'Nächste »'}).isVisible(), true);
+
+        const background = () => row.evaluate(el => getComputedStyle(el).backgroundColor);
+        const idleColor = await background();
+        await description.hover();
+        assert.notEqual(await background(), idleColor);
+
+        const text = await description.evaluate(el => {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const {x,y,width,height} = range.getBoundingClientRect();
+            return {x,y,width,height};
+        });
+        const y = text.y + text.height / 2;
+        const overview = page.url();
+        await page.mouse.move(text.x + 1, y);
+        await page.mouse.down();
+        await page.mouse.move(text.x + text.width + 4, y, {steps:10});
+        await page.mouse.up();
+        assert.match(await page.evaluate(() => getSelection().toString()), /Angebot und Rechnung/);
+        assert.equal(page.url(), overview);
+
+        await page.setViewportSize({width:390,height:900});
+        assert.equal(await scroll.evaluate(el => getComputedStyle(el).overflowY), 'visible');
+        await row.locator('time').click();
+        await page.waitForURL(url => url.searchParams.get('id') === '1', {timeout:5000});
+    } finally { await page.close(); }
+});
+
+test('case creation opens from the footer and reopens with the entered values after a server error', async () => {
+    const page = await open('vorgaenge.php');
+    try {
+        const trigger = page.locator('.ea-search-footer').getByRole('button', {name:'Neuen Vorgang anlegen'});
+        const dialog = page.getByRole('dialog', {name:'Vorgang anlegen'});
+        await trigger.click();
+        assert.equal(await dialog.isVisible(), true);
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'new_name');
+        await dialog.getByRole('button', {name:'Abbrechen'}).click();
+        assert.equal(await dialog.isVisible(), false);
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'vorgang-create-open');
+        await trigger.click();
+        await dialog.getByLabel('Bezeichnung').fill('Versicherung');
+        const form = dialog.locator('form');
+        assert.equal(await form.getAttribute('method'), 'post');
+        assert.equal(await form.locator('[name="action"]').inputValue(), 'create');
+    } finally { await page.close(); }
+
+    const rejected = await open('vorgaenge.php', 390, {action:'create',name:'   ',description:'Beschreibung behalten'});
+    try {
+        const dialog = rejected.getByRole('dialog', {name:'Vorgang anlegen'});
+        assert.equal(await dialog.isVisible(), true);
+        assert.match(await dialog.getByRole('alert').innerText(), /Bezeichnung muss/);
+        assert.equal(await dialog.getByLabel('Beschreibung (optional)').inputValue(), 'Beschreibung behalten');
+    } finally { await rejected.close(); }
+});
+
+test('archive audit can select and clear all repairable findings without submitting', async () => {
+    const page = await open('gesamtexport.php?bereich=archiv&fixture_archive_issues=1', 1440, {action:'archive_audit'});
+    try {
+        const report = page.locator('#archivpruefung');
+        let requests = 0;
+        page.on('request', request => { if (request.method() === 'POST') requests++; });
+        await report.getByRole('button', {name:'Alle auswählen', exact:true}).click({timeout:3000});
+        const selected = report.locator('input[name="archive_selection[]"]:checked');
+        assert.equal(await selected.count(), 2);
+        assert.equal(await report.getByRole('row').filter({hasText:'PDF fehlt'}).getByRole('checkbox').count(), 0);
+        assert.equal(await report.locator('[data-archive-count]').innerText(), '2 ausgewählt');
+        await report.getByRole('button', {name:'Auswahl aufheben', exact:true}).click();
+        assert.equal(await selected.count(), 0);
+        assert.equal(requests, 0);
+    } finally { await page.close(); }
+});
+
+test('case metadata opens read-only and keeps the case and current document on return', async () => {
+    const casePage = await open('vorgaenge.php?id=1&return=dokumente.php');
+    try {
+        const doc = casePage.locator('[data-case-preview]').first();
+        await doc.click();
+        const href = await casePage.getByRole('link', {name:'Metadaten anzeigen'}).getAttribute('href');
+        const viewPage = await open(href);
+        try {
+            const back = await viewPage.getByRole('link', {name:'Zurück zum Vorgang'}).getAttribute('href');
+            const params = new URL(back, viewPage.url()).searchParams;
+            assert.equal(params.get('id'), '1');
+            assert.equal(params.get('selected'), await doc.getAttribute('data-document-id'));
+            assert.equal(params.get('return'), 'dokumente.php');
+            const restoredCase = await open(back);
+            try {
+                const selected = restoredCase.locator('[data-case-preview][aria-current="true"]');
+                assert.equal(await selected.getAttribute('data-document-id'), params.get('selected'));
+                assert.equal(await restoredCase.getByRole('link', {name:'Metadaten anzeigen'}).isEnabled(), true);
+            } finally { await restoredCase.close(); }
+            const edit = new URL(await viewPage.getByRole('link', {name:'Metadaten bearbeiten'}).getAttribute('href'), viewPage.url());
+            assert.equal(edit.pathname, '/bearbeiten.php');
+            assert.equal(new URL(edit.searchParams.get('return'), viewPage.url()).searchParams.get('return'), back);
+        } finally { await viewPage.close(); }
+    } finally { await casePage.close(); }
+});
+
+test('case actions follow the document list and the assignment search stays open', async () => {
+    for (const [query, width] of [['', 390], ['&document_q=Versicherung', 1440]]) {
+        const page = await open('vorgaenge.php?id=1' + query, width);
+        try {
+            const list = page.locator('.ea-vorgang-documents');
+            const attach = page.locator('#vorgang-zuordnen');
+            const edit = page.locator('#vorgang-bearbeiten');
+            assert.equal(await list.evaluate(el => el.nextElementSibling.id), 'vorgang-zuordnen');
+            assert.equal(await attach.evaluate(el => el.nextElementSibling.id), 'vorgang-bearbeiten');
+            assert.equal(await attach.evaluate(el => el.open), Boolean(query));
+            assert.equal(await edit.evaluate(el => el.open), false);
+            await edit.locator('summary').click();
+            assert.equal(await edit.getByRole('button', {name:'Speichern', exact:true}).isVisible(), true);
+        } finally { await page.close(); }
+    }
+});
+
+test('metadata opened from the explorer retains its return URL through editing', async () => {
+    const back = 'explorer.php?' + new URLSearchParams({folder:JSON.stringify(['Haus']), dokid:'1', q:'Rechnung'});
+    const page = await open('ansehen.php?' + new URLSearchParams({dokid:'1', return:back}));
+    try {
+        assert.equal(await page.getByRole('link', {name:'Zurück zur Ablage'}).getAttribute('href'), back);
+        const edit = new URL(await page.getByRole('link', {name:'Metadaten bearbeiten'}).getAttribute('href'), page.url());
+        assert.equal(edit.pathname, '/bearbeiten.php');
+        assert.equal(new URL(edit.searchParams.get('return'), page.url()).searchParams.get('return'), back);
     } finally { await page.close(); }
 });

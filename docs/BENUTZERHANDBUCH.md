@@ -134,7 +134,7 @@ Datenbank und Dateisystem bilden keine gemeinsame atomare Transaktion. Nach eine
 
 ### Suche und Filter
 
-Unter **Dokumente** lassen sich Suchbegriff, Datum von/bis, Kategorie und Dokumententyp kombinieren. Der Kategoriefilter berücksichtigt auch die zweite Kategorie. Inaktive Stammdaten bleiben in den Recherchefiltern auswählbar.
+Unter **Dokumente** lassen sich Suchbegriff, Datum von/bis, Kategorie und Dokumententyp kombinieren. Der Kategoriefilter berücksichtigt auch die zweite Kategorie. Inaktive Stammdaten bleiben in den Recherchefiltern auswählbar. Der Filter **Vorgang** schränkt die Ergebnisse auf einen bestimmten Vorgang ein. **Alle Dokumente** umfasst auch Dokumente ohne Vorgang.
 
 Der Suchbegriff wird an Leerraum in einzelne Wörter zerlegt. Jedes Wort muss in mindestens einem der Felder Partner, Betreff, Nummer oder Tags vorkommen. **Volltextsuche** ergänzt den gespeicherten Dokumenttext; die PDF wird dafür nicht erneut eingelesen. Die Suche arbeitet mit Teilzeichenketten, anders als die Wortgrenzensuche der AutoKat-Regeln.
 
@@ -142,11 +142,22 @@ In den **Nummern** werden zusätzlich unterschiedliche Schreibweisen gefunden: L
 
 ### Ergebnisliste
 
-Ergebnisse sind nach Dokumentdatum absteigend geordnet; eine Seite enthält bis zu 50 Treffer. Die Liste zeigt Datum, Kategorie, Dokumenttyp, Partner, Betreff und gegebenenfalls Nummer. Suchbegriffe werden in Partner und Betreff hervorgehoben.
+Die Liste zeigt Betreff, Partner, Datum, Kategorie und Dokumenttyp sowie die
+wichtigste Nummer. Standardmäßig stehen die neuesten Dokumente zuerst. Pro Seite
+werden bis zu 50 Treffer angezeigt. Die Spaltenüberschriften **Betreff**,
+**Partner**, **Datum** und **Nummer** wechseln die Sortierrichtung. Auf kleinen
+Bildschirmen gibt es dafür das Feld **Sortieren nach**.
 
-- Betreff beziehungsweise Dokumentsymbol anklicken: Dokumentansicht mit Metadaten links und PDF-/Textvorschau rechts öffnen.
-- In der Dokumentansicht **Bearbeiten** wählen, um Metadaten zu ändern, oder **PDF öffnen**, um das PDF in einem neuen Tab zu öffnen. **Zurück zur Suche** erhält Suchbegriff, Filter und Ergebnisseite.
-- Seitensteuerung verwenden: weitere Treffer anzeigen.
+- Ein Klick auf die Zeile öffnet die Dokumentansicht. Per Tastatur lässt sich
+  der Betreff-Link verwenden. Text lässt sich in der Liste markieren und kopieren.
+- In der Dokumentansicht öffnet **Metadaten bearbeiten** das Bearbeitungsformular.
+  **PDF öffnen** öffnet die PDF separat. **Zurück zur Suche** erhält Suchbegriff,
+  Filter, Sortierung und Ergebnisseite.
+- Die Kontrollkästchen markieren einzelne Dokumente. Das Kästchen im Tabellenkopf
+  wählt alle Treffer der aktuellen Seite aus. Mobil ist es mit **Alle auf dieser
+  Seite auswählen** beschriftet. Die Auswahl bleibt beim Blättern und Sortieren
+  derselben Suche erhalten. Über **Vorgang anlegen** lassen sich die markierten
+  Dokumente gemeinsam einem neuen Vorgang zuordnen.
 
 Die Ergebnisliste beginnt mit der blauen Titelleiste **Suchergebnisse** und der
 Trefferzahl. **Suche verfeinern** öffnet die bisherigen Suchkriterien direkt im

@@ -11,7 +11,7 @@ function vorgang_return($raw): string {
     if (!is_string($raw) || preg_match('/[\x00-\x1f\x7f\\\\]/', $raw)) return '';
     $parts = parse_url($raw);
     if (!$parts || isset($parts['scheme']) || isset($parts['host']) || isset($parts['user']) || isset($parts['port'])) return '';
-    if (!in_array($parts['path'] ?? '', ['bearbeiten.php','verarbeiten.php','ansehen.php'], true)) return '';
+    if (!in_array($parts['path'] ?? '', ['bearbeiten.php','verarbeiten.php','ansehen.php','dokumente.php'], true)) return '';
     return $parts['path'] . (isset($parts['query']) ? '?' . $parts['query'] : '');
 }
 $token = eablage_aktion_token();
@@ -29,10 +29,15 @@ $sort = is_string($requestedSort) && isset($sortOptions[$requestedSort]) ? $requ
 $listUrl = static fn(string $order, int $page = 1): string => 'vorgaenge.php?' . http_build_query([
     'q' => $search, 'sort' => $order, 'page' => $page, 'return' => $return,
 ]);
-$documentSearch = is_string($_GET['document_q'] ?? '') ? trim($_GET['document_q'] ?? '') : '';
+$submittedAction = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? '') : '';
+$documentQuery = $_POST['document_q'] ?? $_GET['document_q'] ?? '';
+$documentSearch = is_string($documentQuery) ? trim($documentQuery) : '';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $total = 0; $pages = 1;
-$newName = ''; $newDescription = '';
+$createSubmitted = $submittedAction === 'create';
+$newName = $createSubmitted && is_string($_POST['name'] ?? null) ? $_POST['name'] : '';
+$newDescription = $createSubmitted && is_string($_POST['description'] ?? null) ? $_POST['description'] : '';
+$createError = '';
 try {
     if (isset($_POST['id']) || isset($_GET['id'])) $id = eablage_vorgang_id($_POST['id'] ?? $_GET['id']);
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -41,9 +46,9 @@ try {
         $action = $_POST['action'] ?? '';
         if (!is_string($action) || !in_array($action, ['create','update','delete','attach','detach'], true)) throw new RuntimeException('Ungültige Aktion.');
         if ($action === 'create') {
-            $newName = eablage_vorgang_text($_POST['name'] ?? '', 'Bezeichnung', 255, true);
-            $newDescription = eablage_vorgang_text($_POST['description'] ?? '', 'Beschreibung', 10000);
-            $id = eablage_vorgang_anlegen($db, $newName, $newDescription);
+            $name = eablage_vorgang_text($_POST['name'] ?? '', 'Bezeichnung', 255, true);
+            $description = eablage_vorgang_text($_POST['description'] ?? '', 'Beschreibung', 10000);
+            $id = eablage_vorgang_anlegen($db, $name, $description);
         } else {
             if (!$id) throw new RuntimeException('Vorgang fehlt.');
             $db->beginTransaction();
@@ -87,6 +92,10 @@ try {
     if ($db->inTransaction()) $db->rollBack();
     if ($e instanceof PDOException) { error_log('eAblage Vorgänge: ' . $e->getMessage()); $error = 'Die Änderung konnte nicht ausgeführt werden. Bitte den aktuellen Stand prüfen und erneut versuchen.'; }
     else $error = $e->getMessage();
+    if ($createSubmitted && !$id) {
+        $createError = $error;
+        $error = '';
+    }
 }
 try {
     if ($id) {
@@ -116,35 +125,36 @@ try {
     error_log('eAblage Vorgänge laden: ' . $e->getMessage()); http_response_code(500);
     $error = 'Vorgänge konnten nicht geladen werden. Bitte prüfen, ob sql/update_document_links.sql ausgeführt wurde.';
 }
+$editError = $item && in_array($submittedAction, ['update', 'delete'], true) ? $error : '';
+$attachError = $item && $submittedAction === 'attach' ? $error : '';
 $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencode($return) : '');
 ?>
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>eAblage – Vorgänge</title><link rel="icon" href="ea_icon4.png"><link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__.'/app.css')?>"><?php if ($item): ?><link rel="stylesheet" href="explorer.css?v=<?=filemtime(__DIR__.'/explorer.css')?>">
     <?php eablage_dokumentvorschau_script(); ?>
-    <script src="vorgang_vorschau.js?v=<?=filemtime(__DIR__.'/vorgang_vorschau.js')?>" defer></script><?php endif; ?></head>
-<body><?php include 'navbar.php'; ?><main class="container ea-vorgaenge <?=$item ? 'ea-explorer' : ''?>">
+    <script src="vorgang_vorschau.js?v=<?=filemtime(__DIR__.'/vorgang_vorschau.js')?>" defer></script><?php elseif (!$id): ?>
+    <script src="clickable_rows.js?v=<?=filemtime(__DIR__.'/clickable_rows.js')?>" defer></script>
+    <script src="vorgang_neu.js?v=<?=filemtime(__DIR__.'/vorgang_neu.js')?>" defer></script><?php endif; ?></head>
+<body><?php include 'navbar.php'; ?><main class="container ea-vorgaenge <?=$item ? 'ea-explorer' : (!$id ? 'ea-search-results' : '')?>">
     <?php if ($item): ?><div class="ea-explorer-layout" data-vorgang-workspace><?php endif; ?>
-    <section class="panel panel-primary <?=$item ? 'ea-explorer-documents' : ''?>" aria-labelledby="vorgang-heading">
-        <div class="panel-heading"><h1 class="ea-vorgang-title" id="vorgang-heading"><?=eablage_icon('link')?><?=$item ? 'Vorgang: ' . h($item['Bezeichnung']) : 'Vorgänge'?></h1></div>
-        <div class="panel-body">
-    <?php if ($error !== ''): ?><?=eablage_render_message('danger',$error)?><?php endif; ?>
+    <section class="panel panel-primary <?=$item ? 'ea-explorer-documents' : (!$id ? 'ea-documents-panel' : '')?>" aria-labelledby="vorgang-heading">
+        <div class="panel-heading<?=$id ? '' : ' ea-search-heading'?>"><h1 class="ea-vorgang-title" id="vorgang-heading"><?=eablage_icon('link')?><?=$item ? 'Vorgang: ' . h($item['Bezeichnung']) : 'Vorgänge'?><?php if (!$id): ?> <span class="ea-search-hit-count">(<?=h($total)?>)</span><?php endif; ?></h1></div>
+        <div class="panel-body<?=$id ? '' : ' ea-vorgang-list-tools'?>">
+    <?php if ($error !== '' && $editError === '' && $attachError === ''): ?><?=eablage_render_message('danger',$error)?><?php endif; ?>
     <?php if ($item): ?>
         <?php if ($item['Beschreibung'] !== ''): ?><p class="ea-vorgang-description"><?=h($item['Beschreibung'])?></p><?php endif; ?>
-        <details class="panel panel-default"><summary class="panel-heading">Vorgang bearbeiten</summary><div class="panel-body">
-            <form method="post"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="revision" value="<?=h(eablage_vorgang_revision($item))?>"><input type="hidden" name="return" value="<?=h($return)?>">
-                <div class="form-group"><label for="name">Bezeichnung</label><input class="form-control" id="name" name="name" required maxlength="255" value="<?=h($error !== '' && ($_POST['action']??'') === 'update' && is_string($_POST['name']??null) ? $_POST['name'] : $item['Bezeichnung'])?>"></div>
-                <div class="form-group"><label for="description">Beschreibung</label><textarea class="form-control" id="description" name="description" rows="3" maxlength="10000"><?=h($error !== '' && ($_POST['action']??'') === 'update' && is_string($_POST['description']??null) ? $_POST['description'] : $item['Beschreibung'])?></textarea></div>
-                <div class="ea-form-actions"><button class="btn btn-danger" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('Vorgang und alle seine Zuordnungen löschen? Die Dokumente bleiben erhalten.');"><?=eablage_icon('trash')?>Vorgang löschen</button><button class="btn btn-primary" type="submit" name="action" value="update"><?=eablage_icon('save')?>Speichern</button></div>
-            </form>
-        </div></details>
-        <section class="ea-vorgang-documents" aria-labelledby="vorgang-documents-heading"><div class="ea-vorgang-documents-heading"><h2 id="vorgang-documents-heading">Zugeordnete Dokumente (<?=$total?>)</h2>
+        <section class="ea-vorgang-documents" aria-labelledby="vorgang-documents-heading"><div class="ea-vorgang-documents-heading"><h2 id="vorgang-documents-heading">Zugeordnete Dokumente <span class="ea-vorgang-document-count">(<?=$total?>)</span></h2>
 
         </div>
             <?php if ($trashCount): ?><p class="text-muted"><?=$trashCount?> weitere Dokumente befinden sich im Papierkorb. Ihre Zuordnungen bleiben bis zum endgültigen Löschen erhalten.</p><?php endif; ?>
             <?php if (!$documents): ?><p>Noch keine Dokumente zugeordnet.</p><?php endif; ?>
             <ul class="ea-explorer-items">
-            <?php foreach ($documents as $doc): ?>
-                <li class="ea-explorer-document-row"><a class="ea-explorer-item ea-explorer-document" data-vorgang-document data-case-preview data-document-id="<?=$doc['DokID']?>" data-edit-url="bearbeiten.php?dokid=<?=$doc['DokID']?>&amp;return=<?=rawurlencode($detail)?>" href="archiv_pdf.php?dokid=<?=$doc['DokID']?>" target="_blank" rel="noopener">
+            <?php foreach ($documents as $doc):
+                $documentId = (int)$doc['DokID'];
+                $documentReturn = $detail . '&' . http_build_query(['page' => $page, 'selected' => $documentId]);
+                $documentView = 'ansehen.php?' . http_build_query(['dokid' => $documentId, 'return' => $documentReturn]);
+            ?>
+                <li class="ea-explorer-document-row"><a class="ea-explorer-item ea-explorer-document" data-vorgang-document data-case-preview data-document-id="<?=$doc['DokID']?>" data-view-url="<?=h($documentView)?>" href="archiv_pdf.php?dokid=<?=$doc['DokID']?>" target="_blank" rel="noopener">
                     <span class="ea-explorer-document-meta"><span class="ea-explorer-document-date"><?=h($doc['Datum'])?></span><span class="ea-badge ea-badge-category"><?=h($doc['katBez'])?></span><span class="ea-badge ea-badge-type"><?=h($doc['doktypBez'])?></span></span>
                     <span class="ea-explorer-document-line"><span class="ea-explorer-document-partner"><?=h($doc['Partner'])?></span><span class="ea-explorer-document-subject"><?=h($doc['Betreff'] ?: 'Dokument öffnen')?></span></span>
                 </a>
@@ -154,23 +164,34 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
             <?php if ($pages>1): ?><div class="pagination-wrapper"><?php if ($page>1): ?><a href="<?=h($detail.'&page='.($page-1))?>">« Vorherige</a><?php endif; ?><span>Seite <?=$page?> von <?=$pages?></span><?php if ($page<$pages): ?><a href="<?=h($detail.'&page='.($page+1))?>">Nächste »</a><?php endif; ?></div><?php endif; ?>
             <p><a href="dokumente.php?Vorgang=<?=$id?>">Dokumente in der Suche anzeigen</a></p>
         </section>
-        <details class="panel panel-default" <?=$documentSearch !== '' ? 'open' : ''?>><summary class="panel-heading">Vorhandenes Dokument zuordnen</summary><div class="panel-body">
-            <form method="get"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="return" value="<?=h($return)?>"><div class="form-group"><label for="document_q">Partner, Betreff oder Nummer</label><input class="form-control" id="document_q" name="document_q" value="<?=h($documentSearch)?>" required></div><div class="ea-form-actions"><button class="btn btn-default" type="submit">Dokument suchen</button></div></form>
+        <details class="ea-vorgang-disclosure" id="vorgang-zuordnen" <?= $documentSearch !== '' || $attachError !== '' ? 'open' : '' ?>>
+            <summary>Vorhandenes Dokument zuordnen</summary>
+            <?php if ($attachError !== ''): ?><?=eablage_render_message('danger',$attachError)?><?php endif; ?>
+            <form method="get" action="vorgaenge.php#vorgang-zuordnen"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="return" value="<?=h($return)?>"><div class="form-group"><label for="document_q">Partner, Betreff oder Nummer</label><input class="form-control" id="document_q" name="document_q" value="<?=h($documentSearch)?>" required></div><div class="ea-form-actions"><button class="btn btn-default" type="submit">Dokument suchen</button></div></form>
             <?php if ($documentSearch !== '' && !$candidates): ?><p>Keine weiteren passenden Dokumente gefunden.</p><?php endif; ?>
             <?php if (count($candidates)>50): ?><p>Die ersten 50 Treffer werden angezeigt. Bitte den Suchbegriff eingrenzen.</p><?php endif; ?>
-            <?php foreach (array_slice($candidates,0,50) as $doc): ?><div class="ea-vorgang-document"><div><?=h($doc['Datum'])?> · <?=h($doc['Partner'])?><br><?=h($doc['Betreff'])?></div><form method="post"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="return" value="<?=h($return)?>"><input type="hidden" name="document_id" value="<?=$doc['DokID']?>"><button class="btn btn-default btn-sm" type="submit" name="action" value="attach">Zuordnen</button></form></div><?php endforeach; ?>
-        </div></details>
+            <?php foreach (array_slice($candidates,0,50) as $doc): ?><div class="ea-vorgang-document"><div><?=h($doc['Datum'])?> · <?=h($doc['Partner'])?><br><?=h($doc['Betreff'])?></div><form method="post" action="#vorgang-zuordnen"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="return" value="<?=h($return)?>"><input type="hidden" name="document_q" value="<?=h($documentSearch)?>"><input type="hidden" name="document_id" value="<?=$doc['DokID']?>"><button class="btn btn-default btn-sm" type="submit" name="action" value="attach">Zuordnen</button></form></div><?php endforeach; ?>
+        </details>
+        <details class="ea-vorgang-disclosure" id="vorgang-bearbeiten" <?= $editError !== '' ? 'open' : '' ?>>
+            <summary>Vorgang bearbeiten</summary>
+            <?php if ($editError !== ''): ?><?=eablage_render_message('danger',$editError)?><?php endif; ?>
+            <form method="post" action="#vorgang-bearbeiten"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="revision" value="<?=h(eablage_vorgang_revision($item))?>"><input type="hidden" name="return" value="<?=h($return)?>">
+                <div class="form-group"><label for="name">Bezeichnung</label><input class="form-control" id="name" name="name" required maxlength="255" value="<?=h($editError !== '' && ($_POST['action']??'') === 'update' && is_string($_POST['name']??null) ? $_POST['name'] : $item['Bezeichnung'])?>"></div>
+                <div class="form-group"><label for="description">Beschreibung</label><textarea class="form-control" id="description" name="description" rows="3" maxlength="10000"><?=h($editError !== '' && ($_POST['action']??'') === 'update' && is_string($_POST['description']??null) ? $_POST['description'] : $item['Beschreibung'])?></textarea></div>
+                <div class="ea-form-actions"><button class="btn btn-danger" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('Vorgang und alle seine Zuordnungen löschen? Die Dokumente bleiben erhalten.');"><?=eablage_icon('trash')?>Vorgang löschen</button><button class="btn btn-primary" type="submit" name="action" value="update"><?=eablage_icon('save')?>Speichern</button></div>
+            </form>
+        </details>
     <?php elseif (!$id): ?>
         <form method="get" class="ea-vorgang-search"><input type="hidden" name="return" value="<?=h($return)?>"><input type="hidden" name="sort" value="<?=h($sort)?>"><label for="q">Vorgänge suchen</label><div class="ea-vorgang-add"><input class="form-control" type="search" name="q" id="q" value="<?=h($search)?>"><button class="btn btn-default" type="submit"><?=eablage_icon('search')?>Suchen</button></div></form>
-        <details class="panel panel-default" <?=$newName!=='' ? 'open' : ''?>><summary class="panel-heading">Neuen Vorgang anlegen</summary><div class="panel-body"><form method="post"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="return" value="<?=h($return)?>"><div class="form-group"><label for="new_name">Bezeichnung</label><input class="form-control" id="new_name" name="name" required maxlength="255" value="<?=h($newName)?>"></div><div class="form-group"><label for="new_description">Beschreibung (optional)</label><textarea class="form-control" id="new_description" name="description" rows="3" maxlength="10000"><?=h($newDescription)?></textarea></div><div class="ea-form-actions"><button class="btn btn-primary" type="submit" name="action" value="create">Vorgang anlegen</button></div></form></div></details>
-        <section class="panel panel-default"><div class="panel-heading"><h3>Vorgänge (<?=$total?>)</h3></div><div class="panel-body">
+        </div>
+        <div class="ea-results-scroll" tabindex="0" role="region" aria-labelledby="vorgang-heading">
             <?php if (!$items): ?><p>Keine Vorgänge gefunden.</p><?php endif; ?>
             <?php if ($items): ?>
-                <form method="get" class="ea-vorgang-mobile-sort">
+                <form method="get" class="ea-list-mobile-sort">
                     <input type="hidden" name="q" value="<?=h($search)?>">
                     <input type="hidden" name="return" value="<?=h($return)?>">
                     <label for="vorgang-sort">Sortieren nach</label>
-                    <div class="ea-vorgang-add">
+                    <div>
                         <select name="sort" id="vorgang-sort" class="form-control">
                             <?php foreach ($sortOptions as $value => [$label]): ?>
                                 <option value="<?=h($value)?>" <?=$sort === $value ? 'selected' : ''?>><?=h($label)?></option>
@@ -179,7 +200,7 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
                         <button type="submit" class="btn btn-default">Sortieren</button>
                     </div>
                 </form>
-                <table class="table table-striped ea-vorgang-list" aria-label="Vorgänge">
+                <table class="table table-striped ea-vorgang-list" data-clickable-rows aria-label="Vorgänge">
                     <thead>
                         <tr>
                             <?php $byName = in_array($sort, ['name', 'name-desc'], true); ?>
@@ -199,7 +220,7 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
                             $created = new DateTimeImmutable($entry['ErstelltAm']);
                         ?>
                             <tr>
-                                <td><a href="<?=h($entryUrl)?>"><strong><?=h($entry['Bezeichnung'])?></strong></a></td>
+                                <td><a class="ea-list-title-link" data-row-link href="<?=h($entryUrl)?>"><?=eablage_icon('link')?><span><?=h($entry['Bezeichnung'])?></span></a></td>
                                 <td class="ea-vorgang-list-description"><?php if ($entry['Beschreibung'] !== ''): ?><span title="<?=h($entry['Beschreibung'])?>"><?=h($entry['Beschreibung'])?></span><?php endif; ?></td>
                                 <td><span class="ea-vorgang-mobile-label">Angelegt am </span><time datetime="<?=h($created->format('Y-m-d'))?>"><?=h($created->format('d.m.Y'))?></time></td>
                                 <td><?=h($entry['Anzahl'])?><span class="ea-vorgang-mobile-label"> Dokumente</span></td>
@@ -208,26 +229,55 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
                     </tbody>
                 </table>
             <?php endif; ?>
-            <?php if ($pages > 1): ?>
-                <div class="pagination-wrapper">
-                    <?php if ($page > 1): ?><a href="<?=h($listUrl($sort, $page - 1))?>">« Vorherige</a><?php endif; ?>
-                    <span>Seite <?=$page?> von <?=$pages?></span>
-                    <?php if ($page < $pages): ?><a href="<?=h($listUrl($sort, $page + 1))?>">Nächste »</a><?php endif; ?>
-                </div>
-            <?php endif; ?>
-        </div></section>
-    <?php endif; ?>
         </div>
-        <?php if ($item || $return !== ''): ?>
+        <footer class="ea-search-footer">
+            <?php if ($pages > 1): ?>
+                <nav class="pagination-wrapper" aria-label="Ergebnisseiten">
+                    <div><?php if ($page > 1): ?><a class="btn btn-default btn-sm" href="<?=h($listUrl($sort, $page - 1))?>">« Vorherige</a><?php else: ?><button class="btn btn-default btn-sm" disabled>« Vorherige</button><?php endif; ?>
+                    <?php if ($page < $pages): ?><a class="btn btn-default btn-sm" href="<?=h($listUrl($sort, $page + 1))?>">Nächste »</a><?php else: ?><button class="btn btn-default btn-sm" disabled>Nächste »</button><?php endif; ?></div>
+                    <span class="ea-pagination-info">Seite <?=$page?> von <?=$pages?></span>
+                </nav>
+            <?php endif; ?>
+            <div class="ea-search-actions">
+                <?php if ($return !== ''): ?><a class="btn btn-default" href="<?=h($return)?>"><?=str_starts_with($return, 'dokumente.php') ? 'Zurück zur Suche' : 'Zurück zum Dokument'?></a><?php endif; ?>
+                <button class="btn btn-primary" type="button" id="vorgang-create-open" aria-haspopup="dialog">Neuen Vorgang anlegen</button>
+            </div>
+        </footer>
+    <?php endif; ?>
+        <?php if ($id): ?></div><?php endif; ?>
+        <?php if ($id && ($item || $return !== '')): ?>
         <div class="ea-workspace-footer">
-            <?php if ($return !== ''): ?><a class="btn btn-default" href="<?=h($return)?>">Zurück zum Dokument</a><?php endif; ?>
+            <?php if ($return !== ''): ?><a class="btn btn-default" href="<?=h($return)?>"><?=str_starts_with($return, 'dokumente.php') ? 'Zurück zur Suche' : 'Zurück zum Dokument'?></a><?php endif; ?>
             <?php if ($item): ?>
-            <div id="vorgang-preview-actions" hidden><a class="btn btn-primary" id="vorgang-preview-edit"><?=eablage_icon('edit')?>Metadaten bearbeiten</a></div>
+            <a class="btn btn-primary" id="vorgang-preview-view" role="link" aria-disabled="true" title="Bitte zuerst ein Dokument auswählen."><?=eablage_icon('document')?>Metadaten anzeigen</a>
             <form method="post" id="vorgang-detach-form"><input type="hidden" name="aktion_token" value="<?=h($token)?>"><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="document_id" id="vorgang-detach-document" value=""><input type="hidden" name="return" value="<?=h($return)?>"><button class="btn btn-default btn-sm" type="submit" name="action" value="detach" id="vorgang-detach" disabled title="Bitte zuerst ein Dokument auswählen.">Zuordnung entfernen</button></form>
             <?php endif; ?>
         </div>
         <?php endif; ?>
     </section>
+    <?php if (!$id): ?>
+        <dialog id="vorgang-create-dialog" class="ea-search-case-dialog" aria-labelledby="vorgang-create-heading">
+            <form method="post">
+                <h2 id="vorgang-create-heading">Vorgang anlegen</h2>
+                <input type="hidden" name="aktion_token" value="<?=h($token)?>">
+                <input type="hidden" name="return" value="<?=h($return)?>">
+                <input type="hidden" name="action" value="create">
+                <?php if ($createError !== ''): ?><p class="alert alert-danger" role="alert"><?=h($createError)?></p><?php endif; ?>
+                <div class="form-group">
+                    <label for="new_name">Bezeichnung</label>
+                    <input class="form-control" id="new_name" name="name" required maxlength="255" value="<?=h($newName)?>" autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="new_description">Beschreibung (optional)</label>
+                    <textarea class="form-control" id="new_description" name="description" rows="3" maxlength="10000"><?=h($newDescription)?></textarea>
+                </div>
+                <div class="ea-search-actions">
+                    <button class="btn btn-default" type="button" id="vorgang-create-cancel">Abbrechen</button>
+                    <button class="btn btn-primary" type="submit">Vorgang speichern</button>
+                </div>
+            </form>
+        </dialog>
+    <?php endif; ?>
     <?php if ($item): ?>
         <?php eablage_dokumentvorschau('', '', ['pdf_id'=>'vorgang-preview-pdf', 'open_id'=>'vorgang-preview-open', 'empty_id'=>'vorgang-preview-empty', 'heading_id'=>'vorgang-preview-heading', 'class'=>'ea-explorer-preview']); ?>
     </div>

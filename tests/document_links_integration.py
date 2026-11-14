@@ -132,6 +132,10 @@ class DocumentLinksHTTP(unittest.TestCase):
                 self.assertEqual(rows('SELECT * FROM dokumente WHERE DokID=10001'),before)
                 self.assertEqual((work/'meta/10001meta.json').read_bytes(),original_meta)
                 # Attach from case, filter in the existing search, unlink without deletion.
+                rejected = request('/vorgaenge.php', {'aktion_token':token,'id':case_a,'document_id':99999,'document_q':'Versicherung','action':'attach'})[1]
+                self.assertRegex(rejected, r'<details[^>]*id="vorgang-zuordnen"\s+open>')
+                self.assertIn('Das Dokument ist nicht mehr verfügbar.',rejected)
+                self.assertIn('name="document_q" value="Versicherung"',rejected)
                 self.assertEqual(request('/vorgaenge.php',{'aktion_token':token,'id':case_a,'document_id':10002,'action':'attach'})[0],302)
                 status,html,_=request('/dokumente.php?Vorgang='+str(case_b));self.assertEqual(status,200);self.assertIn('Heizung Rechnung',html);self.assertNotIn('>Vertrag</span></a>',html)
                 status,html,_=request('/vorgaenge.php?id='+str(case_a)+'&document_q=Versicherung');self.assertEqual(status,200);self.assertIn('Zuordnung entfernen',html)
@@ -147,13 +151,43 @@ class DocumentLinksHTTP(unittest.TestCase):
                 # Rename preserves links; stale update is rejected; delete preserves all documents.
                 status,html,_=request('/vorgaenge.php?id='+str(case_a));f=Forms(html).form();f.update(action='update',name='Heizung neu',description='Beschreibung')
                 self.assertEqual(request('/vorgaenge.php',f)[0],302)
-                self.assertIn('zwischenzeitlich geändert',request('/vorgaenge.php',f)[1])
+                rejected = request('/vorgaenge.php',f)[1]
+                self.assertRegex(rejected, r'<details[^>]*id="vorgang-bearbeiten"\s+open>')
+                self.assertIn('zwischenzeitlich geändert',rejected)
                 status,html,_=request('/vorgaenge.php?id='+str(case_a));f=Forms(html).form();f['action']='delete'
                 self.assertEqual(request('/vorgaenge.php',f)[0],302)
                 self.assertEqual(len(rows('SELECT * FROM dokumente')),3)
                 self.assertEqual(rows('SELECT * FROM dokument_vorgang WHERE VorgangID=%s',(case_a,)),[])
                 self.assertEqual(len(rows('SELECT * FROM dokument_vorgang WHERE VorgangID=%s',(case_b,))),2)
                 self.assertEqual(request('/vorgaenge.php?id='+str(case_a))[0],404)
+                # A case from search results is saved atomically and keeps existing links.
+                previous_count = rows('SELECT COUNT(*) AS n FROM vorgang')[0]['n']
+                payload = {'aktion_token': token, 'name': 'Aus Suche', 'description': 'Sammelauswahl'}
+                cursor.execute("UPDATE dokumente SET GeloeschtAm=NOW() WHERE DokID=10002")
+                status, body, _ = request('/vorgang_anlegen.php', {
+                    **payload, 'document_ids': '[10001,10002]'
+                })
+                self.assertEqual(status, 400)
+                self.assertIn('nicht mehr verfügbar', json.loads(body)['error'])
+                self.assertEqual(rows('SELECT COUNT(*) AS n FROM vorgang')[0]['n'], previous_count)
+                cursor.execute("UPDATE dokumente SET GeloeschtAm=NULL WHERE DokID=10002")
+                status, body, _ = request('/vorgang_anlegen.php', {
+                    **payload, 'document_ids': '[10002,10001,10001]'
+                })
+                self.assertEqual(status, 200, body)
+                bulk_id = json.loads(body)['id']
+                self.assertEqual(
+                    [row['DokumentID'] for row in rows(
+                        'SELECT DokumentID FROM dokument_vorgang WHERE VorgangID=%s ORDER BY DokumentID', (bulk_id,)
+                    )], [10001, 10002]
+                )
+                self.assertEqual(len(rows('SELECT * FROM dokument_vorgang WHERE VorgangID=%s',(case_b,))),2)
+                status, html, _ = request('/vorgaenge.php?' + urlencode({
+                    'id': bulk_id, 'return': 'dokumente.php?Suchbegriff=Heizung&page=2'
+                }))
+                self.assertEqual(status, 200)
+                self.assertIn('Zurück zur Suche', html)
+                self.assertIn('href="dokumente.php?Suchbegriff=Heizung&amp;page=2"', html)
                 # Verify sorting of all filtered results before LIMIT/OFFSET with real MariaDB.
                 cursor.executemany(
                     'INSERT INTO vorgang (Bezeichnung,Beschreibung,ErstelltAm) VALUES (%s,%s,%s)',
@@ -172,7 +206,7 @@ class DocumentLinksHTTP(unittest.TestCase):
                         }))
                         self.assertEqual(status, 200)
                         self.assertEqual(
-                            [int(index) for index in re.findall(r'<strong>Testreihe (\d+)</strong>', html)],
+                            [int(index) for index in re.findall(r'<span>Testreihe (\d+)</span>', html)],
                             expected_rows, (order, page)
                         )
                 log.flush();log.seek(0);self.assertNotIn('Fatal error',log.read())

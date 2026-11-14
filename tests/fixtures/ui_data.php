@@ -51,6 +51,7 @@ class UiStatement extends PDOStatement {
 }
 class UiDatabase extends PDO {
     public function __construct() {}
+    public function inTransaction(): bool { return false; }
     public function prepare(string $query, array $options = []): PDOStatement|false { return new UiStatement($query); }
     public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): PDOStatement|false { return new UiStatement($query); }
 }
@@ -60,10 +61,17 @@ function eablage_lade_dokumenttypen($db, ...$args) { return ['0'=>'Alle Dokument
 function eablage_backend_url() { return 'http://fixture.invalid'; }
 function eablage_backend_request($method, $url, ...$args) {
     if (($args[0]['action'] ?? '') === 'create') return ['ok'=>false,'http_status'=>422,'data'=>['detail'=>['message'=>'Bezeichnung bereits vorhanden.']]];
-    if ($url === '/archive/audit') return ['ok'=>true, 'http_status'=>200, 'data'=>[
-        'documents'=>2, 'checked_at'=>'2026-11-10', 'issues'=>[], 'repairable'=>0,
-        'archive_path'=>'/test/pdf', 'meta_path'=>'/test/meta'
-    ]];
+    if ($url === '/archive/audit') {
+        $issues = isset($_GET['fixture_archive_issues']) ? [
+            ['dok_id'=>1, 'filename'=>'1meta.json', 'status'=>'meta_missing', 'details'=>['Metadatei fehlt'], 'token'=>'signed-1'],
+            ['dok_id'=>2, 'filename'=>'2meta.json', 'status'=>'meta_different', 'details'=>['Betreff'], 'token'=>'signed-2'],
+            ['dok_id'=>3, 'filename'=>'3dok.pdf', 'status'=>'pdf_missing', 'details'=>['PDF fehlt']],
+        ] : [];
+        return ['ok'=>true, 'http_status'=>200, 'data'=>[
+            'documents'=>3, 'checked_at'=>'2026-11-10', 'issues'=>$issues, 'repairable'=>$issues ? 2 : 0,
+            'archive_path'=>'/test/pdf', 'meta_path'=>'/test/meta', 'token_minutes'=>15
+        ]];
+    }
     if ($url === '/export/plan') return ['ok'=>true,'http_status'=>200,'data'=>['profile'=>1,'directory_structure'=>true,'items'=>[
         ['dok_id'=>1,'directories'=>['Haus & Garten'],'filename'=>'Versicherung.pdf','display'=>['date'=>'2026-10-26','category'=>'Haus & Garten','type'=>'Rechnung','partner'=>'Müller & Söhne','subject'=>'Gebäudeversicherung','number'=>'AB-123/45']]
     ]]];

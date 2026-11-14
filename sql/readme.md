@@ -4,6 +4,8 @@ Die maßgebliche Anleitung zu Schema, Rechten, Neuinstallation und Aktualisierun
 
 `schema.sql`, `seed.sql` und bei der standardmäßigen Containerstruktur `init_docker_paths.sql` sind für eine **leere Neuinstallation** bestimmt. Sie dürfen nicht über einen bestehenden Bestand importiert werden. Die übrigen Skripte werden nur nach Prüfung des Ausgangsschemas, Sicherung und Schreibpause entsprechend der Datenbankanleitung angewendet.
 
+Beim Update von **4.6.1 auf 4.6.2** sind keine SQL-Skripte erforderlich.
+
 Beim Update von **4.6.0 auf 4.6.1** die beiden Datenupdates `update_empty_master_data.sql` und `update_export_descriptions.sql` gemäß [Updateanleitung](../docs/UPDATE.md#aktualisierung-von-460-auf-461) ausführen. Eine neue Strukturmigration ist dafür nicht nötig.
 
 Eine kompatible Sicherung in eine vorbereitete leere Installation zurückspielen: [Sicherung und Wiederherstellung](../docs/SICHERUNG.md). Begleitdateien und PDFs müssen zum Sicherungsstand passen; sie sind nicht im SQL-Dump enthalten.
