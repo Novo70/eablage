@@ -28,12 +28,8 @@ def eligible(classification, value):
     if value != 'fehlende':
         return False
     auto = classification.get('autokat') or {}
-    comparison = classification.get('textcompare') or {}
-    classified = (classification.get('autokat_ok') and
-                  (auto.get('matched_classification_rule_ref') or auto.get('matched_classification_rule_refs')))
-    compared = (classification.get('textcompare_ok') and comparison.get('matched') and
-                str(comparison.get('category') or '0').strip() not in ('', '0'))
-    return not (classified or compared)
+    return not (classification.get('autokat_ok') and
+                (auto.get('matched_classification_rule_ref') or auto.get('matched_classification_rule_refs')))
 
 
 def revision(raw):

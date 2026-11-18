@@ -55,6 +55,7 @@
         });
         count.textContent = selected.size ? selectionText() : 'Dokumente auswählen';
         clear.disabled = open.disabled = selected.size === 0;
+        document.getElementById('search-mass-open').disabled = selected.size === 0;
     }
 
     function change(ids, checked) {
@@ -85,6 +86,24 @@
         summary.textContent = selectionText() + '.';
         error.hidden = true;
         dialog.showModal();
+    });
+    document.getElementById('search-mass-open').addEventListener('click', () => {
+        const transfer = document.createElement('form');
+        transfer.method = 'post';
+        transfer.action = 'massenbearbeitung.php';
+        for (const [name, value] of Object.entries({
+            document_ids: JSON.stringify([...selected]),
+            aktion_token: form.elements.aktion_token.value,
+            return: form.elements.return.value,
+        })) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            transfer.append(input);
+        }
+        document.body.append(transfer);
+        transfer.submit();
     });
     cancel.addEventListener('click', () => dialog.close());
     dialog.addEventListener('cancel', event => { if (saving) event.preventDefault(); });
@@ -125,3 +144,4 @@
         render();
     });
 })();
+

@@ -134,7 +134,9 @@ Datenbank und Dateisystem bilden keine gemeinsame atomare Transaktion. Nach eine
 
 ### Suche und Filter
 
-Unter **Dokumente** lassen sich Suchbegriff, Datum von/bis, Kategorie und Dokumententyp kombinieren. Der Kategoriefilter berücksichtigt auch die zweite Kategorie. Inaktive Stammdaten bleiben in den Recherchefiltern auswählbar. Der Filter **Vorgang** schränkt die Ergebnisse auf einen bestimmten Vorgang ein. **Alle Dokumente** umfasst auch Dokumente ohne Vorgang.
+Unter **Dokumente** lassen sich Suchbegriff, Partner, Betreff, Nummer, Datum von/bis, Kategorie und Dokumententyp kombinieren. Der Kategoriefilter berücksichtigt auch die zweite Kategorie. Inaktive Stammdaten bleiben in den Recherchefiltern auswählbar. Der Filter **Vorgang** schränkt die Ergebnisse auf einen bestimmten Vorgang ein. **Alle Dokumente** umfasst auch Dokumente ohne Vorgang.
+
+Die Felder **Partner**, **Betreff** und **Nummer** suchen jeweils nach einer Teilzeichenfolge im gewählten Feld. Alle ausgefüllten Filter müssen zum Dokument passen. **Nummer** durchsucht alle gespeicherten Nummernarten und findet etwa `AB-123/45` auch als `AB12345`. Die Felder stehen auch unter **Suche verfeinern** zur Verfügung.
 
 Der Suchbegriff wird an Leerraum in einzelne Wörter zerlegt. Jedes Wort muss in mindestens einem der Felder Partner, Betreff, Nummer oder Tags vorkommen. **Volltextsuche** ergänzt den gespeicherten Dokumenttext; die PDF wird dafür nicht erneut eingelesen. Die Suche arbeitet mit Teilzeichenketten, anders als die Wortgrenzensuche der AutoKat-Regeln.
 
@@ -171,7 +173,7 @@ mit Seitensteuerung und Suchaktionen bleiben sichtbar. Der aufgeklappte
 Suchbereich ist in der Höhe begrenzt und bei Bedarf separat scrollbar. Mobil
 und bei geringer Fensterhöhe scrollt die gesamte Seite.
 
-Die Dokumentansicht zeigt Partner, Betreff, Dokumentdatum, beide Kategorien, Dokumententyp, sämtliche Nummern mit Nummernart, Stichwörter und verknüpfte Vorgänge als lesbare Werte. Vorgänge sind direkt aufrufbar. **Technische Angaben** enthält Dokument-ID, Originaldateiname, Archivierungs- und Änderungsdatum, Aufbewahrungsdauer, Prüfsumme und Erkennungsinformation. Am Desktop sind beide Fenster gleich hoch; die Metadaten scrollen innerhalb des linken Fensters, während Titel und untere Aktionen sichtbar bleiben. Bei geringer Fensterhöhe und mobil scrollt die gesamte Seite. Mobil erscheint die eingebettete Vorschau unter den Metadaten. **PDF öffnen** öffnet das Original separat. Das Ansehen ändert weder Metadaten noch Dokumenttext oder Änderungsdatum.
+Die Dokumentansicht zeigt Partner, Betreff, Dokumentdatum, beide Kategorien, Dokumententyp, sämtliche Nummern mit Nummernart, Stichwörter und verknüpfte Vorgänge als lesbare Werte. Vorgänge sind direkt aufrufbar. Unter **Technische Informationen** findest du in Ansicht und Bearbeitung die DokID, Archivierungs- und Änderungsdatum, Original- und Archivdateinamen, PDF-Prüfsumme, das bisherige Info-Feld, die Größe des Dokumenttexts und den Link zur Dokumenthistorie. Am Desktop sind beide Fenster gleich hoch; die Metadaten scrollen innerhalb des linken Fensters, während Titel und untere Aktionen sichtbar bleiben. Bei geringer Fensterhöhe und mobil scrollt die gesamte Seite. Mobil erscheint die eingebettete Vorschau unter den Metadaten. **PDF öffnen** öffnet das Original separat. Das Ansehen ändert weder Metadaten noch Dokumenttext oder Änderungsdatum.
 
 ## Archivierte Dokumente bearbeiten
 
@@ -227,7 +229,7 @@ Bei aktivierter lokaler KI kann in der Klassifizierung über das Drei-Punkte-Men
 
 Für die Diagnose falscher Zuordnungen unter Einstellungen → Entwicklerwerkzeuge zunächst „KI-Diagnose anzeigen“ einschalten. Danach nach einem manuellen KI-Abruf im Drei-Punkte-Menü **KI-Anfrage anzeigen** wählen. Die reine Anzeige zeigt den ursprünglichen Anfrageinhalt und erlaubt das Kopieren des Anfrage-JSON, ohne weitere KI-Verarbeitung oder Änderung der Formularwerte. [Anleitung](OLLAMA.md#tatsächliche-ki-anfrage-anzeigen).
 
-Bei aktivierter **KI im Hintergrund** bereitet der Worker Vorschläge bereits vor dem Öffnen vor. Auswählbar sind Aus, Nur ohne automatische Klassifizierung und Für alle Dokumente. Ergänzungsregeln allein verhindern die KI nicht. Die Maske bleibt während der Berechnung bedienbar; vorhandene und seit dem Öffnen bearbeitete Angaben werden nicht automatisch ersetzt. [Bedienung](OLLAMA.md#ki-im-hintergrund).
+Bei aktivierter **KI im Hintergrund** bereitet der Worker Vorschläge bereits vor dem Öffnen vor. Auswählbar sind Aus, Nur ohne Treffer einer Klassifikationsregel und Für alle Dokumente. Auch bei erfolgreichem Textvergleich oder reinen Ergänzungsregeln kann die KI Vorschläge liefern. Die Maske bleibt während der Berechnung bedienbar; vorhandene und seit dem Öffnen bearbeitete Angaben werden nicht automatisch ersetzt. [Bedienung](OLLAMA.md#ki-im-hintergrund).
 
 
 Die Verwaltung der Nummernarten und das Verhalten von AutoKat, KI und Suche beschreiben die [Nummernhinweise](NUMMERN.md).
@@ -241,4 +243,18 @@ Die **Dokumentvorschau** bietet den Wechsel zwischen PDF und Dokumenttext. Die l
 ### Desktop-Arbeitsfenster
 
 Beim Klassifizieren und Bearbeiten sind Formular und Vorschau ab 900 px Breite und 600 px Fensterhöhe gleich hoch. Meldungen oberhalb und Arbeitsfenster teilen sich den verfügbaren Platz. Meldungsboxen lassen sich rechts über **×** schließen und geben ihren Platz wieder frei. Das Ausblenden gilt nur für die aktuelle Seite und behebt keine zugrunde liegenden Fehler. Nur die Formularfelder scrollen; Titelzeile und untere Aktionen bleiben sichtbar. Sehr lange Meldungen lassen die Seite wachsen, damit die Arbeitsfenster mindestens 360 px hoch bleiben. Die Menüs in der Titelzeile gehören nicht zum Scrollbereich. Erkennungsdetails beziehungsweise technische Informationen stehen eingeklappt am Ende des linken Scrollbereichs vor der festen Aktionsleiste. Bei relevanten Erkennungsfehlern öffnen sich die Erkennungsdetails weiterhin automatisch. Auf kleineren Bildschirmen und bei geringer Fensterhöhe scrollt weiterhin die gesamte Seite.
+
+
+## Mehrere Dokumente gemeinsam ändern
+
+In der Suche Dokumente markieren und **Metadaten ändern** wählen. Die Auswahl kann mehrere Ergebnisseiten umfassen und enthält höchstens 1.000 Dokumente. Für jedes gewünschte Feld eine Aktion auswählen. Mehrere Felder können zusammen geändert werden.
+
+- Hauptkategorie, Zusatzkategorie und Dokumententyp setzen oder ausdrücklich leeren.
+- Partner und Betreff setzen, Text ersetzen oder leeren. Text ersetzen berücksichtigt die Groß-/Kleinschreibung.
+- Stichworte durch Komma trennen und hinzufügen, entfernen, ersetzen oder leeren. Hinzufügen vermeidet identische doppelte Stichworte. Entfernen prüft vollständige Stichworte einschließlich Groß-/Kleinschreibung.
+- Nummernwerte für eine Nummernart setzen, eine bestimmte Nummer entfernen oder ihre Nummernart wechseln. Beim Entfernen und Wechseln muss der Ausgangswert exakt passen, einschließlich führender Nullen. Eine belegte Ziel-Nummernart führt zu einem Konflikt für das Dokument.
+
+**Vorschau erstellen** zeigt die bisherigen und neuen Werte sowie Konflikte. Nach weiteren Eingaben erneut eine Vorschau erstellen. **Änderungen speichern** verarbeitet die freigegebenen Dokumente einzeln. Datenbank, JSON-Metadaten und Ereignisprotokoll werden über dieselbe Speicherfunktion wie bei der Einzelbearbeitung aktualisiert. Zwischenzeitlich geänderte Dokumente benötigen eine neue Vorschau.
+
+Ergebnisse stehen neben dem jeweiligen Dokument. Bereits gespeicherte Dokumente bleiben bei einem Fehler in einem anderen Dokument gespeichert. Bei einer unterbrochenen Netzwerkverbindung kann die Schaltfläche erneut betätigt werden, um den gespeicherten Bearbeitungsstatus abzufragen und verbleibende Dokumente zu verarbeiten. Bei einem unklaren Ergebnis den Dokumentstand prüfen. Vorschauen sind an die Browsersitzung gebunden.
 

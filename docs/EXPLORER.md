@@ -48,11 +48,27 @@ Die Browser-Zurück-/Vorwärtsnavigation
 wechselt zwischen zuvor geöffneten Ordnern und Dokumentauswahlen.
 Auf schmalen Bildschirmen steht die eingebettete [PDF.js-Vorschau](PDF_VORSCHAU.md) unter der Dokumentliste. Über **PDF öffnen** lässt sich das Original separat anzeigen.
 
+## Haupt- und Zusatzkategorie
+
+Bei gefüllter Zusatzkategorie erscheint ein Dokument zusätzlich über einen
+virtuellen Pfad mit vertauschter Haupt- und Zusatzkategorie. Die konfigurierten
+Ebenen des Gesamtexportprofils gelten für beide Pfade. Mit den Ebenen Kategorie
+und Kategorie2 ist beispielsweise Auto und Verkehr / Sachversicherung sowie
+Sachversicherung / Auto und Verkehr erreichbar. Ist nur Kategorie als Ebene
+eingestellt, erscheint das Dokument direkt unter beiden Kategorien.
+
+Identische Pfade werden zusammengefasst. Bei deaktivierter Verzeichnisstruktur
+erscheint jedes Dokument einmal in der Ablage. Ordnerzahlen und gefilterte
+Treffer zählen jede DokID innerhalb des jeweiligen Bereichs einmal.
+Beim Rückweg aus der Dokumentansicht bleibt der gewählte Kategorieast erhalten,
+solange das Dokument dort weiterhin vorhanden ist.
+
 ## Datenquelle und Grenzen
 
 Die Ansicht verwendet denselben vollständigen Backendplan (`GET /export/plan`)
 wie der Gesamtexport. Zusätzlich liefert der Plan die Dokumentdaten für die Kacheln. Profil 1 wird bei jedem Laden aus der aktuellen Datenbank
-gelesen. Es gibt keine zweite Berechnung von Dateinamen oder Verzeichnisebenen.
+gelesen. Der Backendplan ergänzt virtuelle Explorerpfade mit derselben Berechnung der
+Verzeichnisebenen. Der physische Export verwendet weiterhin den regulären Exportpfad.
 Insbesondere werden vom Backend aufgelöste Dateinamenskollisionen unverändert
 übernommen. Filterung auf einzelne Ordner findet erst danach im Browser statt.
 

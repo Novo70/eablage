@@ -2,6 +2,7 @@
 require_once __DIR__ . '/konfiguration.php';
 require_once __DIR__ . '/dokumentvorschau.php';
 require_once __DIR__ . '/dokument_navigation.php';
+require_once __DIR__ . '/dokument_technik.php';
 require_once __DIR__ . '/nummern_funktionen.php';
 
 if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'HEAD'], true)) {
@@ -71,8 +72,8 @@ try {
             <div class="panel-body">
                 <div class="ea-document-scroll">
                     <div class="ea-document-summary">
-                        <p><?=display_value($document['Partner'])?></p>
                         <h2><?=display_value($document['Betreff'])?></h2>
+                        <p><?=display_value($document['Partner'])?></p>
                     </div>
                     <dl class="ea-document-metadata">
                         <dt>Dokumentdatum</dt><dd><?=display_value($document['Datum'])?></dd>
@@ -83,14 +84,7 @@ try {
                         <dt>Stichwörter</dt><dd><?=display_value($document['Tags'])?></dd>
                         <dt>Vorgänge</dt><dd><?php if ($cases): ?><ul class="ea-document-cases"><?php foreach ($cases as $case): ?><li><a href="<?=h('vorgaenge.php?' . http_build_query(['id' => $case['ID'], 'return' => $viewUrl]))?>"><?=h($case['Bezeichnung'])?></a></li><?php endforeach; ?></ul><?php else: ?>—<?php endif; ?></dd>
                     </dl>
-                    <details class="ea-detail-panel">
-                        <summary>Technische Angaben</summary>
-                        <div><dl class="ea-document-metadata">
-                            <?php foreach (['DokID'=>'Dokument-ID', 'Originaldateiname'=>'Originaldateiname', 'Archivierungsdatum'=>'Archiviert am', 'Aenderungsdatum'=>'Zuletzt geändert', 'Aufbewahrungsdauer'=>'Aufbewahrungsdauer', 'DateiSHA256'=>'SHA-256', 'Info'=>'Erkennung'] as $field=>$label): ?>
-                                <dt><?=h($label)?></dt><dd><?=display_value($document[$field] ?? '')?></dd>
-                            <?php endforeach; ?>
-                        </dl></div>
-                    </details>
+                    <?php eablage_dokument_technik($document, $viewUrl); ?>
                 </div>
                 <div class="ea-document-actions">
                     <a href="<?=h($returnUrl)?>" class="btn btn-default"><?=h($returnLabel)?></a>

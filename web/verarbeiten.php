@@ -6,12 +6,18 @@ require_once 'funktionen.php';
 require_once __DIR__ . '/dokumentvorschau.php';
 require_once 'nummern_funktionen.php';
 require_once 'vorgaenge_funktionen.php';
-require_once 'meldungen.php';
+require_once __DIR__ . '/fehlerseite.php';
 require_once 'csrf.php';
 
 setlocale(LC_CTYPE, 'de_DE.utf8');
 $aktionToken = eablage_aktion_token();
-if ($_SERVER['REQUEST_METHOD'] === 'POST') eablage_aktion_pruefen($_POST['aktion_token'] ?? null);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        eablage_aktion_pruefen($_POST['aktion_token'] ?? null);
+    } catch (EablageSitzungUngueltig $e) {
+        eablage_fehlerseite($e->getMessage(), 403, true);
+    }
+}
 
 function h($value): string
 {
@@ -140,7 +146,7 @@ function eablage_backend_diagnose_hinweis(string $error): string
     return 'Bitte prüfen Sie die Konfiguration und den Status des eablage-backends.';
 }
 
-$dateiRaw = isset($_GET['file']) ? trim((string)$_GET['file']) : '';
+$dateiRaw = is_string($_GET['file'] ?? null) ? trim($_GET['file']) : '';
 $datei = basename($dateiRaw);
 $scanOrdner = PFAD_INBOX;
 
@@ -295,7 +301,7 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
                         </details>
                 </div>
                 <div class="panel-body">
-                    <form action="speichern.php" method="POST" id="classification-document-form" data-classification-draft>
+                    <form action="speichern.php" method="POST" id="classification-document-form" data-session-check data-classification-draft>
                         <div class="ea-form-scroll">
                         <?php if ($ollamaAvailable): ?>
                         <section class="ea-ollama-panel" id="ollama-panel" aria-label="KI-Vorschlag" hidden>
@@ -511,6 +517,7 @@ if (classificationMoreActions) {
 <script src="classification_draft.js?v=<?=filemtime(__DIR__ . '/classification_draft.js')?>" defer></script>
 <script src="ollama.js?v=<?=filemtime(__DIR__ . '/ollama.js')?>" defer></script>
 <script src="meldungen.js?v=<?=filemtime(__DIR__ . '/meldungen.js')?>" defer></script>
+<script src="formular_sitzung.js?v=<?=filemtime(__DIR__ . '/formular_sitzung.js')?>" defer></script>
 </body>
 </html>
 

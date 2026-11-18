@@ -26,7 +26,7 @@ class BackgroundTests(unittest.TestCase):
         cases = [({}, True), ({'autokat_ok': True, 'autokat': {'matched': True, 'matched_supplement_rule_refs': [{'regel_id': 1}]}, 'category': '64'}, True),
                  ({'autokat_ok': True, 'autokat': {'matched_classification_rule_ref': {'regel_id': 2}}}, False),
                  ({'autokat_ok': True, 'autokat': {'matched_classification_rule_refs': [{'regel_id': 2}]}}, False),
-                 ({'textcompare_ok': True, 'textcompare': {'matched': True, 'category': '64'}}, False),
+                 ({'textcompare_ok': True, 'textcompare': {'matched': True, 'category': '64'}}, True),
                  ({'textcompare_ok': True, 'textcompare': {'matched': True, 'category': '0'}}, True),
                  ({'textcompare_ok': False, 'textcompare': {'matched': True, 'category': '64'}}, True)]
         for classification, expected in cases:

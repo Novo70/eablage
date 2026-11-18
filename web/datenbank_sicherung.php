@@ -54,7 +54,9 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
     $timestamp = date('Y-m-d_His');
     $filename = $safeDatabaseName . '_' . $timestamp . '.sql';
     $targetPath = $targetDirectory . DIRECTORY_SEPARATOR . $filename;
-    $handle = @fopen($targetPath, 'xb');
+    $partialPath = $targetPath . '.part';
+    $buffered = $db->getAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
+    $handle = @fopen($partialPath, 'xb');
     if ($handle === false) {
         throw new RuntimeException('Die Sicherungsdatei konnte nicht angelegt werden.');
     }
@@ -64,6 +66,7 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
     $rowCount = 0;
 
     try {
+        if (file_exists($targetPath)) throw new RuntimeException('Eine gleichnamige Sicherung ist bereits vorhanden.');
         if ($db->inTransaction()) throw new RuntimeException('Datensicherung benötigt eine eigene Transaktion.');
         // The application schema uses InnoDB. Fail instead of promising a
         // consistent snapshot for a non-transactional table.
@@ -91,10 +94,12 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
 
         if (!in_array('ereignisprotokoll', $tables, true)) throw new RuntimeException('Ereignisprotokoll fehlt. Zuerst sql/update_document_history.sql ausführen.');
 
+        $db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
         foreach ($tables as $table) {
             $identifier = eablage_sql_identifier($table);
             $createStmt = $db->query('SHOW CREATE TABLE ' . $identifier);
             $createRow = $createStmt->fetch(PDO::FETCH_NUM);
+            $createStmt->closeCursor();
             if ($createRow === false || !isset($createRow[1])) {
                 throw new RuntimeException('Die Tabellenstruktur von ' . $table . ' konnte nicht gelesen werden.');
             }
@@ -125,6 +130,7 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
             }
 
             eablage_backup_write($handle, "\n");
+            $dataStmt->closeCursor();
             $tableCount++;
         }
 
@@ -134,11 +140,15 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
         $handle = null;
         $db->commit();
         $snapshotStarted = false;
+        if (!rename($partialPath, $targetPath)) throw new RuntimeException('Die fertige Sicherung konnte nicht bereitgestellt werden.');
     } catch (Throwable $e) {
+        unset($createStmt, $dataStmt);
         if ($snapshotStarted && $db->inTransaction()) $db->rollBack();
         if (is_resource($handle)) fclose($handle);
-        @unlink($targetPath);
+        @unlink($partialPath);
         throw $e;
+    } finally {
+        $db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $buffered);
     }
 
     clearstatcache(true, $targetPath);

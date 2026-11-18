@@ -1,6 +1,6 @@
 # Drittkomponenten und Lizenzen
 
-Diese Übersicht beschreibt die wesentlichen Abhängigkeiten von eAblage 4.6.2. Die Python-Paketliste stammt aus dem aktuellen Lockfile. Maßgeblich für eine Inventur der Container sind die tatsächlich installierten Pakete und Lizenztexte. PDF.js wird lokal ausgeliefert. Ollama ist ein optionaler externer Dienst. Das Modell und seine Lizenz richten sich nach der jeweiligen Installation.
+Diese Übersicht beschreibt die wesentlichen Abhängigkeiten von eAblage 4.7.0. Die Python-Paketliste stammt aus dem aktuellen Lockfile. Maßgeblich für eine Inventur der Container sind die tatsächlich installierten Pakete und Lizenztexte. PDF.js wird lokal ausgeliefert. Ollama ist ein optionaler externer Dienst. Das Modell und seine Lizenz richten sich nach der jeweiligen Installation.
 
 | Komponente | Verwendung | Lizenz / Hinweis |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ Die Dockerfiles installieren zusätzlich Pakete des Basisbetriebssystems. Bei Ve
 
 Diese Übersicht erhebt keinen Anspruch auf verbindliche Rechtsberatung.
 
-## Vollständige Python-Paketliste für eAblage 4.6.2
+## Vollständige Python-Paketliste für eAblage 4.7.0
 
 Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches extrahiert und umfasst **sämtliche 16 festgeschriebenen Python-Pakete**, einschließlich transitiver Abhängigkeiten. Die Lizenzspalte nennt die übliche Projektlizenz, nicht eine unabhängig geprüfte Lizenzdatei jedes konkreten Wheels.
 

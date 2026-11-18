@@ -31,20 +31,36 @@
                 || item.directories.some(part => typeof part !== 'string' || !part)) {
                 throw new Error('Ungültiger Dokumenteintrag im Exportplan.');
             }
-            let node = tree;
-            node.count++;
-            for (const part of item.directories) {
-                if (!node.children.has(part)) {
-                    const child = {name: part, parts: [...node.parts, part], children: new Map(), documents: [], count: 0};
-                    node.children.set(part, child);
-                    nodes.set(pathKey(child.parts), child);
-                }
-                node = node.children.get(part);
-                node.count++;
+            const paths = item.explorer_paths ?? [item.directories];
+            if (!Array.isArray(paths) || !paths.length || paths.some(parts =>
+                !Array.isArray(parts) || parts.some(part => typeof part !== 'string' || !part))) {
+                throw new Error('Ungültiger Explorerpfad.');
             }
-            const document = {...item, node};
-            node.documents.push(document);
-            documents.set(item.dok_id, document);
+            const visited = new Set();
+            const placements = [];
+            for (const parts of new Map(paths.map(parts => [pathKey(parts), parts])).values()) {
+                let node = tree;
+                const ancestors = [tree];
+                for (const part of parts) {
+                    if (!node.children.has(part)) {
+                        const child = {name: part, parts: [...node.parts, part], children: new Map(), documents: [], count: 0};
+                        node.children.set(part, child);
+                        nodes.set(pathKey(child.parts), child);
+                    }
+                    node = node.children.get(part);
+                    ancestors.push(node);
+                }
+                for (const ancestor of ancestors) {
+                    if (!visited.has(ancestor)) {
+                        ancestor.count++;
+                        visited.add(ancestor);
+                    }
+                }
+                const document = {...item, node, placements};
+                node.documents.push(document);
+                placements.push(document);
+            }
+            documents.set(item.dok_id, placements[0]);
         }
         for (const node of nodes.values()) {
             node.documents.sort(compareDocuments);
@@ -64,8 +80,9 @@
         const query = (params.get('q') || '').trim();
         // Keep the filtered scope, or follow a moved/renamed document after editing.
         if (document) {
-            if (query && listEntries(node, query).some(entry => entry.doc === document)) {
-                return {node, document, query, missing: false};
+            const match = listEntries(node, query).find(entry => entry.doc?.dok_id === document.dok_id);
+            if (match) {
+                return {node, document: match.doc, query, missing: false};
             }
             return {node: document.node, document, query: '', missing: false};
         }
@@ -99,9 +116,13 @@
         const needle = query.trim().normalize('NFC').toLocaleLowerCase('de');
         if (!needle) return [...sortedChildren(node).map(node => ({node})), ...node.documents.map(doc => ({doc}))];
         const matches = [];
+        const seen = new Set();
         function visit(folder) {
             for (const doc of folder.documents) {
-                if (displayText(doc).includes(needle)) matches.push({doc});
+                if (!seen.has(doc.dok_id) && displayText(doc).includes(needle)) {
+                    matches.push({doc});
+                    seen.add(doc.dok_id);
+                }
             }
             for (const child of folder.children.values()) visit(child);
         }

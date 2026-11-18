@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 // einstellungen.php - Konfigurationszentrale für eAblage
 // - Zeigt nur Parameter mit anzeige=ja nach Gruppierung an
 // - Alle Kategorien sind beim Laden standardmäßig eingeklappt
@@ -17,11 +18,6 @@ if (($pdfjsCheck['installed'] ?? null) !== $pdfjsVersion
 
 if (!isset($db) && isset($db_config)) {
     $db = $db_config;
-}
-
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 function valid_return_url(?string $url): string
@@ -63,7 +59,7 @@ $exportDirectoryOptions = [
     'Monat' => 'Monat',
 ];
 
-$returnUrl = valid_return_url($_REQUEST['return'] ?? 'dokumente.php');
+$returnUrl = valid_return_url(is_string($_REQUEST['return'] ?? null) ? $_REQUEST['return'] : null);
 $meldung = '';
 $meldungTyp = 'success';
 
@@ -115,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['params'])) {
                 && !in_array($value, ['generiert', 'original'], true)) {
                 throw new InvalidArgumentException('Ungültiger Export-Dateinamensmodus.');
             }
+            if (!is_string($value)) throw new InvalidArgumentException('Ungültiger Parameterwert.');
             if (preg_match('/^1_expVerzeichnisEbene[1-5]$/', (string)$key)
                 && !array_key_exists((string)$value, $exportDirectoryOptions)) {
                 throw new InvalidArgumentException('Ungültige Export-Verzeichnisebene.');
@@ -132,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['params'])) {
         }
 
         error_log('e_ablage Einstellungen: ' . $e->getMessage());
-        if ($e instanceof RuntimeException && $e->getMessage() === 'Sitzung ungültig. Bitte Seite neu laden.') {
+        if ($e instanceof EablageSitzungUngueltig) {
             http_response_code(403);
             $meldung = $e->getMessage();
         } else {
@@ -151,8 +148,9 @@ $alleParameter = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $gruppierteParameter = [];
 foreach ($alleParameter as $p) {
-    if ($meldungTyp === 'danger' && $p['param_key'] === 'ollamaAnweisung' && is_string($_POST['params']['ollamaAnweisung'] ?? null)) $p['param_value'] = $_POST['params']['ollamaAnweisung'];
-    if ($meldungTyp === 'danger' && in_array($p['param_key'], ['ollamaTextAnfang','ollamaTextEnde'], true) && is_string($_POST['params'][$p['param_key']] ?? null)) $p['param_value'] = $_POST['params'][$p['param_key']];
+    if ($meldungTyp === 'danger' && http_response_code() !== 403 && is_string($_POST['params'][$p['param_key']] ?? null)) {
+        $p['param_value'] = $_POST['params'][$p['param_key']];
+    }
     $grp = !empty($p['gruppierung']) ? $p['gruppierung'] : 'Nicht gruppiert';
     $gruppierteParameter[$grp][] = $p;
 }
@@ -160,17 +158,13 @@ foreach ($alleParameter as $p) {
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e_ablage - Parameter-Einstellungen</title>
-    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_seitenkopf('Einstellungen'); ?>
 </head>
 <body>
 
 <?php require_once 'navbar.php'; ?>
 
-<div class="container ea-settings-container">
+<div class="container ea-workspace ea-settings-container">
     <div class="ea-admin-notices">
     <?php if ($meldung !== ''): ?>
         <?=eablage_render_message($meldungTyp, $meldung)?>
@@ -179,8 +173,8 @@ foreach ($alleParameter as $p) {
     </div>
     <div class="panel panel-primary ea-settings-panel">
         <div class="panel-heading"><?=eablage_icon('settings')?>Einstellungen</div>
-        <form class="panel-body" method="POST" action="einstellungen.php" id="settings-form">
-            <div class="ea-settings-scroll">
+        <form class="panel-body" method="POST" action="einstellungen.php" id="settings-form" data-session-check>
+            <div class="ea-workspace-scroll ea-settings-scroll">
                 <div class="ea-settings-toolbar">
                     <div>
                         <strong>Parameter</strong>
@@ -227,10 +221,10 @@ foreach ($alleParameter as $p) {
                                         <select class="form-control" name="params[ollamaHintergrund]" aria-label="KI im Hintergrund">
                                             <?php if (!in_array($param['param_value'], ['aus', 'fehlende', 'alle'], true)): ?><option value="" selected disabled>Ungültiger Wert – bitte auswählen</option><?php endif; ?>
                                             <option value="aus" <?=($param['param_value'] === 'aus' ? 'selected' : '')?>>Aus</option>
-                                            <option value="fehlende" <?=($param['param_value'] === 'fehlende' ? 'selected' : '')?>>Nur ohne automatische Klassifizierung</option>
+                                            <option value="fehlende" <?=($param['param_value'] === 'fehlende' ? 'selected' : '')?>>Nur ohne Treffer einer Klassifikationsregel</option>
                                             <option value="alle" <?=($param['param_value'] === 'alle' ? 'selected' : '')?>>Für alle Dokumente</option>
                                         </select>
-                                        <p class="small">Benötigt aktive lokale KI und einen laufenden Worker. Eine AutoKat-Klassifikationsregel oder eine Kategorie durch Textvergleich verhindert im zweiten Modus den KI-Aufruf. Ergänzungsregeln allein verhindern ihn nicht. Vorhandene Angaben bleiben erhalten.</p>
+                                        <p class="small">Benötigt aktive lokale KI und einen laufenden Worker. Im zweiten Modus überspringt der Worker Dokumente mit einem Treffer einer AutoKat-Klassifikationsregel. Dokumente mit Textvergleich oder reinen Ergänzungsregeln erhalten weiterhin KI-Vorschläge. Vorhandene Angaben bleiben erhalten.</p>
                                         <?php elseif ($param['param_key'] === 'ollamaDiagnoseAnzeigen'): ?>
                                         <select class="form-control" name="params[ollamaDiagnoseAnzeigen]" aria-label="KI-Diagnose anzeigen">
                                             <?php if (!in_array($param['param_value'], ['ja', 'nein'], true)): ?><option value="" selected disabled>Ungültiger Wert – bitte auswählen</option><?php endif; ?>
@@ -335,6 +329,7 @@ function toggleAllGroups(openState)
 }
 </script>
 <script src="ollama.js?v=<?=filemtime(__DIR__ . '/ollama.js')?>" defer></script>
+<script src="formular_sitzung.js?v=<?=filemtime(__DIR__ . '/formular_sitzung.js')?>" defer></script>
 </body>
 </html>
 

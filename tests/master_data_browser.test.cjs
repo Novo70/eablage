@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '..');
 async function setup(t, kind, width=1440, desktop=false, withRules=false) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eablage-master-'));
     t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
-    for(const name of ['stammdaten.php','icons.php','csrf.php','meldungen.php','status_toggle.php','master_data_sort.js','master_data_layout.js','help_tooltip.js']) fs.copyFileSync(path.join(root,'web',name),path.join(dir,name));
+    for(const name of ['stammdaten.php','seitenkopf.php','icons.php','csrf.php','meldungen.php','status_toggle.php','master_data_sort.js','master_data_layout.js','help_tooltip.js']) fs.copyFileSync(path.join(root,'web',name),path.join(dir,name));
     fs.writeFileSync(path.join(dir,'konfiguration.php'),"<?php define('MYSQL_DATENBANK','testdb');");
     fs.writeFileSync(path.join(dir,'navbar.php'),'');
     fs.copyFileSync(path.join(root,'web/app.css'),path.join(dir,'app.css'));

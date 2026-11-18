@@ -48,6 +48,7 @@ def find_document_date(text: str, search_text: str = "") -> Optional[str]:
     Unterstützte Formate:
     - 19.08.2026
     - 19.08.26
+    - 2026/08/19
     - 19. August 2026
     - August 2026
 
@@ -81,6 +82,15 @@ def find_document_date(text: str, search_text: str = "") -> Optional[str]:
         month = int(match.group(2))
         year = _normalize_year(match.group(3))
 
+        value = _valid_date(year, month, day)
+
+        if value:
+            candidates.append((match.start(), value))
+
+    pattern_year_first = re.compile(r"\b(\d{4})/(\d{2})/(\d{2})\b")
+
+    for match in pattern_year_first.finditer(text):
+        year, month, day = map(int, match.groups())
         value = _valid_date(year, month, day)
 
         if value:

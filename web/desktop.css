@@ -222,6 +222,7 @@
     }
 
     html[data-ea-layout="desktop"] .ea-explorer-layout > .panel,
+    html[data-ea-layout="desktop"] .ea-mass-layout > .panel,
     html[data-ea-layout="desktop"] .ea-document-layout > .panel,
     html[data-ea-layout="desktop"] .ea-classification-column > .panel,
     html[data-ea-layout="desktop"] .ea-document-preview > .panel { margin-bottom: 0; }
@@ -238,7 +239,11 @@
         html[data-ea-layout="desktop"] .ea-master-scroll { padding: 0 14px 14px; }
     }
 
-    html[data-ea-layout="desktop"] .ea-document-scroll { padding: 16px; }
+    html[data-ea-layout="desktop"] .ea-vorgaenge .ea-explorer-documents > .panel-body { padding: 14px; }
+    @media (min-height: 600px) {
+        html[data-ea-layout="desktop"] .ea-document-scroll,
+        html[data-ea-layout="desktop"] .ea-vorgaenge .ea-explorer-documents > .panel-body { padding: var(--ea-space-4); }
+    }
     html[data-ea-layout="desktop"] .ea-results-scroll { --ea-search-result-inset: 14px; }
     html[data-ea-layout="desktop"] .ea-document-metadata { gap: 8px 14px; }
     html[data-ea-layout="desktop"] .ea-document-summary h2 { font-size: 1.15rem; }

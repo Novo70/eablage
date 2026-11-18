@@ -18,6 +18,7 @@
     flex-direction: column;
 }
 .ea-explorer-documents > .panel-body { padding: 12px; }
+.ea-vorgaenge .ea-explorer-documents > .panel-body { padding: var(--ea-space-5); }
 .ea-explorer-documents .panel-body {
     flex: 1;
     min-height: 0;
@@ -93,6 +94,7 @@
 .ea-explorer-filter-controls button { flex-shrink: 0; }
 .ea-explorer-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
 @media (max-width: 899px) {
+    .ea-vorgaenge .ea-explorer-documents > .panel-body { padding: var(--ea-space-4); }
     .ea-explorer-layout {
         display: flex;
         flex-direction: column;

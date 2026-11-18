@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: PHP installieren
-        run: sudo apt-get update && sudo apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring php8.3-curl
+        run: sudo apt-get update && sudo apt-get install -y php8.3-cli php8.3-mysql php8.3-mbstring php8.3-curl php8.3-sqlite3
       - name: Python-Abhängigkeiten installieren
         run: |
           python -m pip install --require-hashes -r backend/requirements.txt
@@ -130,6 +130,13 @@ jobs:
         with:
           persist-credentials: false
       - run: docker build -t eablage-web-test web
+      - name: PHP-Helfer im Webimage prüfen
+        run: |
+          docker run --rm -v "$PWD/tests:/var/www/tests:ro" eablage-web-test sh -ec '
+            ln -s /var/www/html /var/www/web
+            for suite in php_helpers archiv_pdf_helpers export_kopie restore_preflight; do
+              php "/var/www/tests/$suite.php"
+            done'
       - name: Ausgeliefertes Image prüfen
         run: |
           docker run -d --name eablage-web-test -p 127.0.0.1:18080:80 eablage-web-test

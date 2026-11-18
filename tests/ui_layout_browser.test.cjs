@@ -30,7 +30,7 @@ if (isset($argv[2])) {
 $page=basename(parse_url($argv[1], PHP_URL_PATH));
 if (in_array($page,['verarbeiten.php','bearbeiten.php'],true)) {
     require 'konfiguration.php'; require 'funktionen.php'; require 'meldungen.php';
-    require 'dokumentvorschau.php'; require 'vorgaenge_funktionen.php';
+    require 'dokumentvorschau.php'; require 'vorgaenge_funktionen.php'; require 'dokument_technik.php';
     function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
     $aktionToken='test-token'; $datei='Versicherung.pdf'; $vollstaendigerPfad=__FILE__;
     $dokumentText=str_repeat("Beispieltext der Gebäudeversicherung.\\n", 100);
@@ -996,5 +996,31 @@ test('metadata opened from the explorer retains its return URL through editing',
         const edit = new URL(await page.getByRole('link', {name:'Metadaten bearbeiten'}).getAttribute('href'), page.url());
         assert.equal(edit.pathname, '/bearbeiten.php');
         assert.equal(new URL(edit.searchParams.get('return'), page.url()).searchParams.get('return'), back);
+    } finally { await page.close(); }
+});
+
+test('expired settings session keeps inputs and requires a second submission', async () => {
+    const page = await open('einstellungen.php');
+    try {
+        const form = page.locator('#settings-form');
+        const fresh = 'a'.repeat(64);
+        await page.route('**/formular_token.php', route => route.fulfill({json:{token:fresh}}));
+        await form.evaluate(el => {
+            el.querySelector('textarea[name="params[ollamaAnweisung]"]').value = 'Eigene Änderung';
+            el.addEventListener('submit', event => {
+                event.preventDefault();
+                el.dataset.submitted = 'yes';
+            });
+        });
+        const message = page.waitForEvent('dialog').then(async dialog => {
+            assert.match(dialog.message(), /Sitzung wurde erneuert/);
+            await dialog.accept();
+        });
+        await form.locator('[type=submit]').click();
+        await message;
+        assert.equal(await form.getAttribute('data-submitted'), null);
+        assert.equal(await form.locator('textarea[name="params[ollamaAnweisung]"]').first().inputValue(), 'Eigene Änderung');
+        await form.locator('[type=submit]').click();
+        await page.waitForFunction(() => document.querySelector('#settings-form').dataset.submitted === 'yes');
     } finally { await page.close(); }
 });

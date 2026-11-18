@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'meldungen.php';
@@ -11,10 +12,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 $message = $_SESSION['master_message'] ?? '';
 unset($_SESSION['master_message']);
 session_write_close();
-
-function h($value): string {
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 function master_help(string $label, string $text): string {
     return '<button type="button" class="ea-help-button" data-help-tooltip="' . h($text)
@@ -101,16 +98,11 @@ try {
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage – Stammdaten</title>
-    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
-    <link rel="icon" href="ea_icon4.png">
-
+    <?php eablage_seitenkopf('Stammdaten'); ?>
 </head>
 <body>
 <?php require 'navbar.php'; ?>
-<div class="container ea-master-container">
+<div class="container ea-workspace ea-master-container">
     <div class="ea-admin-notices">
     <?php if ($message !== ''): ?><?=eablage_render_message('success', $message)?><?php endif; ?>
     <?php if ($error !== ''): ?><?=eablage_render_message('danger', $error)?><?php endif; ?>
@@ -129,7 +121,7 @@ try {
                 <a href="stammdaten.php?kind=document_types" <?=$kind === 'document_types' ? 'aria-current="page"' : ''?>>Dokumententypen</a>
                 <a href="stammdaten.php?kind=number_types" <?=$kind === 'number_types' ? 'aria-current="page"' : ''?>>Nummernarten</a>
             </nav>
-            <div class="ea-master-scroll">
+            <div class="ea-workspace-scroll ea-master-scroll">
             <details class="ea-master-section ea-master-create" id="master-create" <?= $error !== '' && ($action ?? '') === 'create' ? 'open' : '' ?>>
                 <summary id="master-create-heading">Neuen Eintrag anlegen</summary>
                     <form method="POST" action="stammdaten.php">

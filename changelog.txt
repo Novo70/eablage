@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.7.0 – Gemeinsame Dokumentbearbeitung und erweiterte Suche – 18.11.2026
+
+- Ausgewählte Suchtreffer gemeinsam bearbeiten. Kategorien, Dokumententyp, Partner, Betreff, Stichworte und Nummern lassen sich mit einer Änderungsvorschau anpassen. Ergebnisse und Konflikte werden je Dokument angezeigt.
+- Die Suche bietet eigene Filter für Partner, Betreff und Nummer. Der Ablage-Explorer zeigt Dokumente auch über die Zusatzkategorie an und zählt sie je Ordner nur einmal.
+- In der Suche erhält die Spalte „Kategorie / Dokumenttyp“ mehr Platz. Vorgangsdetail und Dokumentansicht zeigen die Bezeichnung beziehungsweise den Betreff über der kleineren Beschreibung beziehungsweise dem Partner.
+- Ansicht und Bearbeitung zeigen dieselben technischen Informationen und verlinken die Dokumenthistorie.
+- Bei endgültig gescheiterter KI-Erkennung im Hintergrund entfallen Wiederholungsversuche bei unverändertem Erkennungskontext. Ein manueller Neuversuch bleibt möglich.
+- Bei einem Sitzungswechsel bleiben Eingaben in Klassifizierung, Dokumentbearbeitung, Einstellungen und Regeleditor erhalten. Nach erneuter Bestätigung wird die Aktion ausgeführt. Das Webimage bewahrt inaktive PHP-Sitzungen acht Stunden lang zur weiteren Nutzung auf.
+- Beim gleichzeitigen Bearbeiten einer Klassifizierungsregel in zwei Tabs erkennt eAblage veraltete Eingaben und schützt die bereits gespeicherte Änderung. AutoKat zählt Treffer anhand der Regel-IDs im Eingangsauftrag.
+- Die SQL-Sicherung liest Tabellen zeilenweise und benötigt dadurch bei großen Archiven weniger Arbeitsspeicher. Erst vollständig geschriebene Sicherungen erscheinen zur Rücksicherung.
+- Einstellungen und Stammdaten verwenden einen gemeinsamen Seitenkopf und einheitliche Scrollbereiche. Die Schaltflächen zum Initialisieren der Datenbank und zum Reparieren von Metadateien sind als Warnaktionen hervorgehoben.
+- Die PDF-Vorschau im Eingang unterstützt Dateinamen mit Umlauten und Anführungszeichen. Die Formularverarbeitung prüft die Datentypen der übermittelten Werte.
+- Bei ungültiger Sitzung zeigen Dokumentverarbeitung und Speicherung eine einheitliche Fehlerseite mit Rücksprung. Das Webimage schreibt technische PHP-Fehler ins Serverprotokoll.
+- Der Gesamtexport stellt jede PDF erst nach vollständigem Kopieren unter ihrem endgültigen Namen bereit. Bei einem Kopierfehler bleibt eine vorhandene Exportdatei erhalten.
+- Das Update von 4.6.2 benötigt keine SQL-Migration. Neue SQL-Sicherungen tragen die Kennung 4.7.0. Siehe [Updateanleitung](docs/UPDATE.md#aktualisierung-von-462-auf-470).
+
 ## 4.6.2 – Suche, Vorgänge und Wartung – 14.11.2026
 
 - Suchtreffer lassen sich nach Betreff, Partner, Datum und Nummer sortieren. Ein Klick auf eine Zeile öffnet die Dokumentansicht. Kontrollkästchen bleiben unabhängig davon bedienbar.
@@ -153,3 +169,4 @@ Die Anwendung besteht aus einer PHP-Weboberfläche, einem Python/FastAPI-Backend
 ### Lizenz
 
 Der eigene eAblage-Quellcode steht unter AGPL-3.0-only. Externe Komponenten behalten ihre jeweiligen Lizenzen.
+

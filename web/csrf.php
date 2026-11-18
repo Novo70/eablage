@@ -1,5 +1,7 @@
 <?php
 
+final class EablageSitzungUngueltig extends RuntimeException {}
+
 /** Ein sitzungsgebundener Token für alle schreibenden Web-Formulare. */
 function eablage_aktion_token(): string
 {
@@ -16,6 +18,6 @@ function eablage_aktion_token(): string
 function eablage_aktion_pruefen($submitted): void
 {
     if (!is_string($submitted) || !hash_equals(eablage_aktion_token(), $submitted)) {
-        throw new RuntimeException('Sitzung ungültig. Bitte Seite neu laden.');
+        throw new EablageSitzungUngueltig('Sitzung ungültig. Bitte Seite neu laden.');
     }
 }

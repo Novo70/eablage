@@ -7,7 +7,7 @@ Die optionale KI ergänzt die Klassifizierung mit überprüfbaren Vorschlägen. 
 1. In bestehenden Installationen nach einer Datenbanksicherung `sql/update_ollama.sql` in der Anwendungsdatenbank ausführen. Das Skript ergänzt drei Parameter und erhält bereits gespeicherte Werte. Bei Neuinstallationen sind sie in `seed.sql` enthalten. Nach Rücksicherung einer älteren Datenbank gegebenenfalls erneut ausführen.
 2. Für Stammdaten-Erläuterungen zusätzlich `sql/update_master_explanations.sql`, für die bearbeitbare KI-Anweisung `sql/update_ollama_instruction.sql` ausführen. Letzteres erweitert `parameter.param_value` auf TEXT und ergänzt den neuen Parameter, ohne vorhandene Werte zu ersetzen.
    Für den optionalen Denkmodus zusätzlich `sql/update_ollama_thinking.sql` ausführen; vorhandene Werte bleiben erhalten.
-3. Web, Backend und Worker aus demselben Versionsstand bauen und bereitstellen, siehe [Update](UPDATE.md). Diese Anleitung gilt für Version 4.6.2; für die eindeutige Standkennung den Tag oder Commit festhalten.
+3. Web, Backend und Worker aus demselben Versionsstand bauen und bereitstellen, siehe [Update](UPDATE.md). Den verwendeten Tag oder Commit festhalten.
 4. Unter **Einstellungen → Lokale KI** `ollamaAktiv` auf `ja` setzen, `ollamaURL` und `ollamaModell` eintragen und speichern.
    Für die Hintergrundverarbeitung zusätzlich `sql/update_ollama_background.sql` ausführen. Das Skript ergänzt einen reproduzierbaren KI-Cache und die standardmäßig ausgeschaltete Hintergrundoption.
 5. **Verbindung testen** prüft die gespeicherten Werte vom Backendcontainer aus. Der PC muss eingeschaltet, Ollama gestartet und das Modell lokal installiert sein. Das Modell muss für den Test noch nicht in den Arbeitsspeicher geladen sein.
@@ -20,7 +20,7 @@ Die optionale KI ergänzt die Klassifizierung mit überprüfbaren Vorschlägen. 
 | `ollamaDenkmodus` | `ja` aktiviert den Denkmodus mit 8192 Ausgabetokens; `nein` verwendet 1500 ohne Denkmodus; Vorgabe `nein` |
 | `ollamaTextAnfang` | Zeichen vom Dokumentanfang; Vorgabe 9000, mindestens 1 |
 | `ollamaTextEnde` | Zeichen vom Dokumentende; Vorgabe 3000, mindestens 0; 0 lässt den zusätzlichen Schlussteil weg |
-| `ollamaHintergrund` | `aus`, `fehlende` (nur ohne automatische Klassifizierung) oder `alle`; Vorgabe `aus` |
+| `ollamaHintergrund` | `aus`, `fehlende` (nur ohne treffer einer klassifikationsregel) oder `alle`; Vorgabe `aus` |
 | `ollamaAnweisung` | Fachliche Hinweise als mehrzeiliger Text bis 4000 Zeichen; leer oder fehlend verwendet Standardvorgaben |
 
 Diese erste Variante verwendet HTTP mit einer privaten IPv4-Adresse (10/8, 172.16/12, 192.168/16) oder einer IPv6-ULA-Adresse. Hostnamen, öffentliche Adressen, Loopback, URL-Pfade und Zugangsdaten werden abgewiesen. Bei IPv6 die Adresse in eckige Klammern setzen. Die Übertragung im LAN ist unverschlüsselt.
@@ -57,10 +57,10 @@ Unter **Einstellungen → Lokale KI → KI im Hintergrund** (`ollamaHintergrund`
 | Auswahl | Verhalten |
 | --- | --- |
 | Aus | Nur manuell aufgerufene KI; Vorgabe für bestehende und neue Installationen |
-| Nur ohne automatische Klassifizierung | KI, wenn weder eine AutoKat-Klassifikationsregel getroffen hat noch ein erfolgreicher Textvergleich eine Kategorie liefert |
+| Nur ohne Treffer einer Klassifikationsregel | KI für vorbereitete Eingänge mit Dokumenttext, sofern keine AutoKat-Klassifikationsregel getroffen hat |
 | Für alle Dokumente | Ergänzender KI-Vorschlag für jeden vorbereiteten Eingang mit Dokumenttext |
 
-Treffer von Ergänzungsregeln allein verhindern die KI nicht, auch wenn dadurch bereits eine Kategorie eingetragen ist. Fehlende Datum-/Nummerangaben allein lösen dagegen keine KI aus, wenn eine automatische Klassifizierung vorliegt. Vorhandene Angaben dienen als vorläufiger Kontext; sie werden nicht ungeprüft als richtige Zuordnung behandelt. Die Betriebsart beurteilt vorhandene Treffer, nicht deren fachliche Richtigkeit.
+Bei erfolgreichem Textvergleich oder reinen Ergänzungsregeln ergänzt die Hintergrund-KI ihre Vorschläge, etwa für die Rechnungsnummer des aktuellen Dokuments. Bei einem Treffer einer Klassifikationsregel überspringt der Worker das Dokument auch dann, wenn einzelne Angaben fehlen. Vorhandene Angaben dienen als vorläufiger Kontext; sie werden nicht ungeprüft als richtige Zuordnung behandelt. Die Betriebsart beurteilt vorhandene Treffer, nicht deren fachliche Richtigkeit.
 
 Die Hintergrundoption benötigt `ollamaAktiv=ja`, einen erreichbaren lokalen Ollama-PC und den laufenden Inbox-Worker (`EABLAGE_INBOX_ENABLED`). Nach Sicherung und Schreibpause `sql/update_ollama_background.sql` ausführen und Web, Backend und Worker aus demselben Commit bereitstellen. Neuinstallationen enthalten Tabelle und Parameter in Schema/Seed. Betriebsart speichern; sie gilt für die nächsten Workerprüfungen, auch für bereits vorbereitete Eingänge. Nach Änderungen die Klassifizierungsseite neu öffnen; ungespeicherte Eingaben vorher sichern.
 

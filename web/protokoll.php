@@ -48,12 +48,13 @@ function history_return_url($url): string
 {
     if (!is_string($url) || preg_match('/[\\x00-\\x1f\\x7f]/', $url) || str_contains($url, chr(92))) return 'dokumente.php';
     $parts = parse_url($url);
+    $path = $parts['path'] ?? '';
     if ($parts === false || isset($parts['scheme']) || isset($parts['host']) || isset($parts['user'])
-        || isset($parts['pass']) || isset($parts['port']) || ($parts['path'] ?? '') !== 'bearbeiten.php') return 'dokumente.php';
+        || isset($parts['pass']) || isset($parts['port']) || !in_array($path, ['bearbeiten.php', 'ansehen.php'], true)) return 'dokumente.php';
     parse_str($parts['query'] ?? '', $query);
     $id = $query['dokid'] ?? '';
     if (!is_string($id) || !ctype_digit($id) || (int)$id < 1 || (int)$id > 2147483647) return 'dokumente.php';
-    return 'bearbeiten.php?' . http_build_query($query);
+    return $path . '?' . http_build_query($query);
 }
 
 $returnUrl = history_return_url($_GET['return'] ?? null);

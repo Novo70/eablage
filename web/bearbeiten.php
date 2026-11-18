@@ -9,6 +9,7 @@ require_once 'metadaten_funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
 require_once __DIR__ . '/dokument_navigation.php';
+require_once __DIR__ . '/dokument_technik.php';
 require_once 'protokoll_funktionen.php';
 
 $db = $db_config;
@@ -27,22 +28,13 @@ function changed_marker(array $changed, string $field): string
 {
     return !empty($changed[$field]) ? ' <span class="ea-source-badge ea-source-badge--supplement" title="Dieser Wert weicht vom gespeicherten Wert ab.">neu</span>' : '';
 }
-function normalized_compare_value(string $field, $value): string
-{
-    if (in_array($field, ['kategorie_id', 'kategorie2_id', 'doktyp_id'], true)) {
-        $value = trim((string)$value);
-        return ($value === '' || $value === '0') ? '0' : $value;
+require_once __DIR__ . '/dokument_speichern.php';
+
+foreach ($_POST as $value) {
+    if (!is_string($value)) {
+        http_response_code(400);
+        exit('Ungültiger Formularwert.');
     }
-    return trim((string)$value);
-}
-function normalize_document_text($value): string
-{
-    return str_replace(["\r\n", "\r"], "\n", (string)$value);
-}
-function document_revision(array $document): string
-{
-    ksort($document);
-    return hash('sha256', serialize(array_map(static fn($value) => $value === null ? null : (is_array($value) ? json_encode($value) : (string)$value), $document)));
 }
 
 $dokId = filter_input(INPUT_GET, 'dokid', FILTER_VALIDATE_INT);
@@ -53,8 +45,6 @@ if (!$dokId || $dokId < 1) {
 }
 
 $returnUrl = valid_return_url($_REQUEST['return'] ?? 'dokumente.php');
-$kategorien = eablage_lade_kategorien($db);
-$dokumenttypen = eablage_lade_dokumenttypen($db);
 $error = '';
 $saved = isset($_GET['saved']) && $_GET['saved'] === '1';
 $reclassified = false;
@@ -206,91 +196,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === '') {
                 exit;
             }
 
-            $metaPath = rtrim(PFAD_META, '/\\') . DIRECTORY_SEPARATOR . $dokId . 'meta.json';
-            $tempMeta = null;
-            $backupMeta = null;
-            $metaPublished = false;
             try {
-                $db->beginTransaction();
-                $currentStmt = $db->prepare('SELECT * FROM ' . DB_TABELLE_ARCHIV . ' WHERE DokID = ? AND GeloeschtAm IS NULL FOR UPDATE');
-                $currentStmt->execute([$dokId]);
-                $currentAssignments = $currentStmt->fetch(PDO::FETCH_ASSOC);
-                if (!$currentAssignments) throw new RuntimeException('Dokument nicht mehr vorhanden.');
-                $currentAssignments['numbers'] = eablage_nummern_laden($db,(int)$dokId);
-                $currentAssignments['vorgaenge'] = eablage_vorgaenge_laden($db,(int)$dokId);
-                if (!hash_equals(document_revision(array_intersect_key($currentAssignments, $storedDocument)), $documentRevision)) {
-                    throw new UnexpectedValueException('Das Dokument wurde zwischenzeitlich geändert. Bitte die eigenen Eingaben sichern und das Dokument neu öffnen.');
-                }
-                $updated['vorgaenge'] = eablage_vorgaenge_pruefen($db, $_POST['vorgaenge_json'] ?? json_encode($storedDocument['vorgaenge']));
-                eablage_vorgaenge_speichern($db, (int)$dokId, $updated['vorgaenge']);
-                if (!$hasChanges) {
-                    $db->commit();
-                    header('Location: bearbeiten.php?dokid=' . rawurlencode((string)$dokId) . '&saved=1&return=' . rawurlencode($returnUrl));
-                    exit;
-                }
-                $updated['numbers'] = eablage_nummern_pruefen($db,$_POST['numbers_json'] ?? '[]',$currentAssignments['numbers']);
-                $nummer = ($updated['numbers'][0]['value'] ?? '');
-                $updated['Nummer'] = $nummer;
-                eablage_pruefe_zuordnungen($db, $updated, $currentAssignments);
-                // Use the same database clock as the initial archive timestamp.
-                $bearbeitungsdatum = $db->query('SELECT NOW()')->fetchColumn();
-                if (!is_string($bearbeitungsdatum) || $bearbeitungsdatum === '') {
-                    throw new RuntimeException('Die Bearbeitungszeit konnte nicht ermittelt werden.');
-                }
-                $updated['Aenderungsdatum'] = $bearbeitungsdatum;
-                $updated['Doktext'] = normalize_document_text($updated['Doktext']);
-                // All metadata must describe the exact UPDATE, including document text.
-                $metadata = eablage_metadaten_vorbereiten(eablage_metadaten_dokument($db, $updated));
-                $oldMeta = eablage_metadaten_lesen($metaPath);
-                if ($oldMeta !== null) {
-                    $oldJson = str_starts_with($oldMeta, "\xEF\xBB\xBF") ? substr($oldMeta, 3) : $oldMeta;
-                    $oldFormat = json_decode($oldJson, true);
-                    if (is_array($oldFormat) && isset($oldFormat['schema_version']) && !in_array($oldFormat['schema_version'], [1, 2, 3, 4], true)) {
-                        throw new RuntimeException('Unbekannte Metadatenversion; Datei wird nicht überschrieben.');
-                    }
-                    $backupMeta = eablage_metadaten_temp(dirname($metaPath), $oldMeta);
-                }
-                $tempMeta = eablage_metadaten_temp(dirname($metaPath), $metadata['content']);
-                $updateStmt = $db->prepare('UPDATE ' . DB_TABELLE_ARCHIV . ' SET Datum=:datum, kategorie_id=:kategorie_id, kategorie2_id=:kategorie2_id, doktyp_id=:doktyp_id, Partner=:partner, Betreff=:betreff, Nummer=:nummer, Tags=:tags, Doktext=:doktext, Aenderungsdatum=:aenderungsdatum WHERE DokID=:dokid');
-                $updateStmt->execute([':datum' => $datum, ':kategorie_id' => $kategorieId, ':kategorie2_id' => $kategorie2Id, ':doktyp_id' => $doktypId, ':partner' => $partner, ':betreff' => $betreff, ':nummer' => $nummer, ':tags' => $tags, ':doktext' => normalize_document_text($updated['Doktext']), ':aenderungsdatum' => $bearbeitungsdatum, ':dokid' => $dokId]);
-                eablage_nummern_speichern($db,(int)$dokId,$updated['numbers']);
-                if (eablage_metadaten_lesen($metaPath) !== $oldMeta) throw new RuntimeException('Metadatei wurde zwischenzeitlich geändert.');
-                if ($oldMeta === null) {
-                    // Atomic exclusive publication, never overwrite a newly appeared file.
-                    if (!link($tempMeta, $metaPath)) throw new RuntimeException('Metadatenziel existiert bereits oder ist nicht beschreibbar.');
-                    $metaPublished = true;
-                    @unlink($tempMeta);
-                } else {
-                    if (!rename($tempMeta, $metaPath)) throw new RuntimeException('Die Metadatei konnte nicht aktualisiert werden.');
-                    $metaPublished = true;
-                }
-                $tempMeta = null;
-                $details = ['felder' => eablage_protokoll_aenderungen($currentAssignments, $updated),
-                    'dokumenttext_geaendert' => $documentTextChanged];
-                if ($currentAssignments['numbers'] !== $updated['numbers']) {
-                    $details['nummern_vorher']=$currentAssignments['numbers']; $details['nummern_nachher']=$updated['numbers'];
-                }
-                if ($reclassificationInfo !== '') {
-                    $details['klassifizierung'] = eablage_protokoll_klassifizierung($reclassificationInfo);
-                }
-                eablage_protokoll($db, (int)$dokId, 'metadaten_geaendert', $details, $bearbeitungsdatum);
-                $db->commit();
-                $metaPublished = false;
-                if ($backupMeta !== null) @unlink($backupMeta);
+                eablage_dokument_speichern($db, $storedDocument, $updated, $documentRevision, $reclassificationInfo);
                 header('Location: bearbeiten.php?dokid=' . rawurlencode((string)$dokId) . '&saved=1&return=' . rawurlencode($returnUrl));
                 exit;
             } catch (Throwable $e) {
-                // Restore the previous JSON while still holding the row lock if possible.
-                if ($metaPublished) {
-                    $restored = $backupMeta !== null ? @rename($backupMeta, $metaPath) : @unlink($metaPath);
-                    if (!$restored) error_log('e_ablage: JSON-Rollback fehlgeschlagen; Sicherung: ' . ($backupMeta ?? 'keine') . '; Archivprüfung erforderlich.');
-                    if ($restored) $backupMeta = null;
-                } elseif ($backupMeta !== null) {
-                    @unlink($backupMeta);
-                }
-                if ($db->inTransaction()) $db->rollBack();
-                if ($tempMeta !== null && file_exists($tempMeta)) @unlink($tempMeta);
-                error_log('e_ablage Dokument bearbeiten/speichern: ' . $e->getMessage());
                 $error = $e instanceof UnexpectedValueException ? $e->getMessage() : 'Die Änderungen konnten nicht gespeichert werden.';
             }
         }
@@ -339,7 +249,7 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
                         </details>
                     </div>
                     <div class="panel-body">
-                        <form action="bearbeiten.php" method="POST" id="edit-document-form" data-document-draft>
+                        <form action="bearbeiten.php" method="POST" id="edit-document-form" data-session-check data-document-draft>
                             <div class="ea-form-scroll">
                                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                                 <input type="hidden" name="document_revision" value="<?=h($documentRevision)?>">
@@ -359,20 +269,9 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
                                 <?php eablage_nummern_editor($db,$document['numbers']); ?>
                                 <?php eablage_vorgaenge_editor($db,$document['vorgaenge']); ?>
                                 <div class="form-group"><label for="Tags">Stichworte / Tags<?= changed_marker($reclassificationChanged, 'Tags') ?></label><input type="text" id="Tags" name="Tags" class="form-control" value="<?= h($document['Tags']) ?>"></div>
-                                <details class="ea-detail-panel">
-                                    <summary><?=eablage_icon('info')?>Technische Informationen</summary>
-                                    <div>
-                                        <p><strong>DokID:</strong> <?= h($storedDocument['DokID'] ?? '') ?></p>
-                                        <p><strong>Archiviert:</strong> <?= h($storedDocument['Archivierungsdatum'] ?? '') ?></p>
-                                        <p><strong>Zuletzt geändert:</strong> <?= h($storedDocument['Aenderungsdatum'] ?? '–') ?></p>
-                                        <p style="overflow-wrap:anywhere;"><strong>Originaldateiname:</strong> <?= h($storedDocument['Originaldateiname'] ?? '–') ?></p>
-                                        <p style="overflow-wrap:anywhere;"><strong>PDF SHA-256:</strong> <?= h($storedDocument['DateiSHA256'] ?? '–') ?></p>
-                                        <p><strong>Bisheriges Info-Feld (Altbestand):</strong> <?= h($storedDocument['Info'] ?? '') ?></p>
-                                        <p><strong>Dokumenttext:</strong> <?= number_format(strlen((string)($storedDocument['Doktext'] ?? '')), 0, ',', '.') ?> Byte gespeichert<?php if ($pendingDocumentText !== ''): ?> / <?= number_format(strlen($pendingDocumentText), 0, ',', '.') ?> Byte neu eingelesen<?php endif; ?></p>
-                                        <p style="margin-bottom:0;"><strong>Datei:</strong> <?= h($filename) ?></p>
-                                        <p><a href="protokoll.php?<?= h(http_build_query(['dokid' => (int)$dokId, 'return' => 'bearbeiten.php?' . http_build_query(['dokid' => (int)$dokId, 'return' => $returnUrl])])) ?>" data-draft-link>Dokumenthistorie öffnen</a></p>
-                                    </div>
-                                </details>
+                                <?php eablage_dokument_technik($storedDocument, 'bearbeiten.php?' . http_build_query([
+                                    'dokid' => $dokId, 'return' => $returnUrl,
+                                ]), $pendingDocumentText); ?>
                             </div>
                             <div class="ea-edit-actions ea-form-footer">
                                 <div class="ea-form-actions ea-document-actions">
@@ -420,7 +319,9 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
     </script>
     <script src="classification_draft.js?v=<?=filemtime(__DIR__ . '/classification_draft.js')?>"></script>
 <script src="meldungen.js?v=<?=filemtime(__DIR__ . '/meldungen.js')?>" defer></script>
+<script src="formular_sitzung.js?v=<?=filemtime(__DIR__ . '/formular_sitzung.js')?>" defer></script>
 </body>
 
 </html>
+
 

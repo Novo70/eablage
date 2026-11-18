@@ -46,6 +46,27 @@ function highlight_text($text, array $terms): string
 }
 
 
+function number_search_condition(string $value, string $pattern, array &$params, string &$types, string $escape = ''): string
+{
+    $match = 'n.Wert LIKE ?' . $escape;
+    $params[] = $pattern;
+    $types .= 's';
+
+    // Suchwert contains only ASCII letters and digits, without separators.
+    $normalized = preg_replace('/[^a-zA-Z0-9]/', '', $value);
+    if ($normalized !== '') {
+        $match .= ' OR n.Suchwert LIKE ?';
+        $params[] = '%' . strtoupper($normalized) . '%';
+        $types .= 's';
+    }
+    return 'EXISTS (SELECT 1 FROM dokument_nummer n WHERE n.DokumentID = dokumente.DokID AND (' . $match . '))';
+}
+
+function literal_search_pattern(string $value): string
+{
+    return '%' . strtr($value, ['=' => '==', '%' => '=%', '_' => '=_']) . '%';
+}
+
 $kategorien = eablage_lade_kategorien($db);
 $dokumenttypen = eablage_lade_dokumenttypen($db);
 $suchbegriff = request_value('Suchbegriff');
@@ -54,7 +75,11 @@ $datumvon = request_value('Datumvon');
 $datumbis = request_value('Datumbis');
 $kategorie = request_value('Kategorie', '0');
 $dokumenttyp = request_value('Dokumententyp', '0');
-$nummer = request_value('Nummer', '0');
+$feldsuche = [
+    'Partner' => request_value('Partner'),
+    'Betreff' => request_value('Betreff'),
+    'Nummer' => request_value('Nummer'),
+];
 $vorgang = request_value('Vorgang', '0');
 $vorgaenge = $db->query('SELECT ID,Bezeichnung FROM vorgang ORDER BY Bezeichnung,ID')->fetchAll(PDO::FETCH_KEY_PAIR);
 $sortColumns = [
@@ -104,9 +129,6 @@ if ($datumbis !== '') {
 }
 $searchColumns = ['dokumente.Partner', 'dokumente.Betreff', 'dokumente.Tags'];
 if ($volltextsuche) $searchColumns[] = 'dokumente.Doktext';
-// Nur Nummern zusätzlich ohne typische Schreibtrennzeichen vergleichen.
-// Dasselbe Muster in PHP und MariaDB verwenden; Originalwerte bleiben erhalten.
-$nummerTrennzeichen = '[[:space:]\x{00A0}\x{202F}./()‐‑‒–—−-]';
 foreach ($terms as $term) {
     $orParts = [];
     foreach ($searchColumns as $column) {
@@ -114,16 +136,18 @@ foreach ($terms as $term) {
         $types .= 's';
         $params[] = '%' . $term . '%';
     }
-    $orParts[] = 'EXISTS (SELECT 1 FROM dokument_nummer n WHERE n.DokumentID=dokumente.DokID AND n.Wert LIKE ?)';
-    $types .= 's'; $params[] = '%' . $term . '%';
-    $nummerTerm = preg_replace('/[^a-zA-Z0-9]/', '', $term);
-    if ($nummerTerm !== null && $nummerTerm !== '') {
-        $orParts[] = "EXISTS (SELECT 1 FROM dokument_nummer n WHERE n.DokumentID=dokumente.DokID AND n.Suchwert LIKE ? ESCAPE '=')";
-        $types .= 's';
-        // Wildcards im zusätzlichen Vergleich als Bestandteil der Nummer behandeln.
-        $params[] = '%' . strtr(strtoupper($nummerTerm), ['=' => '==', '%' => '=%', '_' => '=_']) . '%';
-    }
+    $orParts[] = number_search_condition($term, '%' . $term . '%', $params, $types);
     $where[] = '(' . implode(' OR ', $orParts) . ')';
+}
+foreach (['Partner', 'Betreff'] as $field) {
+    if ($feldsuche[$field] === '') continue;
+    $where[] = "dokumente.$field LIKE ? ESCAPE '='";
+    $params[] = literal_search_pattern($feldsuche[$field]);
+    $types .= 's';
+}
+if ($feldsuche['Nummer'] !== '') {
+    $number = $feldsuche['Nummer'];
+    $where[] = number_search_condition($number, literal_search_pattern($number), $params, $types, " ESCAPE '='");
 }
 $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 $joinSql = ' FROM dokumente LEFT JOIN kategorie ON kategorie.id = dokumente.kategorie_id LEFT JOIN doktyp ON doktyp.id = dokumente.doktyp_id ';
@@ -157,7 +181,7 @@ $firstHit = $totalRows === 0 ? 0 : $offset + 1;
 $lastHit = min($offset + $perPage, $totalRows);
 // Same selection for all pages of the same search, including GET/POST entry points.
 $selectionKey = hash('sha256', serialize([
-    $suchbegriff, $volltextsuche, $datumvon, $datumbis, $kategorie, $dokumenttyp, $nummer, $vorgang,
+    $suchbegriff, $volltextsuche, $datumvon, $datumbis, $kategorie, $dokumenttyp, $feldsuche, $vorgang,
 ]));
 $aktionToken = $documents ? eablage_aktion_token() : '';
 $returnQuery = build_query([]);
@@ -212,6 +236,16 @@ $resultColumns = ['subject', 'partner', 'date', 'classification', 'number'];
                                 <div class="form-group ea-form-check"><input id="Volltextsuche" name="Volltextsuche" value="1" type="checkbox" <?= $volltextsuche ? ' checked' : '' ?>><label for="Volltextsuche">Volltextsuche</label></div>
                             </div>
                         </div>
+                        <div class="row">
+                            <?php foreach ($feldsuche as $feld => $wert): ?>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="<?= h($feld) ?>"><?= h($feld) ?></label>
+                                        <input class="form-control" id="<?= h($feld) ?>" name="<?= h($feld) ?>" type="text" value="<?= h($wert) ?>">
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </form>
                 </div>
             </details>
@@ -265,11 +299,11 @@ $resultColumns = ['subject', 'partner', 'date', 'classification', 'number'];
                                             <input type="checkbox" data-search-document="<?=h($row['DokID'])?>" aria-label="<?=h('Dokument ' . $row['DokID'] . ' auswählen')?>">
                                         <?php endif; ?>
                                     </td>
-                                    <td class="ea-subject"><a href="<?= h($link) ?>" class="ea-document-link ea-list-title-link" data-row-link><?=eablage_icon('document')?><span><?= highlight_text(trim((string)($row['Betreff'] ?? '')) !== '' ? $row['Betreff'] : 'Dokument ' . $row['DokID'], $terms) ?></span></a></td>
-                                    <td class="ea-partner"><?= highlight_text($row['Partner'] ?? '', $terms) ?></td>
+                                    <td class="ea-subject"><a href="<?= h($link) ?>" class="ea-document-link ea-list-title-link" data-row-link><?=eablage_icon('document')?><span><?= highlight_text(trim((string)($row['Betreff'] ?? '')) !== '' ? $row['Betreff'] : 'Dokument ' . $row['DokID'], [...$terms, $feldsuche['Betreff']]) ?></span></a></td>
+                                    <td class="ea-partner"><?= highlight_text($row['Partner'] ?? '', [...$terms, $feldsuche['Partner']]) ?></td>
                                     <td class="ea-result-date"><?= h($row['Datum'] ?? '') ?></td>
                                     <td class="ea-result-classification"><?php if (($row['katBez'] ?? '') !== ''): ?><span class="ea-badge ea-badge-category"><?= h($row['katBez']) ?></span><?php endif; ?><?php if (($row['doktypBez'] ?? '') !== ''): ?><span class="ea-badge ea-badge-type"><?= h($row['doktypBez']) ?></span><?php endif; ?></td>
-                                    <td class="ea-number"><?= highlight_text($row['Nummer'] ?? '', $terms) ?></td>
+                                    <td class="ea-number"><?= highlight_text($row['Nummer'] ?? '', [...$terms, $feldsuche['Nummer']]) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -287,6 +321,7 @@ $resultColumns = ['subject', 'partner', 'date', 'classification', 'number'];
                     <?php if ($documents): ?>
                         <span id="search-selection-count" role="status">Dokumente auswählen</span>
                         <button class="btn btn-default" type="button" id="search-selection-clear" disabled>Auswahl aufheben</button>
+                        <button class="btn btn-primary" type="button" id="search-mass-open" disabled>Metadaten ändern</button>
                         <button class="btn btn-primary" type="button" id="search-case-open" disabled aria-haspopup="dialog">Vorgang anlegen</button>
                     <?php endif; ?>
                     <a class="btn btn-default" href="index.php" id="search-new">Neue Suche</a>
@@ -323,5 +358,6 @@ $resultColumns = ['subject', 'partner', 'date', 'classification', 'number'];
 </body>
 
 </html>
+
 
 

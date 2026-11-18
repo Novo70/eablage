@@ -1,5 +1,5 @@
 -- e_ablage initial data
--- Target: eAblage 4.6.2 (gemeinsame Web-/Backend-/Worker-Version)
+-- Target: eAblage 4.7.0 (gemeinsame Web-/Backend-/Worker-Version)
 -- Import after schema.sql
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";

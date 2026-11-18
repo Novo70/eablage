@@ -138,11 +138,16 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
 <body><?php include 'navbar.php'; ?><main class="container ea-vorgaenge <?=$item ? 'ea-explorer' : (!$id ? 'ea-search-results' : '')?>">
     <?php if ($item): ?><div class="ea-explorer-layout" data-vorgang-workspace><?php endif; ?>
     <section class="panel panel-primary <?=$item ? 'ea-explorer-documents' : (!$id ? 'ea-documents-panel' : '')?>" aria-labelledby="vorgang-heading">
-        <div class="panel-heading<?=$id ? '' : ' ea-search-heading'?>"><h1 class="ea-vorgang-title" id="vorgang-heading"><?=eablage_icon('link')?><?=$item ? 'Vorgang: ' . h($item['Bezeichnung']) : 'Vorgänge'?><?php if (!$id): ?> <span class="ea-search-hit-count">(<?=h($total)?>)</span><?php endif; ?></h1></div>
+        <div class="panel-heading<?=$id ? '' : ' ea-search-heading'?>"><h1 class="ea-vorgang-title" id="vorgang-heading"><?=eablage_icon('link')?><?=$id ? 'Vorgang' : 'Vorgänge'?><?php if (!$id): ?> <span class="ea-search-hit-count">(<?=h($total)?>)</span><?php endif; ?></h1></div>
         <div class="panel-body<?=$id ? '' : ' ea-vorgang-list-tools'?>">
     <?php if ($error !== '' && $editError === '' && $attachError === ''): ?><?=eablage_render_message('danger',$error)?><?php endif; ?>
     <?php if ($item): ?>
-        <?php if ($item['Beschreibung'] !== ''): ?><p class="ea-vorgang-description"><?=h($item['Beschreibung'])?></p><?php endif; ?>
+        <div class="ea-document-summary">
+            <h2><?=h($item['Bezeichnung'])?></h2>
+            <?php if ($item['Beschreibung'] !== ''): ?>
+                <p><?=h($item['Beschreibung'])?></p>
+            <?php endif; ?>
+        </div>
         <section class="ea-vorgang-documents" aria-labelledby="vorgang-documents-heading"><div class="ea-vorgang-documents-heading"><h2 id="vorgang-documents-heading">Zugeordnete Dokumente <span class="ea-vorgang-document-count">(<?=$total?>)</span></h2>
 
         </div>

@@ -22,6 +22,8 @@ RUN echo 'Timeout 340' > /etc/apache2/conf-available/eablage-timeouts.conf \
 COPY apache-security.conf /etc/apache2/conf-available/eablage-security.conf
 RUN a2enconf eablage-security
 
+COPY session.ini /usr/local/etc/php/conf.d/session.ini
+COPY php-errors.ini /usr/local/etc/php/conf.d/php-errors.ini
 COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 COPY . /var/www/html/

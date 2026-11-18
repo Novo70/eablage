@@ -14,7 +14,8 @@ function h($value): string
 
 function request_value(string $name, string $default = ''): string
 {
-    return isset($_REQUEST[$name]) ? trim((string)$_REQUEST[$name]) : $default;
+    $value = $_REQUEST[$name] ?? null;
+    return is_string($value) ? trim($value) : $default;
 }
 
 function selected_value(string $current, string $value): string
@@ -24,6 +25,11 @@ function selected_value(string $current, string $value): string
 
 $suchbegriff   = request_value('Suchbegriff');
 $volltextsuche = isset($_REQUEST['Volltextsuche']);
+$feldsuche = [
+    'Partner' => request_value('Partner'),
+    'Betreff' => request_value('Betreff'),
+    'Nummer' => request_value('Nummer'),
+];
 $datumvon      = request_value('Datumvon');
 $datumbis      = request_value('Datumbis');
 $kategorie     = request_value('Kategorie', '0');
@@ -65,6 +71,17 @@ $dokumenttypen = eablage_lade_dokumenttypen($db_config);
                             <div class="form-group ea-form-check">
                                 <input id="Volltextsuche" name="Volltextsuche" value="1" type="checkbox"<?= $volltextsuche ? ' checked' : '' ?>>
                                 <label for="Volltextsuche">Volltextsuche</label>
+                            </div>
+
+                            <div class="row">
+                                <?php foreach ($feldsuche as $feld => $wert): ?>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="<?= h($feld) ?>"><?= h($feld) ?></label>
+                                            <input class="form-control" id="<?= h($feld) ?>" name="<?= h($feld) ?>" type="text" value="<?= h($wert) ?>">
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
 
                             <div class="row">

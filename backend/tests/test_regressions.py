@@ -21,6 +21,17 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(find_document_date('September 2026'), '2026-09-01')
         self.assertEqual(find_document_date('Geburtsdatum 01.01.1970 Datum: 13.09.2026', 'Datum'), '2026-09-13')
 
+    def test_year_first_slash_date(self):
+        self.assertEqual(find_document_date('Datum: 2023/01/22'), '2023-01-22')
+        self.assertEqual(find_document_date('2023/01/22 danach 23.01.2023'), '2023-01-22')
+        self.assertEqual(find_document_date('23.01.2023 danach 2023/01/22'), '2023-01-23')
+        self.assertEqual(find_document_date('2023/02/29 danach 2024/02/29'), '2024-02-29')
+        self.assertIsNone(find_document_date('2023/02/29'))
+        self.assertEqual(
+            find_document_date('Geburtsdatum 01.01.1970 Datum: 2023/01/22', 'Datum'),
+            '2023-01-22',
+        )
+
     def test_utf8_filename_limit(self):
         for value in ('ä'*250, '😀'*250, 'a'*400):
             result = build_export_filename({'DokID':1, 'Betreff':value}, {'expBetreff':'ja','expMaxLaengeDateiname':'500'})

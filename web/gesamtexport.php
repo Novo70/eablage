@@ -5,6 +5,7 @@ require_once 'funktionen.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
 require_once 'datenbank_sicherung.php';
+require_once __DIR__ . '/export_kopie.php';
 require_once 'datenbank_wiederherstellung.php';
 
 $db = $db_config;
@@ -159,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     $targetPath = $targetDir . DIRECTORY_SEPARATOR . $filename;
-                    if (!@copy($sourcePath, $targetPath)) {
+                    if (!eablage_export_kopieren($sourcePath, $targetPath)) {
                         $errors[] = 'DokID ' . $dokId . ': Datei konnte nicht kopiert werden.';
                         continue;
                     }

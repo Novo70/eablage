@@ -227,6 +227,18 @@ def build_export_directories(document: dict, settings: dict) -> list[str]:
     return directories
 
 
+def build_explorer_paths(document: dict, settings: dict) -> list[list[str]]:
+    """Use the configured levels for both category orientations."""
+    paths = [build_export_directories(document, settings)]
+    if document.get("kat2Bez"):
+        swapped = {**document, "katBez": document.get("kat2Bez"),
+                   "kat2Bez": document.get("katBez")}
+        alternate = build_export_directories(swapped, settings)
+        if alternate not in paths:
+            paths.append(alternate)
+    return paths
+
+
 def prepare_single_export(dok_id: int) -> dict:
     """Return export metadata; filesystem access remains the web server's task."""
     document = load_document(dok_id)
@@ -253,6 +265,7 @@ def build_full_export_plan(documents: list[dict], settings: dict) -> dict:
                 "dok_id": document["DokID"],
                 "filename": build_export_filename(document, settings),
                 "directories": build_export_directories(document, settings),
+                "explorer_paths": build_explorer_paths(document, settings),
                 "display": {
                     "date": document.get("Datum"),
                     "category": document.get("katBez"),

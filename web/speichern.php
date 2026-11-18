@@ -3,7 +3,7 @@
 require_once 'konfiguration.php';
 require_once 'nummern_funktionen.php';
 require_once 'vorgaenge_funktionen.php';
-require_once 'meldungen.php';
+require_once __DIR__ . '/fehlerseite.php';
 require_once 'csrf.php';
 require_once 'stammdaten_funktionen.php';
 require_once 'metadaten_funktionen.php';
@@ -11,39 +11,6 @@ require_once 'inbox_funktionen.php';
 require_once 'protokoll_funktionen.php';
 
 $db = $db_config;
-
-function eablage_autokat_regel_ids(string $erkennungsInfo): array
-{
-    if (!preg_match_all('/\bR\d{4,}\b/i', $erkennungsInfo, $matches)) {
-        return [];
-    }
-
-    return array_values(array_unique(array_map('strtoupper', $matches[0])));
-}
-
-function eablage_save_error_page(string $message, int $status = 500): void
-{
-    http_response_code($status);
-    ?>
-    <!DOCTYPE html>
-    <html lang="de">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>e_ablage - Fehler</title>
-        <link href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>" rel="stylesheet">
-    </head>
-    <body>
-        <?php include 'navbar.php'; ?>
-        <div class="container">
-            <?=eablage_render_message('danger', $message)?>
-            <a href="javascript:history.back()" class="btn btn-default">Zurück zum Formular</a>
-        </div>
-    </body>
-    </html>
-    <?php
-    exit;
-}
 
 $pfadInbox = PFAD_INBOX;
 $pfadArchiv = PFAD_ARCHIV;
@@ -57,7 +24,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['original_datei'])) {
 try {
     eablage_aktion_pruefen($_POST['aktion_token'] ?? null);
 } catch (RuntimeException $e) {
-    eablage_save_error_page($e->getMessage(), 403);
+    eablage_fehlerseite($e->getMessage(), 403);
+}
+
+foreach ($_POST as $value) {
+    if (!is_string($value)) {
+        http_response_code(400);
+        exit('Ungültiger Formularwert.');
+    }
 }
 
 $regelVorbereiten = ($_POST['after_save'] ?? '') === 'prepare_rule';
@@ -70,7 +44,7 @@ if (
     str_contains($originalFile, chr(92)) || preg_match('/[\x00-\x1f\x7f]/', $originalFile) ||
     strtolower(pathinfo($originalFile, PATHINFO_EXTENSION)) !== 'pdf'
 ) {
-    eablage_save_error_page('Ungültiger Dateiname. Das Dokument konnte nicht archiviert werden.');
+    eablage_fehlerseite('Ungültiger Dateiname. Das Dokument konnte nicht archiviert werden.');
 }
 
 $datum = !empty($_POST['Datum']) ? $_POST['Datum'] : date('Y-m-d');
@@ -91,11 +65,11 @@ $dokText = !empty($_POST['dokument_text']) ? $_POST['dokument_text'] : '';
 $erkennungsInfo = !empty($_POST['erkennungs_info'])
     ? trim($_POST['erkennungs_info'])
     : 'Manuell';
-$autokatRegelIds = eablage_autokat_regel_ids($erkennungsInfo);
+$autokatRegelIds = [];
 $quellPfad = $pfadInbox . $originalFile;
 
 if (!file_exists($quellPfad)) {
-    eablage_save_error_page(
+    eablage_fehlerseite(
         'Die Quelldatei existiert nicht mehr im Eingang. Das Dokument konnte nicht archiviert werden.'
     );
 }
@@ -139,6 +113,13 @@ try {
         if (!$savedJob || $savedJob['dateiname'] !== $originalFile || (!$manualReadFailure && !hash_equals($savedJob['sha256'], $dateiSHA256))
             || !in_array($savedJob['status'], ['bereit', 'fehler'], true)) {
             throw new RuntimeException('Der Verarbeitungsvorgang ist nicht mehr aktuell. Bitte den Eingang neu öffnen.');
+        }
+        $result = json_decode($savedJob['ergebnis'] ?? 'null', true);
+        $auto = $result['classification']['autokat'] ?? [];
+        $refs = array_merge($auto['matched_supplement_rule_refs'] ?? [], $auto['matched_classification_rule_refs'] ?? [], [$auto['matched_classification_rule_ref'] ?? null]);
+        foreach ($refs as $ref) {
+            $id = $ref['regel_id'] ?? null;
+            if (is_string($id) && preg_match('/^R[0-9]{4,}$/iD', $id)) $autokatRegelIds[strtoupper($id)] = strtoupper($id);
         }
     }
     eablage_pruefe_zuordnungen($db, ['kategorie_id'=>$kategorieId, 'kategorie2_id'=>$kategorie2Id, 'doktyp_id'=>$doktypId]);
@@ -300,7 +281,7 @@ try {
         . ':' . $e->getLine()
     );
 
-    eablage_save_error_page(
+    eablage_fehlerseite(
         ($e instanceof RuntimeException && !($e instanceof PDOException)) ? $e->getMessage() : 'Das Dokument konnte nicht archiviert werden. Details wurden im PHP-Fehlerprotokoll gespeichert.'
     );
 }

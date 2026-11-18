@@ -117,10 +117,15 @@ try:
         # Simulate failure after the INSERT/PDF/JSON but before COMMIT.
         cursor.execute("INSERT INTO autokat (RegelID, Regeltyp) VALUES ('R9999','K')")
         cursor.execute("CREATE TRIGGER fail_rule BEFORE UPDATE ON autokat FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='test failure'")
+        job_result = {'classification': {'autokat': {'matched_classification_rule_refs': [{'regel_id': 'R9999'}]}}}
+        cursor.execute("INSERT INTO verarbeitungsauftraege (dateischluessel,dateiname,sha256,status,ergebnis) VALUES (%s,%s,%s,'bereit',%s)",
+                       ('a'*64, 'a.pdf', hashlib.sha256(source.read_bytes()).hexdigest(), json.dumps(job_result)))
+        job_id = cursor.lastrowid
         fail_runner=base/'save_late_failure.php'
-        fail_runner.write_text("<?php require " + json.dumps(str(ROOT/'web/csrf.php')) + "; $_SERVER['REQUEST_METHOD']='POST'; $_POST=['aktion_token'=>eablage_aktion_token(),'original_datei'=>'a.pdf','Datum'=>'2026-09-13','erkennungs_info'=>'AutoKat:R9999']; require " + json.dumps(str(ROOT/'web/speichern.php')) + ';')
+        fail_runner.write_text("<?php require " + json.dumps(str(ROOT/'web/csrf.php')) + "; $_SERVER['REQUEST_METHOD']='POST'; $_POST=['aktion_token'=>eablage_aktion_token(),'original_datei'=>'a.pdf','Datum'=>'2026-09-13', 'inbox_job_id'=>(string)"+str(job_id)+",'erkennungs_info'=>'Manuell' ]; require " + json.dumps(str(ROOT/'web/speichern.php')) + ';')
         subprocess.run([php,str(fail_runner)],cwd=base,capture_output=True,text=True,timeout=20)
         assert rows()==[] and source.exists() and not target.exists() and not meta.exists()
+        cursor.execute('DELETE FROM verarbeitungsauftraege WHERE id=%s', (job_id,))
         cursor.execute('DROP TRIGGER fail_rule'); cursor.execute('DELETE FROM autokat')
         print('Late archive failure rollback: PASS')
         cursor.execute("CREATE TRIGGER fail_history BEFORE INSERT ON ereignisprotokoll FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='test history failure'")
@@ -175,6 +180,24 @@ try:
             with opener.open(f'http://127.0.0.1:{http_port}/bearbeiten.php?dokid={documents[0][0]}') as response:
                 initial = response.read().decode()
             token = re.search(r'name="aktion_token" value="([a-f0-9]+)"', initial).group(1)
+            cursor.execute("INSERT INTO autokat (RegelID,Regeltyp,Suchbegriffe) VALUES ('R9001','K','Rechnung')")
+            rule_url = f'http://127.0.0.1:{http_port}/autokat_regel_bearbeiten.php?regel=R9001'
+            with opener.open(rule_url) as response:
+                revision = re.search(r'name="regel_revision" value="([a-f0-9]+)"', response.read().decode()).group(1)
+            fields = {'aktion_token': token, 'regel_revision': revision, 'regel_id': 'R9001',
+                      'Aktiv': '1', 'number_rules_json': '[]', 'Kommentar': 'Erster Tab'}
+            with opener.open(rule_url, urllib.parse.urlencode(fields).encode()) as response:
+                assert response.status == 200
+            fields['Kommentar'] = 'Zweiter Tab'
+            try:
+                opener.open(rule_url, urllib.parse.urlencode(fields).encode())
+                raise AssertionError('Stale rule form was accepted')
+            except urllib.error.HTTPError as error:
+                assert error.code == 409 and 'zwischenzeitlich geändert' in error.read().decode()
+            cursor.execute("SELECT Kommentar, Version FROM autokat WHERE RegelID='R9001'")
+            assert cursor.fetchone() == ('Erster Tab', 1)
+            cursor.execute("DELETE FROM autokat WHERE RegelID='R9001'")
+            print('Rule editor rejects a stale comment edit without changing the rule version: PASS')
             initial_revision = re.search(r'name="document_revision" value="([a-f0-9]+)"', initial).group(1)
             with opener.open(f'http://127.0.0.1:{http_port}/archiv_pdf.php?dokid={documents[0][0]}') as response:
                 assert response.read() == (base/f'archiv/{documents[0][0]}dok.pdf').read_bytes()
@@ -185,7 +208,7 @@ try:
             view_path='/ansehen.php?'+urllib.parse.urlencode({'dokid':documents[0][0],'return':'dokumente.php?Suchbegriff=Rechnung&page=2'})
             with opener.open(f'http://127.0.0.1:{http_port}'+view_path) as response:
                 view_html=response.read().decode()
-                assert response.status==200 and 'Technische Angaben' in view_html and 'archiv_pdf.php?dokid=' in view_html
+                assert response.status==200 and 'Technische Informationen' in view_html and 'archiv_pdf.php?dokid=' in view_html
                 assert 'name="document_revision"' not in view_html and 'Fatal error' not in view_html
                 assert 'Suchbegriff=Rechnung' in view_html
             cursor.execute('SELECT * FROM dokumente ORDER BY DokID'); assert cursor.fetchall()==before_view

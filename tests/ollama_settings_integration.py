@@ -125,7 +125,7 @@ echo "\\nSTATE:" . json_encode(['databaseLabel'=>$db->databaseLabel,'value'=>$db
     def test_background_selector_saves_three_modes_and_rejects_invalid(self):
         html, state = self.call({})
         self.assertEqual(state['background'], 'aus')
-        self.assertIn('Nur ohne automatische Klassifizierung', html)
+        self.assertIn('Nur ohne Treffer einer Klassifikationsregel', html)
         for value in ['aus', 'fehlende', 'alle']:
             _, state = self.call({'params': {'ollamaHintergrund': value}})
             self.assertEqual(state['background'], value)

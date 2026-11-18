@@ -46,6 +46,14 @@ function next_regel_id(PDO $db): string
     return 'R' . str_pad((string)($max + 1), 4, '0', STR_PAD_LEFT);
 }
 
+function eablage_regel_revision(array $regel, array $nummern, array $fachfelder): string
+{
+    $felder = array_merge(['id', 'RegelID', 'Version', 'Aktiv', 'Rang', 'Bezeichnung', 'Kommentar'], $fachfelder);
+    $werte = [];
+    foreach ($felder as $feld) $werte[] = $regel[$feld] ?? null;
+    return hash('sha256', serialize([$werte, $nummern]));
+}
+
 $fachfelder = [
     'Suchbegriffe', 'Ausschlussbegriffe', 'Regeltyp', 'kat', 'kat2', 'dok', 'partner', 'betreff', 'nr', 'tags',
     'prDatum', 'prBetreff', 'prBetreffAnz', 'BetreffLänge', 'BetreffEnde', 'prNum', 'prNumAnz', 'NumLänge', 'NumEnde'
@@ -126,6 +134,9 @@ if (!$neu) {
 }
 
 $numberDefinitions = !$neu ? eablage_regel_nummern_laden($db,(int)$regel['id']) : [];
+$regelRevision = $isPost
+    ? (is_string($_POST['regel_revision'] ?? null) ? $_POST['regel_revision'] : '')
+    : eablage_regel_revision($regel, $numberDefinitions, $fachfelder);
 if ($neu && $sourceDokId) {
     foreach (eablage_nummern_laden($db,$sourceDokId) as $n) $numberDefinitions[]=['NummernartID'=>$n['kind_id'],'Startanker'=>'','Endmodus'=>'zeile','Endanker'=>'','Festwert'=>$n['value'],'Praefix'=>'','MaxLaenge'=>0,'Sortierung'=>count($numberDefinitions)*10+10];
 }
@@ -154,6 +165,7 @@ if ($isPost && $fehler === '') {
         $fehler = 'Mindestens ein Suchbegriff ist erforderlich.';
     } else {
         try {
+            $db->beginTransaction();
             if ($isNew) {
                 $check = $db->prepare('SELECT COUNT(*) FROM autokat WHERE RegelID = :regel_id');
                 $check->execute([':regel_id' => $postedRegelId]);
@@ -171,13 +183,18 @@ if ($isPost && $fehler === '') {
                      :prNum, :prNumAnz, :NumLaenge, :NumEnde)';
                 $version = 1;
             } else {
-                $stmtAlt = $db->prepare('SELECT * FROM autokat WHERE RegelID = :regel_id');
+                $stmtAlt = $db->prepare('SELECT * FROM autokat WHERE RegelID = :regel_id FOR UPDATE');
                 $stmtAlt->execute([':regel_id' => $postedRegelId]);
                 $alt = $stmtAlt->fetch(PDO::FETCH_ASSOC);
                 if (!$alt) {
                     throw new RuntimeException('Die Regel wurde zwischenzeitlich nicht gefunden.');
                 }
 
+                $numberDefinitions = eablage_regel_nummern_laden($db, (int)$alt['id']);
+                if (!hash_equals(eablage_regel_revision($alt, $numberDefinitions, $fachfelder), $regelRevision)) {
+                    http_response_code(409);
+                    throw new RuntimeException('Die Regel wurde zwischenzeitlich geändert. Bitte eigene Eingaben sichern und die Regel neu öffnen.');
+                }
                 $fachlichGeaendert = false;
                 foreach ($fachfelder as $feld) {
                     $altWert = trim((string)($alt[$feld] ?? ''));
@@ -213,7 +230,6 @@ if ($isPost && $fehler === '') {
                 $params[':Version'] = $version;
             }
 
-            $db->beginTransaction();
             $newNumberDefinitions = eablage_regel_nummern_pruefen($db,$numberDefinitionsRaw);
             if (!$isNew && json_encode($newNumberDefinitions) !== json_encode($numberDefinitions) && !$fachlichGeaendert) {
                 $version++; $params[':Version']=$version;
@@ -283,8 +299,9 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
     </div>
     <div class="panel panel-primary ea-rule-editor-panel">
         <div class="panel-heading ea-rule-editor-heading"><h1 class="ea-rule-editor-title"><?=eablage_icon('edit')?><?= $neu ? 'Neue AutoKat-Regel' : 'AutoKat-Regel ' . h($regel['RegelID']) ?></h1></div>
-        <form method="post" class="panel-body ea-rule-editor-form">
+        <form method="post" class="panel-body ea-rule-editor-form" data-session-check>
             <div class="ea-rule-editor-scroll">
+                <input type="hidden" name="regel_revision" value="<?=h($regelRevision)?>">
                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                 <input type="hidden" name="is_new" value="<?= $neu ? '1' : '0' ?>">
                 <input type="hidden" name="regel_id" value="<?= h($regel['RegelID']) ?>">
@@ -370,6 +387,7 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
     </div>
 </div>
 </div>
+<script src="formular_sitzung.js?v=<?=filemtime(__DIR__ . '/formular_sitzung.js')?>" defer></script>
 </body>
 </html>
 
