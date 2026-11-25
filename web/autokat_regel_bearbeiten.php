@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'nummern_funktionen.php';
@@ -10,9 +11,6 @@ if (!isset($db) && isset($db_config)) {
     $db = $db_config;
 }
 
-function h($value): string {
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 function eablage_rule_return_url($value): string
 {
@@ -269,24 +267,12 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e_ablage - AutoKat-Regel bearbeiten</title>
-    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
-    <link rel="icon" href="ea_icon4.png" type="image/png">
-    <style>
-        .ea-rule-section { border:1px solid #ddd; border-radius:4px; margin-bottom:15px; background:#fff; }
-        .ea-rule-section__title { padding:10px 15px; font-weight:700; background:#f7f7f7; border-bottom:1px solid #ddd; }
-        .ea-rule-section__body { padding:15px; }
-        .ea-rule-id { font-family:monospace; font-weight:700; }
-        .ea-help { color:#777; font-size:12px; margin-top:4px; }
-    </style>
+    <?php eablage_seitenkopf('Klassifizierungsregel bearbeiten'); ?>
 </head>
 <body>
 <?php require_once 'navbar.php'; ?>
 <div class="ea-main-container">
-<div class="container ea-rule-editor-container">
+<div class="container ea-workspace ea-rule-editor-container">
     <div class="ea-admin-notices">
     <?php if ($fehler !== ''): ?>
         <?=eablage_render_message('danger', $fehler)?>
@@ -300,7 +286,7 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
     <div class="panel panel-primary ea-rule-editor-panel">
         <div class="panel-heading ea-rule-editor-heading"><h1 class="ea-rule-editor-title"><?=eablage_icon('edit')?><?= $neu ? 'Neue AutoKat-Regel' : 'AutoKat-Regel ' . h($regel['RegelID']) ?></h1></div>
         <form method="post" class="panel-body ea-rule-editor-form" data-session-check>
-            <div class="ea-rule-editor-scroll">
+            <div class="ea-workspace-scroll ea-rule-editor-scroll">
                 <input type="hidden" name="regel_revision" value="<?=h($regelRevision)?>">
                 <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                 <input type="hidden" name="is_new" value="<?= $neu ? '1' : '0' ?>">
@@ -315,7 +301,7 @@ function selected($a, $b): string { return (string)$a === (string)$b ? 'selected
                             <div class="col-md-2"><div class="form-group"><label>Version</label><input class="form-control" value="<?= h($regel['Version']) ?>" readonly><div class="ea-help">Erhöht sich bei fachlichen Änderungen.</div></div></div>
                             <div class="col-md-2"><div class="form-group"><label for="Rang">Rang</label><input type="number" class="form-control" id="Rang" name="Rang" value="<?= h($regel['Rang']) ?>"></div></div>
                             <div class="col-md-3"><div class="form-group"><label for="Regeltyp">Regeltyp</label><select class="form-control" id="Regeltyp" name="Regeltyp"><option value="E" <?= selected($regel['Regeltyp'], 'E') ?>>E – Ergänzungsregel</option><option value="K" <?= selected($regel['Regeltyp'], 'K') ?>>K – Klassifikationsregel</option></select></div></div>
-                            <div class="col-md-3"><div class="checkbox" style="margin-top:28px;"><label><input type="checkbox" name="Aktiv" value="1" <?= (int)$regel['Aktiv'] === 1 ? 'checked' : '' ?>> Regel aktiv</label></div></div>
+                            <div class="col-md-3"><div class="ea-form-check ea-form-check--aligned"><label><input type="checkbox" name="Aktiv" value="1" <?= (int)$regel['Aktiv'] === 1 ? 'checked' : '' ?>> Regel aktiv</label></div></div>
                         </div>
                         <div class="form-group"><label for="Bezeichnung">Bezeichnung</label><input type="text" class="form-control" id="Bezeichnung" name="Bezeichnung" value="<?= h($regel['Bezeichnung']) ?>" placeholder="Kurze verständliche Beschreibung der Regel"></div>
                         <div class="form-group"><label for="Kommentar">Kommentar</label><textarea class="form-control" id="Kommentar" name="Kommentar" rows="2"><?= h($regel['Kommentar']) ?></textarea></div>

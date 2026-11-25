@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.8.0 – Neues Erscheinungsbild und automatische Bediendichte – 22.11.2026
+
+- Die Ein- oder Doppelseitenansicht der PDF-Vorschau bleibt über Seitenaufrufe hinweg erhalten.
+- Überarbeitetes Erscheinungsbild auf allen Seiten: ruhige Farbpalette auf Basis des Logo-Blaus, fünf einheitliche Schriftgrößen und weiße Panelköpfe mit blauem Titel, hellblaue Tabellenköpfe und helle Fußleisten mit blauer Akzentlinie. „Zurücksetzen“ in den Klassifizierungsregeln ist jetzt eine Schaltfläche wie in der Suche; „Filtern“ bzw. „Suchen“ ist in Regeln, Ereignisprotokoll und Vorgängen einheitlich die blaue Hauptschaltfläche mit Lupe. Meldungen und Statusschalter verwenden einheitliche Symbole statt Emojis.
+- Ab 1280 Pixeln Fensterbreite steht die Navigation links. Mit Maus wird automatisch eine kompakte, bei Touch eine großzügige Darstellung verwendet; unter **Darstellung** lässt sich das festlegen. Der bisherige Desktop-Modus entfällt.
+- Alle Seiten verwenden den gemeinsamen Seitenkopf; Inline-Styles und eingebettete Stylesheets sind entfernt.
+- Die SQL-Datensicherung verwendet das aktuelle PDO-Attribut für MySQL und vermeidet dadurch Warnungen unter PHP 8.5.
+- Python-Abhängigkeiten aktualisiert (u. a. FastAPI 0.163.1, python-dotenv 1.2.4).
+- Das Update von 4.7.0 benötigt keine SQL-Migration. Eine im bisherigen Desktop-Modus gespeicherte Auswahl wird nicht übernommen. Neue SQL-Sicherungen tragen die Kennung 4.8.0. Siehe [Updateanleitung](docs/UPDATE.md#aktualisierung-von-470-auf-480).
+
 ## 4.7.0 – Gemeinsame Dokumentbearbeitung und erweiterte Suche – 18.11.2026
 
 - Ausgewählte Suchtreffer gemeinsam bearbeiten. Kategorien, Dokumententyp, Partner, Betreff, Stichworte und Nummern lassen sich mit einer Änderungsvorschau anpassen. Ergebnisse und Konflikte werden je Dokument angezeigt.

@@ -1,12 +1,12 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once __DIR__ . '/dokumentvorschau.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'meldungen.php';
 
 header('Cache-Control: no-store');
-function h($value): string { return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 $plan = null;
 $error = '';
 try {
@@ -28,12 +28,8 @@ try {
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e_ablage – Ablage-Explorer</title>
-    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
+    <?php eablage_seitenkopf('Ablage'); ?>
     <link rel="stylesheet" href="explorer.css?v=<?=filemtime(__DIR__ . '/explorer.css')?>">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
     <?php eablage_dokumentvorschau_script(); ?>
     <script src="explorer.js?v=<?=filemtime(__DIR__ . '/explorer.js')?>" defer></script>
 </head>

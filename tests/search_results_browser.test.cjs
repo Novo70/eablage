@@ -11,8 +11,8 @@ let dir, browser;
 
 before(async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eablage-search-layout-'));
-    for (const name of ['dokumente.php','icons.php','navbar.php','vorgaenge_funktionen.php',
-        'protokoll_funktionen.php','csrf.php','app.css','desktop.css','preview_layout.js','clickable_rows.js','search_results.js']) {
+    for (const name of ['dokumente.php','icons.php','navbar.php','seitenkopf.php','vorgaenge_funktionen.php',
+        'protokoll_funktionen.php','csrf.php','app.css','preview_layout.js','clickable_rows.js','search_results.js']) {
         fs.copyFileSync(path.join(web, name), path.join(dir, name));
     }
     let fixture = fs.readFileSync(path.join(__dirname, 'fixtures/ui_data.php'), 'utf8');
@@ -47,7 +47,7 @@ function renderSearch(url) {
 }
 
 async function open({width=1440, height=900, desktop=false, count=150, query='Suchbegriff=Haus&Kategorie=1&page=2'} = {}) {
-    const url = `dokumente.php?fixture_count=${count}&${query}` + (desktop ? '&layout=desktop' : '');
+    const url = `dokumente.php?fixture_count=${count}&${query}` + (desktop ? '&layout=desktop' : (width<900 ? '&density=touch' : '&density=auto'));
     const context = await browser.newContext({viewport:{width,height},locale:'de-DE'});
     const page = await context.newPage();
     await page.route('http://eablage.test/**', async route => {

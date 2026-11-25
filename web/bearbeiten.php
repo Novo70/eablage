@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once __DIR__ . '/dokumentvorschau.php';
@@ -14,10 +15,6 @@ require_once 'protokoll_funktionen.php';
 
 $db = $db_config;
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 function valid_date(string $value): bool
 {
@@ -215,12 +212,7 @@ $displayDocumentText = $pendingDocumentText !== '' ? $pendingDocumentText : $sto
 <html lang="de">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage - Dokument bearbeiten</title>
-    <link href="app.css?v=<?= filemtime(__DIR__ . '/app.css') ?>" rel="stylesheet">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
-    <link rel="icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_seitenkopf('Dokument bearbeiten'); ?>
 </head>
 
 <body>

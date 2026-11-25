@@ -1,6 +1,6 @@
 # Drittkomponenten und Lizenzen
 
-Diese Übersicht beschreibt die wesentlichen Abhängigkeiten von eAblage 4.7.0. Die Python-Paketliste stammt aus dem aktuellen Lockfile. Maßgeblich für eine Inventur der Container sind die tatsächlich installierten Pakete und Lizenztexte. PDF.js wird lokal ausgeliefert. Ollama ist ein optionaler externer Dienst. Das Modell und seine Lizenz richten sich nach der jeweiligen Installation.
+Diese Übersicht beschreibt die wesentlichen Abhängigkeiten von eAblage 4.8.0. Die Python-Paketliste stammt aus dem aktuellen Lockfile. Maßgeblich für eine Inventur der Container sind die tatsächlich installierten Pakete und Lizenztexte. PDF.js wird lokal ausgeliefert. Ollama ist ein optionaler externer Dienst. Das Modell und seine Lizenz richten sich nach der jeweiligen Installation.
 
 | Komponente | Verwendung | Lizenz / Hinweis |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ Die Dockerfiles installieren zusätzlich Pakete des Basisbetriebssystems. Bei Ve
 
 Diese Übersicht erhebt keinen Anspruch auf verbindliche Rechtsberatung.
 
-## Vollständige Python-Paketliste für eAblage 4.7.0
+## Vollständige Python-Paketliste für eAblage 4.8.0
 
 Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches extrahiert und umfasst **sämtliche 16 festgeschriebenen Python-Pakete**, einschließlich transitiver Abhängigkeiten. Die Lizenzspalte nennt die übliche Projektlizenz, nicht eine unabhängig geprüfte Lizenzdatei jedes konkreten Wheels.
 
@@ -46,14 +46,14 @@ Die folgende Liste ist aus `backend/requirements.txt` des geprüften Branches ex
 | annotated-types | 0.8.0 | MIT |
 | anyio | 4.15.1 | MIT |
 | click | 8.5.0 | BSD-3-Clause |
-| fastapi | 0.162.4 | MIT |
+| fastapi | 0.163.1 | MIT |
 | h11 | 0.16.0 | MIT |
 | idna | 3.19 | BSD-3-Clause |
 | mysql-connector-python | 26.10.0 | GPL-2.0 mit Universal FOSS Exception |
 | opentelemetry-api | 1.45.2 | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-python/blob/main/opentelemetry-api/LICENSE) |
 | pydantic | 2.13.5 | MIT |
 | pydantic-core | 2.46.5 | MIT |
-| python-dotenv | 1.2.3 | BSD-3-Clause |
+| python-dotenv | 1.2.4 | BSD-3-Clause |
 | starlette | 1.6.0 | BSD-3-Clause |
 | typing-extensions | 4.16.0 | PSF-2.0 |
 | typing-inspection | 0.4.4 | MIT |

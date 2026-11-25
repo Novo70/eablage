@@ -31,7 +31,9 @@ function eablage_backend_request($method,$url,$payload,$timeout) {
     await page.route('http://eablage.test/**', route=>route.request().url().endsWith('/icons.svg') ? route.fulfill({contentType:'image/svg+xml',body:fs.readFileSync(path.join(root,'web/icons.svg'))}) : route.fulfill({contentType:'text/html',body:rendered.stdout}));
     await page.goto('http://eablage.test/stammdaten.php');
     await page.addStyleTag({content:fs.readFileSync(path.join(root,'web/app.css'),'utf8')});
-    if(desktop) { await page.evaluate(()=>document.documentElement.dataset.eaLayout='desktop'); await page.addStyleTag({content:fs.readFileSync(path.join(root,'web/desktop.css'),'utf8')}); }
+    // Kompakte Darstellung: entspricht der automatischen Wahl bei Mausbedienung.
+    if(desktop) await page.evaluate(()=>document.documentElement.dataset.eaDensity='compact');
+    else await page.evaluate(()=>document.documentElement.dataset.eaDensity='touch');
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'web/master_data_layout.js'),'utf8')});
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'web/help_tooltip.js'),'utf8')});
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'web/status_toggle.js'),'utf8')});

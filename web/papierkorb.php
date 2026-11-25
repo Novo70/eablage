@@ -1,14 +1,11 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'konfiguration.php';
 require_once 'meldungen.php';
 require_once 'csrf.php';
 require_once 'papierkorb_funktionen.php';
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 $db = $db_config;
 $token = eablage_aktion_token();
 $error = '';
@@ -55,10 +52,7 @@ try {
 <html lang="de">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage – Papierkorb</title>
-    <link rel="stylesheet" href="app.css?v=<?= filemtime(__DIR__ . '/app.css') ?>">
+    <?php eablage_seitenkopf('Papierkorb'); ?>
 </head>
 
 <body><?php require 'navbar.php'; ?><main class="container ea-admin-workspace">

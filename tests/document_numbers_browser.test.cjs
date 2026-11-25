@@ -17,15 +17,26 @@ test('typed numbers preserve manual values, hide absent proposals and fit mobile
  assert.equal(await page.locator('.ea-number-badges .ea-ollama-confirmed').isVisible(),true);
  assert.equal(await page.locator('.ea-number-ai').isVisible(),false);
  assert.equal(await page.locator('.ea-number-heading').count(),0);
+ await page.locator('[data-number-add]').click();
+ assert.equal(await page.locator('.ea-number-badges').nth(1).isVisible(),false);
  for (const width of [1000, 600, 390, 320]) {
   await page.setViewportSize({width,height:800});
   const boxes = await Promise.all(['.ea-number-row > input','.ea-number-badges','.ea-number-remove'].map(selector=>page.locator(selector).first().boundingBox()));
   assert.ok(boxes[0].x + boxes[0].width <= boxes[1].x + 1);
   assert.ok(boxes[1].x + boxes[1].width <= boxes[2].x + 1);
   assert.ok(boxes.every(box=>Math.abs(box.y + box.height/2 - (boxes[0].y + boxes[0].height/2)) < 2));
+  for (const selector of ['select','input','.ea-number-remove']) {
+   const [withBadges, withoutBadges] = await page.locator('.ea-number-row').evaluateAll(
+    (rows, selector)=>rows.map(row=>{
+     const {x,width}=row.querySelector(selector).getBoundingClientRect();
+     return {x,width};
+    }), selector);
+   assert.deepEqual(withoutBadges, withBadges, selector + ' columns at ' + width + 'px');
+  }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  }
 
+ await page.locator('.ea-number-remove').nth(1).click();
  await page.locator('.ea-number-badges .ea-ollama-confirmed').click();
  assert.match(await page.locator('#ea-ai-evidence-tooltip').innerText(),/Kundennummer: 0001/);
  await page.keyboard.press('Escape');

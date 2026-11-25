@@ -1,12 +1,12 @@
 <?php
 require_once __DIR__ . '/dokumentvorschau.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'csrf.php';
 require_once 'meldungen.php';
 require_once 'vorgaenge_funktionen.php';
 $db = $db_config;
-function h($value): string { return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function vorgang_return($raw): string {
     if (!is_string($raw) || preg_match('/[\x00-\x1f\x7f\\\\]/', $raw)) return '';
     $parts = parse_url($raw);
@@ -130,7 +130,8 @@ $attachError = $item && $submittedAction === 'attach' ? $error : '';
 $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencode($return) : '');
 ?>
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>eAblage – Vorgänge</title><link rel="icon" href="ea_icon4.png"><link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__.'/app.css')?>"><?php if ($item): ?><link rel="stylesheet" href="explorer.css?v=<?=filemtime(__DIR__.'/explorer.css')?>">
+<html lang="de"><head>
+    <?php eablage_seitenkopf('Vorgänge'); ?><?php if ($item): ?><link rel="stylesheet" href="explorer.css?v=<?=filemtime(__DIR__.'/explorer.css')?>">
     <?php eablage_dokumentvorschau_script(); ?>
     <script src="vorgang_vorschau.js?v=<?=filemtime(__DIR__.'/vorgang_vorschau.js')?>" defer></script><?php elseif (!$id): ?>
     <script src="clickable_rows.js?v=<?=filemtime(__DIR__.'/clickable_rows.js')?>" defer></script>
@@ -187,7 +188,7 @@ $detail = 'vorgaenge.php?id=' . $id . ($return !== '' ? '&return=' . rawurlencod
             </form>
         </details>
     <?php elseif (!$id): ?>
-        <form method="get" class="ea-vorgang-search"><input type="hidden" name="return" value="<?=h($return)?>"><input type="hidden" name="sort" value="<?=h($sort)?>"><label for="q">Vorgänge suchen</label><div class="ea-vorgang-add"><input class="form-control" type="search" name="q" id="q" value="<?=h($search)?>"><button class="btn btn-default" type="submit"><?=eablage_icon('search')?>Suchen</button></div></form>
+        <form method="get" class="ea-vorgang-search"><input type="hidden" name="return" value="<?=h($return)?>"><input type="hidden" name="sort" value="<?=h($sort)?>"><label for="q">Vorgänge suchen</label><div class="ea-vorgang-add"><input class="form-control" type="search" name="q" id="q" value="<?=h($search)?>"><button class="btn btn-primary" type="submit"><?=eablage_icon('search')?>Suchen</button></div></form>
         </div>
         <div class="ea-results-scroll" tabindex="0" role="region" aria-labelledby="vorgang-heading">
             <?php if (!$items): ?><p>Keine Vorgänge gefunden.</p><?php endif; ?>

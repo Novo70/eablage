@@ -25,6 +25,8 @@ async function open(items, query = '', viewport = {width: 1440, height: 1000}) {
     let markup = fs.readFileSync(path.join(web, 'explorer.php'), 'utf8');
     const component=execFileSync(process.env.PHP_BIN||'php',['-r',`require $argv[1]; eablage_dokumentvorschau('', '', ['pdf_id'=>'explorer-pdf','open_id'=>'explorer-open','empty_id'=>'explorer-selection','heading_id'=>'explorer-preview-heading','class'=>'ea-explorer-preview']);`,path.join(web,'dokumentvorschau.php')],{encoding:'utf8'});
     markup=markup.replace(/<\?php eablage_dokumentvorschau\('', '', \[.*?\]\); \?>/,component.replace(/<script[\s\S]*?<\/script>/g,''));
+    // Der gemeinsame Seitenkopf wird hier statisch nachgebildet, weil PHP nicht ausgeführt wird.
+    markup=markup.replace(/<\?php eablage_seitenkopf\([^)]*\); \?>/,'<meta charset="UTF-8"><link rel="stylesheet" href="app.css">');
     markup = markup.slice(markup.indexOf('<!DOCTYPE html>')).replace(/<\?[\s\S]*?\?>/g, '');
     markup=markup.replace('<script src="explorer.js','<script src="dokumentvorschau.js" defer></script><script src="explorer.js');
     const plan = {profile: 1, directory_structure: items.some(x => x.directories.length), items};
@@ -198,7 +200,8 @@ test('preview controls stay on the right while the metadata action uses the left
         assert.equal(await page.locator('#explorer-selection').isVisible(), false);
         assert.equal(await page.locator('.ea-explorer-preview > .panel-body').getByText('Erstes Dokument.pdf').count(), 0);
         assert.equal((await heading.boundingBox()).height, initialHeadingHeight, 'showing preview actions does not enlarge the title bar');
-        assert.equal((await heading.locator('#explorer-open').boundingBox()).height, 34);
+        const viewButton = await heading.locator('[data-preview-view]').first().boundingBox();
+        assert.equal((await heading.locator('#explorer-open').boundingBox()).height, viewButton.height, 'open link matches the view buttons');
         assert.equal(await heading.locator('#explorer-open').isVisible(), true);
         assert.equal(await page.locator('.ea-workspace-footer #explorer-view').isVisible(), true);
         assert.equal(await heading.locator('#explorer-open').getAttribute('href'), 'archiv_pdf.php?dokid=1');

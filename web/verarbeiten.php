@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
@@ -19,10 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 function eablage_source_badge($source): string
 {
@@ -102,7 +99,7 @@ function eablage_textcompare_badge($textcompare, bool $show = true): string
     $title .= ' – Vergleichsdokument öffnen';
 
     $returnUrl = 'verarbeiten.php?file=' . rawurlencode(basename((string)($_GET['file'] ?? '')));
-    return '<a data-draft-link class="ea-source-badge ea-source-badge--date" style="cursor:pointer;" href="bearbeiten.php?dokid=' . rawurlencode($dokId) . '&amp;return=' . rawurlencode($returnUrl) . '" title="' . h($title) . '">DokID ' . h($dokId) . '</a>';
+    return '<a data-draft-link class="ea-source-badge ea-source-badge--compare" href="bearbeiten.php?dokid=' . rawurlencode($dokId) . '&amp;return=' . rawurlencode($returnUrl) . '" title="' . h($title) . '">DokID ' . h($dokId) . '</a>';
 }
 
 function eablage_rule_ref_badges($refs): string
@@ -174,9 +171,9 @@ if ($job && in_array($job['status'], ['wartend', 'verarbeitung', 'archiviert'], 
         ? 'Die OCR konnte noch nicht gestartet werden, weil das Dokument gerade verarbeitet oder übertragen wird. Bitte nach Abschluss OCR erneut starten.'
         : (($job['error'] ?? '') ?: 'Das Dokument wird gerade verarbeitet. Das Ergebnis wird anschließend automatisch geöffnet.');
     ?>
-    <!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <?php if ($busy && !$ocrRequested): ?><meta http-equiv="refresh" content="3;url=verarbeiten.php?file=<?=rawurlencode($datei)?>"><?php endif; ?>
-    <title>Dokumentverarbeitung</title><link href="app.css" rel="stylesheet"></head><body>
+    <!DOCTYPE html><html lang="de"><head>
+    <?php eablage_seitenkopf('Dokument klassifizieren'); ?>
+    <?php if ($busy && !$ocrRequested): ?><meta http-equiv="refresh" content="3;url=verarbeiten.php?file=<?=rawurlencode($datei)?>"><?php endif; ?></head><body>
     <?php include 'navbar.php'; ?><div class="container">
     <?=eablage_render_message('info', $busy ? $busyMessage : 'Dieses Dokument wurde bereits archiviert. Die verbliebene Eingangskopie kann verworfen werden.')?>
     <a href="eingang.php" class="btn btn-default">Zurück zum Eingang</a>
@@ -233,12 +230,7 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage - Dokument verarbeiten</title>
-    <link href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>" rel="stylesheet">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
-    <link rel="icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_seitenkopf('Dokument klassifizieren'); ?>
 </head>
 <body>
 <?php include 'navbar.php'; ?>
@@ -260,9 +252,9 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
 
     <?php if (!empty($weitereKlassifikationsregeln)): ?>
         <div class="alert alert-warning" role="alert">
-            ⚠️ <strong>Weitere passende Klassifikationsregeln:</strong>
+            <strong>Weitere passende Klassifikationsregeln:</strong>
             <?=eablage_rule_ref_badges($weitereKlassifikationsregeln)?>
-            <div class="small" style="margin-top:5px;">
+            <div class="ea-text-small ea-mt-1">
                 Die Regel mit dem niedrigsten Rang wurde für die Vorbelegung verwendet.
                 Weitere Treffer können durch Anklicken geprüft, geändert oder deaktiviert werden.
             </div>
@@ -380,10 +372,10 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
                                 <summary><?=eablage_icon('scan')?>Erkennungsdetails</summary>
 
                                 <div>
-                                    <p style="overflow-wrap:anywhere;"><strong>Originaldateiname:</strong> <?=h($datei)?></p>
+                                    <p class="ea-break-anywhere"><strong>Originaldateiname:</strong> <?=h($datei)?></p>
                                     <?php if (!$pdfTextResult['ok']): ?>
                                         <div class="alert alert-warning">
-                                            ⚠️ PDF-Text konnte nicht eingelesen werden: <?=h($pdfTextResult['error'])?>
+                                            PDF-Text konnte nicht eingelesen werden: <?=h($pdfTextResult['error'])?>
                                         </div>
                                     <?php endif; ?>
 
@@ -400,8 +392,8 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
                                         </div>
                                     <?php elseif ($pythonAutoKatErfolgreich && !empty($pythonAutoKat['matched'])): ?>
                                         <div class="alert alert-success">
-                                            ✅ AutoKat-Regel erkannt.
-                                            <p style="margin-bottom:0;">
+                                            AutoKat-Regel erkannt.
+                                            <p class="ea-mb-0">
                                                 <?php
                                                 $eDetail = eablage_rule_refs_text($pythonAutoKat['matched_supplement_rule_refs'] ?? []);
                                                 $kDetail = eablage_rule_ref_text($pythonAutoKat['matched_classification_rule_ref'] ?? null);
@@ -428,24 +420,24 @@ $ollamaAvailable = $ollamaSetting === 'ja' && ($job['status'] ?? '') === 'bereit
                                             </p>
                                         </div>
                                     <?php elseif ($pythonAutoKatErfolgreich): ?>
-                                        <div class="alert alert-info">ℹ️ Keine passende AutoKat-Regel gefunden.</div>
+                                        <div class="alert alert-info">Keine passende AutoKat-Regel gefunden.</div>
                                     <?php endif; ?>
 
                                     <?php if (!$backendFehler): ?>
                                         <?php if ($pythonTextvergleichErfolgreich && !empty($pythonTextvergleich['matched'])): ?>
                                             <div class="alert alert-success">
-                                                ✅ Ähnliches Dokument gefunden:
+                                                Ähnliches Dokument gefunden:
                                                 DokID <?=h($pythonTextvergleich['source_document_id'] ?? '')?> |
                                                 <strong><?=h($pythonTextvergleich['similarity'] ?? 0)?> %</strong> Übereinstimmung |
                                                 <?=h($pythonTextvergleich['matching_words'] ?? 0)?> gemeinsame relevante Wörter
                                             </div>
                                         <?php elseif ($pythonTextvergleichErfolgreich): ?>
-                                            <div class="alert alert-info">ℹ️ Kein ausreichend ähnliches Vergleichsdokument gefunden.</div>
+                                            <div class="alert alert-info">Kein ausreichend ähnliches Vergleichsdokument gefunden.</div>
                                         <?php endif; ?>
                                     <?php endif; ?>
 
                                     <?php if (empty($dokumentText)): ?>
-                                        <div class="alert alert-warning">⚠️ Es konnte kein Dokumenttext extrahiert werden.</div>
+                                        <div class="alert alert-warning">Es konnte kein Dokumenttext extrahiert werden.</div>
                                     <?php endif; ?>
                                     <?php if ($ollamaAvailable): ?>
                                     <section id="ollama-recognition-details" aria-label="KI-Erkennung" hidden>

@@ -4,7 +4,7 @@ eAblage verarbeitet PDF-Dokumente im Browser: vom Eingang über die automatische
 
 Für Installation und Administration führt die [Dokumentationsübersicht](README.md) zu den zuständigen Anleitungen. Dieses Handbuch beschreibt den täglichen Arbeitsablauf.
 
-In der Standarddarstellung sind **Suche**, **Ablage**, **Vorgänge** und **Eingang** auf großen Bildschirmen direkt in der Kopfleiste erreichbar. Der optionale [Desktop-Modus](DESKTOP_LAYOUT.md) platziert die Navigation in einer Seitenleiste. Unter **Verwaltung** stehen Stammdaten, Regeln, Papierkorb, Export und Einstellungen. Auf kleinen Bildschirmen enthält das Menü oben rechts alle Bereiche. Der aktuelle Bereich ist hervorgehoben.
+Ab 1280 Pixeln Fensterbreite steht die Navigation als Seitenleiste links. Darunter sind **Suche**, **Ablage**, **Vorgänge** und **Eingang** in der Kopfleiste erreichbar, auf kleinen Bildschirmen enthält das Menü oben rechts alle Bereiche. Unter **Verwaltung** stehen Stammdaten, Regeln, Papierkorb, Export und Einstellungen. Der aktuelle Bereich ist hervorgehoben. Mit Maus oder Touchpad wird automatisch eine kompaktere Darstellung verwendet, bei Touch-Bedienung größere Schaltflächen. Unter **Darstellung** lässt sich das pro Browser festlegen ([Darstellung und Design-System](DESIGN.md)).
 
 ## Empfohlener Arbeitsablauf
 
@@ -238,7 +238,7 @@ Die Verwaltung der Nummernarten und das Verhalten von AutoKat, KI und Suche besc
 
 Zusammengehörige Dokumente lassen sich unabhängig von der Archivierung zu Vorgängen zusammenstellen. Ein Dokument kann mehreren Vorgängen angehören. Verwaltung, Zuordnung und Suche: [Vorgänge und Dokumentenverknüpfungen](VORGAENGE.md).
 
-Die **Dokumentvorschau** bietet den Wechsel zwischen PDF und Dokumenttext. Die lokale [PDF.js-Werkzeugleiste](PDF_VORSCHAU.md) enthält Zoom, Seitennavigation, Textsuche und die Ein- oder Doppelseitenansicht. Die Textsuche im PDF benötigt eine Textschicht. Über **Text** lässt sich separat der gespeicherte Dokumenttext anzeigen. Der Originaldateiname steht beim Klassifizieren vollständig in den aufklappbaren **Erkennungsdetails**, beim Bearbeiten zusammen mit der technischen Dokument-ID unter **Technische Informationen**. Lange Dateinamen werden dort umgebrochen.
+Die **Dokumentvorschau** bietet den Wechsel zwischen PDF und Dokumenttext. Die lokale [PDF.js-Werkzeugleiste](PDF_VORSCHAU.md) enthält Zoom, Seitennavigation, Textsuche und die Ein- oder Doppelseitenansicht. Die gewählte Seitenansicht merkt sich der Browser für die nächsten Aufrufe. Die Textsuche im PDF benötigt eine Textschicht. Über **Text** lässt sich separat der gespeicherte Dokumenttext anzeigen. Der Originaldateiname steht beim Klassifizieren vollständig in den aufklappbaren **Erkennungsdetails**, beim Bearbeiten zusammen mit der technischen Dokument-ID unter **Technische Informationen**. Lange Dateinamen werden dort umgebrochen.
 
 ### Desktop-Arbeitsfenster
 

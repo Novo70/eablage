@@ -19,7 +19,7 @@ function setup(kind, response, reject = false) {
     const row = Object.assign(element(), { cells: Array(5), querySelector: () => null, after(node) { this.feedback = node; },
         getBoundingClientRect: () => ({ height: 72 }) });
     const button = Object.assign(element(), { type:'submit', name:kind === 'master' || kind === 'delete' ? 'action' : '',
-        value: kind === 'delete' ? 'delete' : 'deactivate', textContent:kind === 'rename' ? 'Speichern' : '✅ aktiv' });
+        value: kind === 'delete' ? 'delete' : 'deactivate', textContent:kind === 'rename' ? 'Speichern' : 'aktiv', dataset:{active:'1'} });
     const input = { value: 'Neue Bezeichnung' };
     const activeField = { value: '0' };
     const controls = [button];
@@ -66,7 +66,7 @@ for (const kind of ['master','rule','rename','delete']) {
         } else if (kind === 'delete') {
             assert.equal(h.row.children[0].textContent,'✓ Eintrag gelöscht');
             assert.equal(h.row.children[0].style.height,'72px');
-        } else assert.equal(h.button.textContent,'⏸️ inaktiv');
+        } else { assert.equal(h.button.textContent,'inaktiv'); assert.equal(h.button.dataset.active,'0'); }
     });
 }
 test('validation error spans the row and preserves input', async () => {
@@ -81,7 +81,7 @@ test('validation error spans the row and preserves input', async () => {
 test('network failure keeps the previous status', async () => {
     const h = setup('master',null,true);
     await h.handlers.submit({preventDefault() {}});
-    assert.equal(h.button.textContent,'✅ aktiv');
+    assert.equal(h.button.textContent,'aktiv'); assert.equal(h.button.dataset.active,'1');
     assert.equal(h.row.feedback.hidden,false);
 });
 

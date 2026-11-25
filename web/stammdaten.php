@@ -146,7 +146,7 @@ try {
                     <div class="ea-master-mobile-help" aria-label="Hinweise zu Stammdaten">
                         <?php foreach ($masterHints as $label => $text): ?><span><?=h($label)?> <?=master_help($label, $text)?></span><?php endforeach; ?>
                     </div>
-                    <div class="table-responsive">
+                    <div>
                     <table class="table table-striped ea-master-table<?=$kind==='number_types' ? ' ea-master-table--numbers' : ''?>"<?=$kind==='number_types' ? ' data-master-sort' : ''?>>
                         <colgroup>
                             <col class="ea-master-name-col"><col>
@@ -207,11 +207,11 @@ try {
                                     <input type="hidden" name="aktion_token" value="<?=h($aktionToken)?>">
                                     <input type="hidden" name="kind" value="<?=h($kind)?>">
                                     <input type="hidden" name="entry_id" value="<?=h($item['id'])?>">
-                                    <button class="ea-master-status" type="submit" name="action" value="<?=(int)$item['active'] ? 'deactivate' : 'activate'?>"
+                                    <button class="ea-master-status ea-status-toggle" data-active="<?=(int)$item['active'] ? '1' : '0'?>" type="submit" name="action" value="<?=(int)$item['active'] ? 'deactivate' : 'activate'?>"
                                         <?=((int)$item['active'] && $item['rules']) ? 'disabled' : ''?>
                                         title="<?=((int)$item['active'] && $item['rules']) ? 'Deaktivieren nicht möglich: AutoKat-Regeln sind verknüpft.' : ((int)$item['active'] ? 'Eintrag deaktivieren' : 'Eintrag reaktivieren')?>"
                                         aria-label="<?=h($item['name'])?>: <?=(int)$item['active'] ? 'Eintrag deaktivieren' : 'Eintrag reaktivieren'?>">
-                                        <?=(int)$item['active'] ? '✅ aktiv' : '⏸️ inaktiv'?>
+                                        <?=(int)$item['active'] ? 'aktiv' : 'inaktiv'?>
                                     </button>
                                 </form>
                             </td>

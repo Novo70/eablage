@@ -5,8 +5,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../web/preview_layout.js'), 'utf8');
 
-function mount({saved = null, layout = 'desktop', eligible = true, desktopEligible = true, blocked = false, count = 1} = {}) {
-    const root = {dataset: {eaLayout: layout}};
+function mount({saved = null, eligible = true, desktopEligible = true, blocked = false, count = 1} = {}) {
+    const root = {dataset: {}};
     const buttons = Array.from({length: count}, () => ({
         attributes: {},
         icon: {setAttribute(key, value) { this[key] = value; }},
@@ -16,18 +16,20 @@ function mount({saved = null, layout = 'desktop', eligible = true, desktopEligib
     }));
     let stored = saved;
     let mediaListener;
-    let layoutListener;
     const media = {matches: eligible, addEventListener(type, listener) {
         assert.equal(type, 'change'); mediaListener = listener;
     }};
-    const desktopMedia = {matches: desktopEligible, addEventListener(type) { assert.equal(type, 'change'); }};
+    let desktopListener;
+    const desktopMedia = {matches: desktopEligible, addEventListener(type, listener) {
+        assert.equal(type, 'change'); desktopListener = listener;
+    }};
     vm.runInNewContext(source, {
         document: {documentElement: root, querySelectorAll(selector) {
             assert.equal(selector, '[data-preview-split-toggle]'); return buttons;
         }},
         window: {
             matchMedia(query) {
-                if (query === '(min-width: 1100px) and (hover: hover) and (pointer: fine)') return desktopMedia;
+                if (query === '(min-width: 1280px)') return desktopMedia;
                 assert.equal(query, '(min-width: 1600px)');
                 return media;
             },
@@ -39,18 +41,11 @@ function mount({saved = null, layout = 'desktop', eligible = true, desktopEligib
                 };
             },
         },
-        MutationObserver: class {
-            constructor(listener) { layoutListener = listener; }
-            observe(node, options) {
-                assert.equal(node, root);
-                assert.equal(options.attributeFilter.join(), 'data-ea-layout');
-            }
-        },
     });
     return {
         root, buttons, get saved() { return stored; },
         resize(eligible) { media.matches = eligible; mediaListener(); },
-        setLayout(value) { root.dataset.eaLayout = value; layoutListener(); },
+        setSidebar(value) { desktopMedia.matches = value; desktopListener(); },
     };
 }
 
@@ -94,18 +89,18 @@ test('narrow desktop windows keep a disabled control and preserve the preference
     assert.equal(state.buttons[0].attributes['aria-pressed'], 'true');
 });
 
-test('touch devices and windows outside desktop mode keep the control hidden', () => {
+test('windows without the side navigation keep the control hidden', () => {
     assert.equal(mount({desktopEligible: false}).buttons[0].hidden, true);
 });
 
-test('switching the application layout updates control availability', () => {
-    const state = mount({layout: 'touch', saved: 'wide'});
+test('resizing across the side navigation breakpoint updates control availability', () => {
+    const state = mount({desktopEligible: false, saved: 'wide'});
     assert.equal(state.buttons[0].hidden, true);
     state.buttons[0].click();
     assert.equal(state.saved, 'wide');
-    state.setLayout('desktop');
+    state.setSidebar(true);
     assert.equal(state.buttons[0].hidden, false);
-    state.setLayout('touch');
+    state.setSidebar(false);
     assert.equal(state.buttons[0].hidden, true);
     assert.equal(state.saved, 'wide');
 });

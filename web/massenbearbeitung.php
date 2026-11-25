@@ -1,9 +1,9 @@
 <?php
 require_once 'konfiguration.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'csrf.php';
 require_once 'massen_aenderungen.php';
 require_once 'dokument_navigation.php';
-function h($v): string { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 $token = eablage_aktion_token();
 $return = valid_return_url($_POST['return'] ?? 'dokumente.php');
 $error = '';
@@ -114,7 +114,8 @@ foreach ($ids as $id) {
 }
 ?>
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Metadaten ändern – eAblage</title><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="massenbearbeitung.css?v=<?=filemtime(__DIR__ . '/massenbearbeitung.css')?>"><script src="massenbearbeitung.js?v=<?=filemtime(__DIR__ . '/massenbearbeitung.js')?>" defer></script></head>
+<html lang="de"><head>
+    <?php eablage_seitenkopf('Metadaten ändern'); ?><link rel="stylesheet" href="massenbearbeitung.css?v=<?=filemtime(__DIR__ . '/massenbearbeitung.css')?>"><script src="massenbearbeitung.js?v=<?=filemtime(__DIR__ . '/massenbearbeitung.js')?>" defer></script></head>
 <body><?php require 'navbar.php'; ?><main class="container ea-mass-layout">
 <section class="panel panel-primary ea-mass-panel"><div class="panel-heading">Metadaten ändern</div><div class="panel-body">
 <?php if ($error): ?><p class="alert alert-danger" role="alert"><?=h($error)?></p><?php endif; ?>
@@ -141,7 +142,7 @@ foreach ($ids as $id) {
 </form>
 <?php if ($rows): ?><section id="mass-preview" data-batch="<?=h($batch)?>" data-token="<?=h($token)?>"><h2>Änderungsvorschau</h2>
 <p><?=count($entries)?> Dokumente zur Änderung bereit · <?=count($rows)-count($entries)?> ohne Änderung oder mit Konflikt</p>
-<div class="table-responsive"><table class="table"><thead><tr><th>Dokument</th><th>Änderungen (bisher → neu)</th><th>Ergebnis</th></tr></thead><tbody>
+<div><table class="table"><thead><tr><th>Dokument</th><th>Änderungen (bisher → neu)</th><th>Ergebnis</th></tr></thead><tbody>
 <?php foreach ($rows as $row): ?><tr><td><?=h($row['id'])?></td><td><?php foreach ($row['changes'] as [$label,$old,$new]): ?><p><strong><?=h($label)?></strong><br><?=h($old)?> → <?=h($new)?></p><?php endforeach; ?></td><td data-result="<?=h($row['id'])?>" <?=isset($entries[$row['id']])?'data-ready':''?>><?=h($row['status'])?></td></tr><?php endforeach; ?>
 </tbody></table></div><button type="button" class="btn btn-primary" id="mass-save" <?=!$entries?'disabled':''?>>Änderungen speichern</button><p id="mass-progress" role="status"></p></section><?php endif; ?>
 </div></section>

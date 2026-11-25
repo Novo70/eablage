@@ -9,6 +9,17 @@
     if (typeof module !== 'undefined' && module.exports) module.exports = {previewUrl};
     if (!root.document) return;
     const controllers = new WeakMap();
+    // Die ein-/zweiseitige Darstellung gilt browserlokal für alle Vorschauen und bleibt über Seitenaufrufe erhalten.
+    const spreadKey = 'eablage.previewSpread';
+    function storedSpread() {
+        try {
+            const mode = Number(root.localStorage.getItem(spreadKey));
+            return [0, 1, 2].includes(mode) ? mode : 0;
+        } catch (_) { return 0; }
+    }
+    function storeSpread(mode) {
+        try { root.localStorage.setItem(spreadKey, String(mode)); } catch (_) { /* Ohne Speicher gilt die Wahl nur für diese Seite. */ }
+    }
     function controller(panel) {
         if (controllers.has(panel)) return controllers.get(panel);
         const pdf = panel.querySelector('[data-preview-pdf]');
@@ -17,7 +28,7 @@
         const empty = panel.querySelector('[data-preview-empty]');
         const open = panel.querySelector('[data-preview-open]');
         const buttons = Array.from(panel.querySelectorAll('[data-preview-view]'));
-        let spreadMode = 0;
+        let spreadMode = storedSpread();
         let current = null, view = 'pdf', request = null, version = 0, loaded = false;
         async function loadText() {
             if (!current?.textUrl || loaded || request) return;
@@ -77,7 +88,9 @@
                 frame.dataset.previewSpreadMode = String(spreadMode);
                 frame.addEventListener('eablage:pdf-spread-changed', event => {
                     if (frame !== pdf.firstElementChild || ![0, 1, 2].includes(event.detail?.spreadMode)) return;
+                    if (spreadMode === event.detail.spreadMode) return;
                     spreadMode = event.detail.spreadMode;
+                    storeSpread(spreadMode);
                 });
                 frame.src = previewUrl(document.pdfUrl, panel.dataset.previewVersion);
                 pdf.append(frame);

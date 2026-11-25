@@ -32,6 +32,7 @@ if (in_array($page,['verarbeiten.php','bearbeiten.php'],true)) {
     require 'konfiguration.php'; require 'funktionen.php'; require 'meldungen.php';
     require 'dokumentvorschau.php'; require 'vorgaenge_funktionen.php'; require 'dokument_technik.php';
     function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+    require 'seitenkopf.php';
     $aktionToken='test-token'; $datei='Versicherung.pdf'; $vollstaendigerPfad=__FILE__;
     $dokumentText=str_repeat("Beispieltext der Gebäudeversicherung.\\n", 100);
     $sourceSHA256=str_repeat('a',64); $erkennungsInfo='Manuell'; $job=null;
@@ -77,7 +78,9 @@ async function open(url, width=1440, post=null, touch=false) {
         if (fs.existsSync(file)) return route.fulfill({path:file});
         return route.fulfill({status:404,body:''});
     });
-    await page.goto('http://eablage.test/'+url);
+    // Schmale Fenster werden wie Touch-Geräte geprüft, breite wie Mausbedienung (sofern nicht angegeben).
+    const density=/[?&](density|layout)=/.test(url) ? '' : (url.includes('?') ? '&' : '?')+'density='+(width<900 ? 'touch' : 'auto');
+    await page.goto('http://eablage.test/'+url+density);
     await page.evaluate(()=>document.fonts.ready);
     return page;
 }
@@ -303,7 +306,8 @@ test('document details are read-only, retain search context and share the PDF/te
     } finally { await results.close(); }
 });
 test('navigation shows the current work area and closes with Escape, focus and outside clicks', async () => {
-    const page=await open('dokumente.php?Suchbegriff=Haus');
+    // Unterhalb von 1280 Pixeln steht die Verwaltung im aufklappbaren Menü.
+    const page=await open('dokumente.php?Suchbegriff=Haus',1000);
     try {
         assert.equal(await page.locator('.ea-navbar__links [aria-current="page"]').innerText(),'Suche');
         await page.locator('#eaMenuBtn').click();
@@ -455,7 +459,8 @@ for (const [width,desktop] of [[390,false],[1440,false],[1920,true]]) {
                 assert.equal(await heading.locator('[data-preview-spread]').count(),0);
                 assert.equal(await page.getByRole('link',{name:'PDF öffnen',exact:true}).count(),1);
                 assert.equal(await heading.getByRole('link',{name:'Metadaten bearbeiten',exact:true}).count(),0);
-                assert.equal(await page.locator('[data-preview-split-toggle]').isVisible(),desktop);
+                // Ab 1280 Pixeln (Seitenleiste) ist die Vorschaubreite wählbar.
+                assert.equal(await page.locator('[data-preview-split-toggle]').isVisible(),width>=1280);
                 if(base.startsWith('ansehen')||base==='explorer.php'||base.startsWith('vorgaenge')) {
                     const action=page.getByRole('link',{name:base.startsWith('ansehen')?'Metadaten bearbeiten':'Metadaten anzeigen',exact:true});
                     assert.equal(await action.evaluate(el=>Boolean(el.closest('.ea-workspace-footer, .ea-document-actions'))),true);
@@ -582,7 +587,8 @@ for(const [width,layout,touch] of [[900,'touch',false],[1440,'touch',false],[192
             assert.equal(await page.locator('.ea-autokat-table th.ea-rule-rank').evaluate(el=>{
                 const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length;
             }),1,'rank heading fits one line');
-            if(width>=1200) {
+            // Mit Seitenleiste und Touch-Größen dürfen die Filter bei 1200 Pixeln umbrechen.
+            if(width>=1200 && !touch) {
                 const input=await page.locator('#q').boundingBox();
                 const filter=await page.locator('.ea-autokat-toolbar button[type="submit"]').boundingBox();
                 assert.ok(Math.abs(input.y+input.height-filter.y-filter.height)<1,'filter aligns with the bottom of the input fields');
@@ -710,7 +716,7 @@ for(const [width,layout,touch] of [[900,'touch',false],[1440,'touch',false],[192
         assert.ok(Math.abs(footerBefore.y+footerBefore.height-panel.y-panel.height+1)<2,'footer meets panel edge');
         assert.match(await footer.innerText(),/150 Ereignisse.*Seite 2 von 3/);
         assert.equal(await footer.getByRole('link',{name:'Zurück',exact:true}).getAttribute('href'),back);
-        if(width>=1200) {
+        if(width>=1200 && !touch) {
             const field=await page.locator('.ea-history-toolbar [name="dokid"]').boundingBox();
             const button=await page.locator('.ea-history-toolbar button[type="submit"]').boundingBox();
             assert.ok(Math.abs(field.y+field.height-button.y-button.height)<1,'filter controls align in both layouts');

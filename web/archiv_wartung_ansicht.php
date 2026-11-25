@@ -1,5 +1,5 @@
 <?php require_once __DIR__ . '/icons.php'; ?>
-<div class="panel panel-default" id="archivpruefung">
+<div class="panel" id="archivpruefung">
     <div class="panel-heading"><?=eablage_icon('check-document')?>Archivprüfung &amp; Metadatenreparatur</div>
     <div class="panel-body">
         <p>Prüft die Zuordnung von Datenbankeinträgen, PDFs und Metadateien sowie vorhandene SHA-256-Prüfsummen. Die Prüfung verändert keine Dateien oder Referenzwerte. Die Datenbank ist für Metadaten maßgeblich. Das Einlesen aller PDFs mit Prüfsumme kann Zeit benötigen.</p>
@@ -38,7 +38,7 @@
                             <span data-archive-count aria-live="polite"></span>
                         </div>
                     <?php endif; ?>
-                    <div class="table-responsive">
+                    <div>
                     <table class="table table-striped">
                         <thead><tr><th>Auswahl</th><th>DokID</th><th>Datei</th><th>Befund</th></tr></thead>
                         <tbody><?php foreach ($archiveReport['issues'] as $issue): ?>

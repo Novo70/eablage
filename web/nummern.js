@@ -46,8 +46,7 @@
             const id = String(source.source_document_id ?? '').trim();
             if (/^\d+$/.test(id)) {
                 const badge = document.createElement('a');
-                badge.className = 'ea-source-badge ea-source-badge--date';
-                badge.style.cursor = 'pointer';
+                badge.className = 'ea-source-badge ea-source-badge--compare';
                 badge.textContent = 'DokID ' + id;
                 badge.title = 'Textvergleich mit DokID ' + id;
                 if (source.similarity != null && source.similarity !== '') badge.title += ' (' + source.similarity + ' % Übereinstimmung)';

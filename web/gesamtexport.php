@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'meldungen.php';
@@ -11,10 +12,6 @@ require_once 'datenbank_wiederherstellung.php';
 $db = $db_config;
 require_once 'archiv_wartung.php';
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 function export_parameter(PDO $db, string $key): ?string
 {
@@ -240,11 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e_ablage - Export &amp; Datensicherung</title>
-    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_seitenkopf('Export und Datensicherung'); ?>
 </head>
 <body>
 <?php require_once 'navbar.php'; ?>
@@ -262,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <?php if ($area === 'export'): ?>
-                <div class="panel panel-default">
+                <div class="panel">
                     <div class="panel-heading"><?=eablage_icon('export')?>Dokumenten-Gesamtexport</div>
                     <div class="panel-body">
                         <p>Die Parameter für den Gesamtexport können in den Einstellungen geändert werden. Dort kann das Exportverzeichnis unter "Pfad" sowie die Zusammensetzung des Dateinamens unter "Gesamtexport"
@@ -286,14 +279,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <?php if ($exportResult !== null): ?>
-                    <div class="panel panel-default">
+                    <div class="panel">
                         <div class="panel-heading">Ergebnis Gesamtexport</div>
                         <div class="panel-body">
                             <p><strong>Geplant:</strong> <?=h($exportResult['planned'])?> &nbsp; <strong>Exportiert:</strong> <?=h($exportResult['exported'])?> &nbsp; <strong>Fehler/Hinweise:</strong> <?=h(count($exportResult['errors']))?></p>
                             <?php if (!empty($exportResult['errors'])): ?>
                                 <details>
                                     <summary>Fehler und Hinweise anzeigen</summary>
-                                    <ul style="margin-top:10px;">
+                                    <ul class="ea-mt-2">
                                         <?php foreach ($exportResult['errors'] as $error): ?>
                                             <li><?=h($error)?></li>
                                         <?php endforeach; ?>
@@ -305,7 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
             <?php elseif ($area === 'sicherung'): ?>
-                <div class="panel panel-default">
+                <div class="panel">
                     <div class="panel-heading"><?=eablage_icon('database')?>Backup der Datenbank</div>
                     <div class="panel-body">
                         <p>Erstellt eine SQL-Sicherung der eAblage-Datenbank mit Tabellenstruktur und Daten. Die Sicherung wird im Zielverzeichnis gespeichert.</p>
@@ -330,7 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <?php if ($backupResult !== null): ?>
-                    <div class="panel panel-default">
+                    <div class="panel">
                         <div class="panel-heading">Ergebnis Datensicherung</div>
                         <div class="panel-body">
                             <p><strong>Datei:</strong> <?=h($backupResult['filename'])?></p>
@@ -340,7 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
                 <?php if ($restoreAvailable && $backupConfigured): ?>
-                    <div class="panel panel-default" id="datenbank-wiederherstellen">
+                    <div class="panel" id="datenbank-wiederherstellen">
                         <div class="panel-heading"><?=eablage_icon('database')?>Datenbank aus Backup initialisieren</div>
                         <div class="panel-body">
                             <p>Nur bei leerer Tabelle <code>dokumente</code>. Vorhandene Stammdaten, Parameter und Dokumenthistorie werden durch den gesicherten Stand ersetzt. Eine ältere Sicherung ohne Historie leert die vorhandene Protokolltabelle. Unterstützte eAblage-Versionen: <?=h(implode(', ', EABLAGE_RESTORE_VERSIONS))?>. Der Papierkorb wird mit übernommen. Andere Sicherungen benötigen eine gesonderte Migration.</p>
@@ -365,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
                 <?php if ($restoreResult !== null): ?>
-                    <div class="panel panel-default"><div class="panel-heading">Ergebnis Rücksicherung</div><div class="panel-body">
+                    <div class="panel"><div class="panel-heading">Ergebnis Rücksicherung</div><div class="panel-body">
                         <p><?=h($restoreResult['filename'])?>: <?=h($restoreResult['tables'])?> Tabellen, <?=h($restoreResult['documents'])?> Dokumente importiert.</p>
                         <p><a href="gesamtexport.php?bereich=archiv">Zur unabhängigen Archivprüfung</a>. Dort die Prüfung starten, nachdem die zugehörigen PDFs und Metadateien bereitgestellt wurden.</p>
                     </div></div>

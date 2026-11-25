@@ -55,7 +55,10 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
     $filename = $safeDatabaseName . '_' . $timestamp . '.sql';
     $targetPath = $targetDirectory . DIRECTORY_SEPARATOR . $filename;
     $partialPath = $targetPath . '.part';
-    $buffered = $db->getAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
+    $bufferedQueryAttribute = class_exists(\Pdo\Mysql::class)
+        ? \Pdo\Mysql::ATTR_USE_BUFFERED_QUERY
+        : PDO::MYSQL_ATTR_USE_BUFFERED_QUERY;
+    $buffered = $db->getAttribute($bufferedQueryAttribute);
     $handle = @fopen($partialPath, 'xb');
     if ($handle === false) {
         throw new RuntimeException('Die Sicherungsdatei konnte nicht angelegt werden.');
@@ -94,7 +97,7 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
 
         if (!in_array('ereignisprotokoll', $tables, true)) throw new RuntimeException('Ereignisprotokoll fehlt. Zuerst sql/update_document_history.sql ausführen.');
 
-        $db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+        $db->setAttribute($bufferedQueryAttribute, false);
         foreach ($tables as $table) {
             $identifier = eablage_sql_identifier($table);
             $createStmt = $db->query('SHOW CREATE TABLE ' . $identifier);
@@ -148,7 +151,7 @@ function eablage_create_database_backup(PDO $db, string $databaseName, string $t
         @unlink($partialPath);
         throw $e;
     } finally {
-        $db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $buffered);
+        $db->setAttribute($bufferedQueryAttribute, $buffered);
     }
 
     clearstatcache(true, $targetPath);

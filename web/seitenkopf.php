@@ -14,6 +14,7 @@ function eablage_seitenkopf(string $titel): void
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?=h($titel)?> – eAblage</title>
     <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="ea_icon4.png" type="image/png">
     <?php
 }

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 require_once 'nummern_funktionen.php';
@@ -19,10 +20,6 @@ if (!isset($db)) {
     $db = null;
 }
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 $meldung = trim((string)($_GET['msg'] ?? ''));
 $meldungTyp = 'success';
@@ -210,85 +207,12 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e_ablage - AutoKat-Regeln</title>
-    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
-    <link rel="icon" href="ea_icon4.png" type="image/png">
-    <style>
-        .ea-autokat-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:15px; }
-        .ea-autokat-toolbar .form-group { margin-bottom:0; }
-        .ea-autokat-title { margin:0; font:inherit; }
-        .ea-autokat-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-        .ea-autokat-table td { vertical-align:middle !important; }
-        .ea-rule-main { width: 18%; min-width:190px; }
-        .ea-rule-action { width:38px; text-align:center; white-space:nowrap; }
-        .ea-rule-type { display:inline-block; min-width:28px; text-align:center; font-weight:700; padding:3px 7px; border-radius:12px; }
-        .ea-rule-type--e { background:#fff4c2; color:#806000; border:1px solid #e3c85a; }
-        .ea-rule-type--k { background:#e5f6e9; color:#26723b; border:1px solid #8cc79a; }
-        .ea-rule-inactive { opacity:.55; }
-        .ea-rule-terms { line-height:1.2; }
-        .ea-rule-exclusions { margin-top:3px; color:#a94442; font-size:12px; }
-        .ea-rule-meta { color:#777; font-size:12px; }
-        .ea-rule-label { margin-top:3px; line-height:1.25; font-weight:600; color:#52606d; }
-        .ea-rule-result { margin-top:6px; color:#555; font-size:12px; line-height:1.35; }
-        .ea-rule-status-form { display:inline; margin:0; padding:0; }
-        .ea-rule-status { border:0; background:transparent; padding:2px 4px; cursor:pointer; font:inherit; white-space:nowrap; }
-        .ea-rule-status:hover, .ea-rule-status:focus { text-decoration:underline; outline:none; }
-        .ea-rule-usage { white-space:nowrap; }
-        .ea-rule-mobile-label { display:none; }
-        .ea-rule-hit-count { font-weight:700; font-size:1.02rem; }
-        .ea-rule-last-hit { margin-top:2px; color:#777; font-size:12px; white-space:nowrap; }
-        .ea-test-result { margin-top:15px; }
-        @media (max-width: 767px) {
-            .ea-autokat-toolbar { display:block; }
-            .ea-autokat-toolbar .form-group { margin-bottom:10px; }
-            .ea-autokat-table { font-size:12px; }
-            .ea-rule-main { min-width:160px; }
-        }
-        @media (max-width: 899px) {
-            .ea-autokat-table tbody tr:not(.ea-rule-empty) {
-                display:grid;
-                grid-template-columns:minmax(0, 1fr) auto auto;
-                align-items:start;
-                gap:8px;
-                padding:12px;
-            }
-            .ea-autokat-table td {
-                padding:0;
-                border-bottom:0;
-            }
-            .ea-autokat-table .ea-rule-main {
-                grid-column:1;
-                grid-row:1;
-                min-width:0;
-                width:auto;
-                overflow-wrap:anywhere;
-            }
-            .ea-autokat-table .ea-rule-type-cell { grid-column:2; grid-row:1; }
-            .ea-autokat-table .ea-rule-status-cell { grid-column:3; grid-row:1; white-space:nowrap; }
-            .ea-autokat-table .ea-rule-rank,
-            .ea-autokat-table .ea-rule-usage { display:none; }
-            .ea-autokat-table .ea-rule-terms {
-                grid-column:1 / -1;
-                grid-row:2;
-                border-top:1px solid var(--ea-gray-200);
-                padding-top:8px;
-                overflow-wrap:anywhere;
-            }
-            .ea-autokat-table .ea-rule-mobile-label {
-                display:inline;
-                font-weight:700;
-                color:var(--ea-gray-700);
-            }
-        }
-    </style>
+    <?php eablage_seitenkopf('Klassifizierungsregeln'); ?>
 </head>
 <body>
 <?php require_once 'navbar.php'; ?>
 <div class="ea-main-container">
-<div class="container ea-autokat-container">
+<div class="container ea-workspace ea-autokat-container">
     <div class="ea-admin-notices">
     <?php if ($meldung !== ''): ?>
         <?=eablage_render_message($meldungTyp, $meldung)?>
@@ -300,9 +224,9 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
             <h1 class="ea-autokat-title"><?=eablage_icon('rules')?>Klassifizierungsregeln</h1>
         </div>
         <div class="panel-body ea-autokat-body">
-            <div class="ea-autokat-scroll">
+            <div class="ea-workspace-scroll ea-autokat-scroll">
             <form method="get" class="ea-autokat-toolbar">
-                <div class="form-group" style="min-width:280px; flex:1;">
+                <div class="form-group ea-autokat-search">
                     <label for="q">Suche</label>
                     <input type="text" class="form-control" id="q" name="q" value="<?=h($filterText)?>" placeholder="RegelID, Bezeichnung, Such- oder Ausschlussbegriff, Partner, Betreff ...">
                 </div>
@@ -330,8 +254,8 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                         <option value="ohne" <?=$filterNutzung === 'ohne' ? 'selected' : ''?>>Ohne Treffer</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-default"><?=eablage_icon('search')?>Filtern</button>
-                <a href="autokat_regeln.php" class="btn btn-link">Zurücksetzen</a>
+                <button type="submit" class="btn btn-primary"><?=eablage_icon('search')?>Filtern</button>
+                <a href="autokat_regeln.php" class="btn btn-default">Zurücksetzen</a>
             </form>
 
             <?php if ($anzahlRegeln > 0): ?>
@@ -353,7 +277,7 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                 </div>
             <?php endif; ?>
 
-            <div class="table-responsive">
+            <div>
                 <table class="table table-striped table-hover ea-autokat-table">
                     <thead>
                         <tr>
@@ -423,8 +347,8 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                                     <input type="hidden" name="action" value="toggle">
                                     <input type="hidden" name="regel_id" value="<?=h($regel['RegelID'])?>">
                                     <input type="hidden" name="aktiv" value="<?=(int)$regel['Aktiv'] === 1 ? '0' : '1'?>">
-                                    <button type="submit" class="ea-rule-status" title="<?=(int)$regel['Aktiv'] === 1 ? 'Regel deaktivieren' : 'Regel aktivieren'?>" aria-label="<?=(int)$regel['Aktiv'] === 1 ? 'Regel deaktivieren' : 'Regel aktivieren'?>">
-                                        <?=(int)$regel['Aktiv'] === 1 ? '✅ aktiv' : '⏸️ inaktiv'?>
+                                    <button type="submit" class="ea-rule-status ea-status-toggle" data-active="<?=(int)$regel['Aktiv'] === 1 ? '1' : '0'?>" title="<?=(int)$regel['Aktiv'] === 1 ? 'Regel deaktivieren' : 'Regel aktivieren'?>" aria-label="<?=(int)$regel['Aktiv'] === 1 ? 'Regel deaktivieren' : 'Regel aktivieren'?>">
+                                        <?=(int)$regel['Aktiv'] === 1 ? 'aktiv' : 'inaktiv'?>
                                     </button>
                                 </form>
                             </td>
@@ -434,8 +358,8 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                 </table>
             </div>
 
-    <div class="panel panel-default ea-autokat-test-panel">
-        <div class="panel-heading"><h3 class="panel-title">🧪 AutoKat testen</h3></div>
+    <div class="panel ea-autokat-test-panel">
+        <div class="panel-heading"><h2 class="ea-panel-title"><?=eablage_icon('check-document')?>AutoKat testen</h2></div>
         <div class="panel-body">
             <p class="text-muted">Der Beispieltext wird gegen den aktuell gespeicherten und aktiven Regelbestand im Python-Dienst getestet. Änderungen müssen daher vorher gespeichert sein.</p>
             <form method="post" action="autokat_regeln.php#test-ergebnis">
@@ -443,12 +367,12 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                 <div class="form-group">
                     <textarea class="form-control" name="test_text" rows="7" placeholder="Beispieltext eines Dokuments einfügen ..."><?=h($testText)?></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">▶️ Test ausführen</button>
+                <button type="submit" class="btn btn-primary"><?=eablage_icon('refresh')?>Test ausführen</button>
             </form>
             <div id="test-ergebnis"></div>
 
             <?php if ($testFehler !== ''): ?>
-                <div class="alert alert-warning ea-test-result">⚠️ <?=h($testFehler)?></div>
+                <div class="alert alert-warning ea-test-result"><?=h($testFehler)?></div>
             <?php elseif (is_array($testResult)): ?>
                 <div class="alert <?=!empty($testResult['matched']) ? 'alert-success' : 'alert-info'?> ea-test-result">
                     <?php if (!empty($testResult['matched'])): ?>
@@ -461,8 +385,8 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                         $primaryK = $kRefs[0] ?? null;
                         $additionalK = count($kRefs) > 1 ? array_slice($kRefs, 1) : [];
                         ?>
-                        <strong>✅ Regel(n) erkannt.</strong>
-                        <div style="margin-top:8px;">
+                        <strong>Regel(n) erkannt.</strong>
+                        <div class="ea-mt-2">
                             <strong>Ergänzungsregeln:</strong> <?=$eRefs ? h(implode(', ', array_map('rule_ref_text', $eRefs))) : 'keine'?><br>
                             <strong>Primäre Klassifikationsregel:</strong> <?=is_array($primaryK) ? h(rule_ref_text($primaryK)) : 'keine'?>
                             <?php if ($additionalK): ?>
@@ -470,15 +394,15 @@ function pagination_url(int $seite, string $filterText, string $filterTyp, strin
                             <?php endif; ?>
                         </div>
                         <?php if ($additionalK): ?>
-                            <div style="margin-top:8px;"><strong>⚠️ Mehrfachtreffer:</strong> Für die Vorbelegung wird nur die primäre Klassifikationsregel mit dem niedrigsten Rang verwendet.</div>
+                            <div class="ea-mt-2"><strong>Mehrfachtreffer:</strong> Für die Vorbelegung wird nur die primäre Klassifikationsregel mit dem niedrigsten Rang verwendet.</div>
                         <?php endif; ?>
                     <?php else: ?>
-                        <strong>ℹ️ Keine passende AutoKat-Regel gefunden.</strong>
+                        <strong>Keine passende AutoKat-Regel gefunden.</strong>
                     <?php endif; ?>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table table-bordered table-condensed">
+                <div>
+                    <table class="table">
                         <thead><tr><th>Feld</th><th>Ergebnis</th><th>Quelle</th></tr></thead>
                         <tbody>
                         <?php

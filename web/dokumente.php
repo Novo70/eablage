@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 // Modernisierte Ergebnisliste für e_ablage:web
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
@@ -7,10 +8,6 @@ require_once 'vorgaenge_funktionen.php';
 require_once 'csrf.php';
 $db = $db_config;
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 function request_value(string $name, string $default = ''): string
 {
     $value = $_REQUEST[$name] ?? null;
@@ -192,13 +189,7 @@ $resultColumns = ['subject', 'partner', 'date', 'classification', 'number'];
 <html lang="de">
 
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage</title>
-    <link href="app.css?v=<?= filemtime(__DIR__ . '/app.css') ?>" rel="stylesheet">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
-    <link rel="icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_seitenkopf('Suchergebnisse'); ?>
 </head>
 
 <body>
@@ -218,10 +209,10 @@ $resultColumns = ['subject', 'partner', 'date', 'classification', 'number'];
                             <div class="col-md-4">
                                 <div class="form-group"><label for="Suchbegriff">Suchbegriff</label><input class="form-control" id="Suchbegriff" name="Suchbegriff" type="text" value="<?= h($suchbegriff) ?>"></div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 ea-search-date">
                                 <div class="form-group"><label for="Datumvon">Datum von</label><input class="form-control" id="Datumvon" name="Datumvon" type="date" value="<?= h($datumvon) ?>"></div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 ea-search-date">
                                 <div class="form-group"><label for="Datumbis">Datum bis</label><input class="form-control" id="Datumbis" name="Datumbis" type="date" value="<?= h($datumbis) ?>"></div>
                             </div>
                             <div class="col-md-2">

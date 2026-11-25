@@ -1,0 +1,21 @@
+{
+    "name": "eAblage",
+    "short_name": "eAblage",
+    "id": "./",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "icons": [
+        {
+            "src": "ea_app_192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "ea_app_512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

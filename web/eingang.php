@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 
 require_once 'konfiguration.php';
 require_once 'meldungen.php';
@@ -8,10 +9,6 @@ require_once 'funktionen.php';
 require_once 'inbox_funktionen.php';
 require_once 'upload_funktionen.php';
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 $scanOrdner = PFAD_INBOX;
 $meldung = '';
@@ -139,12 +136,7 @@ if (is_dir($scanOrdner)) {
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage - Eingang</title>
-    <link href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>" rel="stylesheet">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png">
-    <link rel="icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_seitenkopf('Eingang'); ?>
 </head>
 <body>
 <?php include 'navbar.php'; ?>
@@ -166,7 +158,7 @@ if (is_dir($scanOrdner)) {
                     <?php $kiWorkerNotice = !empty($kiWorker['enabled']) && (empty($kiWorker['fresh']) || in_array($kiWorker['state'] ?? '', ['pausiert','deaktiviert'], true)); ?>
                     <p id="ki-worker-status" class="text-muted" role="status" <?=!$kiWorkerNotice ? 'hidden' : ''?>><?=h($kiWorkerNotice ? ($kiWorker['message'] ?? '') : '')?></p>
                     <?php if (empty($gefundeneDateien)): ?>
-                        <div class="search-summary">✨ Es liegen aktuell keine neuen Dokumente im Scan-Ordner.</div>
+                        <div class="search-summary">Es liegen aktuell keine neuen Dokumente im Scan-Ordner.</div>
                     <?php else: ?>
                         <ul class="ea-inbox-list">
                             <?php foreach ($gefundeneDateien as $datei): ?>
@@ -218,7 +210,7 @@ if (is_dir($scanOrdner)) {
                             >
                             <p class="ea-upload-dropzone__status" id="pdf_drop_status" role="status" aria-live="polite"></p>
                         </div>
-                        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">
+                        <button type="submit" class="btn btn-primary ea-btn-block">
                             <?=eablage_icon('upload')?>Datei in den Eingang hochladen
                         </button>
                     </form>

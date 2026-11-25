@@ -1,12 +1,9 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once 'konfiguration.php';
 require_once 'protokoll_funktionen.php';
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 function history_details($value): string
 {
@@ -36,7 +33,7 @@ function history_details($value): string
         'bezeichnung' => 'Bezeichnung'
     ];
     if (!$value) return '–';
-    $html = '<ul style="padding-left:20px;margin-bottom:4px">';
+    $html = '<ul class="ea-history-list">';
     foreach ($value as $key => $entry) {
         $label = is_int($key) ? (string)($key + 1) : ($labels[$key] ?? $key);
         $html .= '<li><strong>' . h($label) . ':</strong> ' . history_details($entry) . '</li>';
@@ -110,23 +107,18 @@ function history_page(int $page): string
 <html lang="de">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage – Ereignisprotokoll / Dokumenthistorie</title>
-    <link rel="stylesheet" href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>">
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png" />
-    <link rel="icon" href="ea_icon4.png" type="image/png" />
+    <?php eablage_seitenkopf('Ereignisprotokoll'); ?>
 </head>
 
 <body>
     <?php include 'navbar.php'; ?>
-    <main class="container ea-history-container">
+    <main class="container ea-workspace ea-history-container">
         <div class="panel panel-primary ea-history-panel">
             <div class="panel-heading ea-history-heading">
                 <h1 class="ea-history-title"><?=eablage_icon('clipboard')?>Ereignisprotokoll / Dokumenthistorie</h1>
             </div>
             <div class="panel-body ea-history-body">
-                <div class="ea-history-scroll">
+                <div class="ea-workspace-scroll ea-history-scroll">
                 <p>Gespeicherte Dokumentereignisse, neueste zuerst. Frühere Info-Texte bleiben beim Dokument unter „Technische Informationen“ erhalten.</p>
                 <form method="get" class="ea-history-toolbar">
                     <?php if ($hasReturn): ?><input type="hidden" name="return" value="<?= h($returnUrl) ?>"><?php endif; ?>
@@ -136,7 +128,7 @@ function history_page(int $page): string
                             <?php foreach (EABLAGE_EREIGNISSE as $key => $label): ?><option value="<?= h($key) ?>" <?= $event === $key ? 'selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?>
                         </select></label>
                     <label>RegelID <input class="form-control" name="regel" placeholder="R0042" value="<?= h($regel) ?>"></label>
-                    <button class="btn btn-primary" type="submit">Filtern</button> <a href="<?= h($resetUrl) ?>" class="btn btn-default">Zurücksetzen</a>
+                    <button class="btn btn-primary" type="submit"><?=eablage_icon('search')?>Filtern</button> <a href="<?= h($resetUrl) ?>" class="btn btn-default">Zurücksetzen</a>
                 </form>
                 <?php if ($error !== ''): ?><div class="alert alert-danger"><?= h($error) ?></div>
                 <?php else: ?>

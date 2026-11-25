@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/icons.php';
+require_once __DIR__ . '/seitenkopf.php';
 // Modernisierte Startseite für e_ablage:web
 // - Formular sendet per GET, damit Suchparameter in der Ergebnisliste/Pagination erhalten bleiben
 // - Werte werden vorbelegt, falls index.php mit Parametern aufgerufen wird
@@ -7,10 +8,6 @@ require_once __DIR__ . '/icons.php';
 require_once 'konfiguration.php';
 require_once 'funktionen.php';
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
 
 function request_value(string $name, string $default = ''): string
 {
@@ -41,16 +38,7 @@ $dokumenttypen = eablage_lade_dokumenttypen($db_config);
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage</title>
-
-    <link href="app.css?v=<?= filemtime(__DIR__ . '/app.css') ?>" rel="stylesheet">
-
-
-    <link rel="shortcut icon" href="ea_icon4.png" type="image/png" />
-    <link rel="icon" href="ea_icon4.png" type="image/png" />
+    <?php eablage_seitenkopf('Suche'); ?>
 </head>
 <body>
 <div id="app">
@@ -85,13 +73,13 @@ $dokumenttypen = eablage_lade_dokumenttypen($db_config);
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-6 ea-search-date">
                                     <div class="form-group">
                                         <label for="Datumvon">Datum von</label>
                                         <input class="form-control" id="Datumvon" name="Datumvon" type="date" value="<?= h($datumvon) ?>">
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 ea-search-date">
                                     <div class="form-group">
                                         <label for="Datumbis">Datum bis</label>
                                         <input class="form-control" id="Datumbis" name="Datumbis" type="date" value="<?= h($datumbis) ?>">

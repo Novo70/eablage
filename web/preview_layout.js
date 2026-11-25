@@ -3,7 +3,10 @@
     const root = document.documentElement;
     const buttons = Array.from(document.querySelectorAll('[data-preview-split-toggle]'));
     if (!buttons.length) return;
-    const desktop = window.matchMedia('(min-width: 1100px) and (hover: hover) and (pointer: fine)');
+    // Die Vorschaubreite ist nur neben der Seitenleiste wählbar; die Grenze kommt aus app.css.
+    const sidebarBreakpoint = (typeof window.getComputedStyle === 'function'
+        && window.getComputedStyle(root).getPropertyValue('--ea-sidebar-breakpoint').trim()) || '1280px';
+    const desktop = window.matchMedia('(min-width: ' + sidebarBreakpoint + ')');
     const wideWindow = window.matchMedia('(min-width: 1600px)');
     let split = 'balanced';
     try {
@@ -12,7 +15,7 @@
 
     function render() {
         root.dataset.eaPreviewSplit = split;
-        const available = root.dataset.eaLayout === 'desktop' && desktop.matches;
+        const available = desktop.matches;
         const wide = split === 'wide' && wideWindow.matches;
         buttons.forEach(button => {
             button.hidden = !available;
@@ -29,14 +32,13 @@
     }
 
     buttons.forEach(button => button.addEventListener('click', () => {
-        if (root.dataset.eaLayout !== 'desktop' || !desktop.matches || !wideWindow.matches) return;
+        if (!desktop.matches || !wideWindow.matches) return;
         split = split === 'wide' ? 'balanced' : 'wide';
         try { window.localStorage.setItem('eablage.previewSplit', split); } catch (_) {}
         render();
     }));
     desktop.addEventListener('change', render);
     wideWindow.addEventListener('change', render);
-    new MutationObserver(render).observe(root, {attributes: true, attributeFilter: ['data-ea-layout']});
     render();
 })();
 

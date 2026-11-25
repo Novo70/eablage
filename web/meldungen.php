@@ -19,22 +19,22 @@ function eablage_message_type(string $type): string
 
 function eablage_message_icon(string $type): string
 {
-    return match (eablage_message_type($type)) {
-        'success' => '✅',
-        'warning' => '⚠️',
-        'danger' => '❌',
-        default => 'ℹ️',
-    };
+    require_once __DIR__ . '/icons.php';
+    return eablage_icon(match (eablage_message_type($type)) {
+        'success' => 'check-circle',
+        'warning' => 'alert-triangle',
+        'danger' => 'x-circle',
+        default => 'info',
+    });
 }
 
 function eablage_render_message(string $type, string $message): string
 {
     $type = eablage_message_type($type);
-    $icon = eablage_message_icon($type);
 
-    return '<div class="alert alert-' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '" role="alert">'
-        . $icon . ' '
-        . htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+    return '<div class="alert alert-' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . ' ea-alert-with-icon" role="alert">'
+        . eablage_message_icon($type)
+        . '<div>' . htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div>'
         . '</div>';
 }
 

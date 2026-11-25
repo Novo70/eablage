@@ -61,7 +61,7 @@ test('adopting an alternative replaces the rule link with an AI badge',()=>{
 test('text comparison shows linked source document and can be confirmed by AI',()=>{
  const w=setup([{kind_id:'1',value:'0001',source:{type:'textcompare',source_document_id:42,similarity:98}}]);
  const badge=w.document.querySelector('.ea-source-badge');
- assert.equal(badge.textContent,'DokID 42');assert.equal(badge.classList.contains('ea-source-badge--date'),true);
+ assert.equal(badge.textContent,'DokID 42');assert.equal(badge.classList.contains('ea-source-badge--compare'),true);
  assert.match(badge.title,/98 % Übereinstimmung/);assert.equal(badge.hasAttribute('data-draft-link'),true);
  assert.equal(new URL(badge.href).pathname,'/bearbeiten.php');
  assert.equal(new URL(badge.href).searchParams.get('dokid'),'42');

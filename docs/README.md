@@ -1,6 +1,6 @@
 # eAblage Dokumentation
 
-Diese Dokumentation beschreibt eAblage 4.7.0 mit gezielter Dokumentensuche und gemeinsamer Bearbeitung ausgewählter Treffer. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
+Diese Dokumentation beschreibt eAblage 4.8.0 mit überarbeitetem Erscheinungsbild, responsiver Navigation und automatischer Bediendichte für Maus und Touch. Web, Backend und Worker gehören zu derselben Version. Für Installation und Sicherung den verwendeten Tag oder Commit festhalten.
 
 Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale Beispiele.
 
@@ -19,7 +19,7 @@ Pfade, Konten, Datenbanknamen und Passwörter in den Anleitungen sind neutrale B
 | Thema | Zuständige Beschreibung |
 | --- | --- |
 | Tägliche Bedienung und Oberflächen | [Benutzerhandbuch](BENUTZERHANDBUCH.md), [Screenshots](SCREENSHOTS.md) |
-| Dokumentvorschau und Oberflächenvarianten | [PDF.js-Vorschau](PDF_VORSCHAU.md), [Desktop-Modus](DESKTOP_LAYOUT.md) |
+| Dokumentvorschau und Oberflächenvarianten | [PDF.js-Vorschau](PDF_VORSCHAU.md), [Darstellung und Design-System](DESIGN.md) |
 | Ergänzende Klassifizierung mit lokaler KI | [Ollama](OLLAMA.md) |
 | Text aus gescannten oder gemischten PDFs erkennen | [Lokale OCR](OCR.md) |
 | Inbox automatisch vorbereiten und manuell prüfen | [Stapelverarbeitung](STAPELVERARBEITUNG.md) |

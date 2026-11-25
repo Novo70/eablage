@@ -16,8 +16,9 @@ Die Schaltfläche mit dem Seitensymbol direkt in der PDF.js-Werkzeugleiste
 wechselt zwischen Einzelseiten und Doppelseiten (1+2, 3+4 usw.). Der Tooltip benennt die nächste
 Aktion, der aktive Zustand die zweiseitige Darstellung. Aktuelle Seite und
 manueller Zoom bleiben beim Umschalten erhalten; bei automatischer Seitenbreite
-passt PDF.js den Zoom an. Die Auswahl bleibt beim Dokumentwechsel innerhalb
-der Ansicht erhalten. Der Schalter ist Teil der internen Werkzeugleiste der
+passt PDF.js den Zoom an. Die Auswahl wird browserlokal gespeichert
+(`localStorage`, Schlüssel `eablage.previewSpread`) und gilt beim Dokumentwechsel
+und bei späteren Aufrufen für alle Vorschauen. Der Schalter ist Teil der internen Werkzeugleiste der
 PDF-Ansicht. Änderungen über das PDF.js-Menü aktualisieren seinen Zustand.
 Schaltfläche und Symbole werden über `pdfjs.js` und `pdfjs.css` ergänzt; die
 PDF.js-Bibliothek, `viewer.mjs` und `viewer.css` bleiben unverändert.

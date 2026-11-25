@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/konfiguration.php';
+require_once __DIR__ . '/seitenkopf.php';
 require_once __DIR__ . '/dokumentvorschau.php';
 require_once __DIR__ . '/dokument_navigation.php';
 require_once __DIR__ . '/dokument_technik.php';
@@ -15,7 +16,6 @@ if ($dokId === false || $dokId === null) {
     http_response_code(400);
     exit('Ungültige Dokument-ID.');
 }
-function h($value): string { return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function display_value($value): string { return trim((string)$value) !== '' ? h($value) : '—'; }
 
 $returnUrl = valid_return_url(is_string($_GET['return'] ?? null) ? $_GET['return'] : null);
@@ -57,11 +57,7 @@ try {
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>e_ablage – Dokument ansehen</title>
-    <link href="app.css?v=<?=filemtime(__DIR__ . '/app.css')?>" rel="stylesheet">
-    <link rel="icon" href="ea_icon4.png" type="image/png">
+    <?php eablage_seitenkopf('Dokument ansehen'); ?>
 </head>
 <body>
 <?php include __DIR__ . '/navbar.php'; ?>

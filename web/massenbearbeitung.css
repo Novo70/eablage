@@ -14,8 +14,7 @@
     .ea-mass-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: stretch;
-        height: calc(100vh - var(--ea-page-top) - var(--ea-page-bottom, var(--ea-space-6)));
-        height: calc(100dvh - var(--ea-page-top) - var(--ea-page-bottom, var(--ea-space-6)));
+        height: var(--ea-workspace-height);
     }
     .ea-mass-panel {
         display: flex;
@@ -33,16 +32,16 @@
 }
 
 .ea-mass-document {
-    padding: 0 0 16px;
-    margin: 0 0 16px;
-    border-bottom: 1px solid #d4dce4;
+    padding: 0 0 var(--ea-space-4);
+    margin: 0 0 var(--ea-space-4);
+    border-bottom: 1px solid var(--ea-border);
 }
 .ea-mass-document:last-child { border-bottom: 0; margin-bottom: 0; }
-.ea-mass-document h2 { font-size: 1rem; margin: 0 0 12px; }
+.ea-mass-document h2 { font-size: var(--ea-text-md); margin: 0 0 var(--ea-space-3); }
 .ea-mass-document dl {
     display: grid;
     grid-template-columns: minmax(100px, 30%) minmax(0, 1fr);
-    gap: 6px 12px;
+    gap: var(--ea-space-2) var(--ea-space-3);
     margin: 0;
 }
 .ea-mass-document dt { font-weight: 600; }

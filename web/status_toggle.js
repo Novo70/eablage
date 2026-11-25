@@ -116,7 +116,8 @@ document.querySelectorAll('[data-status-toggle], [data-row-action]').forEach((fo
             if (typeof result.active !== 'boolean') throw new Error('Invalid status');
             const active = result.active;
             const isRule = form.dataset.statusToggle === 'rule';
-            button.textContent = active ? '✅ aktiv' : '⏸️ inaktiv';
+            button.textContent = active ? 'aktiv' : 'inaktiv';
+            button.dataset.active = active ? '1' : '0';
             const label = isRule
                 ? (active ? 'Regel deaktivieren' : 'Regel aktivieren')
                 : (active ? 'Eintrag deaktivieren' : 'Eintrag reaktivieren');

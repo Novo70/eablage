@@ -205,7 +205,7 @@
             block.append(heading); recognitionNotes.append(block);
             return block;
         };
-        const information = message || history ? alert('info', 'ℹ️ KI-Erkennung') : null;
+        const information = message || history ? alert('info', 'KI-Erkennung') : null;
         if (message && information) {
             const note = document.createElement('p'); note.textContent = message;
             information.append(note);
@@ -221,13 +221,13 @@
             block.append(heading, summary, list); information.append(block);
         }
         if (warnings.length) {
-            const block = alert('warning', '⚠️ KI-Hinweise'); block.dataset.aiWarnings = 'true';
+            const block = alert('warning', 'KI-Hinweise'); block.dataset.aiWarnings = 'true';
             for (const warning of warnings) {
                 const note = document.createElement('p'); note.textContent = warning; block.append(note);
             }
         }
         if (error) {
-            const block = alert('warning', '⚠️ KI-Fehler'); block.dataset.backgroundError = 'true';
+            const block = alert('warning', 'KI-Fehler'); block.dataset.backgroundError = 'true';
             const note = document.createElement('p'); note.textContent = error;
             block.append(note);
             if (lastAttempt) {

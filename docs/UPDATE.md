@@ -2,6 +2,17 @@
 
 Web, Backend und Worker werden zusammen aus einem vollständigen Projektstand aktualisiert. Vorhandene lokale Konfigurationen und Dokumentdaten müssen dabei erhalten bleiben.
 
+## Aktualisierung von 4.7.0 auf 4.8.0
+
+Eine vollständig aktualisierte 4.6.1-, 4.6.2- oder 4.7.0-Installation benötigt beim Wechsel auf 4.8.0 keine SQL-Migration. Auch aus älteren Versionen ist ein direktes Update auf 4.8.0 möglich.
+
+1. Datenbank, PDF-Archiv, JSON-Metadaten und lokale Konfiguration sichern.
+2. Bei älteren Ausgangsständen Web, Backend und Worker stoppen und die Datenbank für die SQL-Schritte erreichbar lassen. Nur die für den Ausgangsstand noch ausstehenden SQL-Migrationen und Datenupdates aus den folgenden Versionsabschnitten in aufsteigender Versionsreihenfolge ausführen. Danach direkt den vollständigen Stand 4.8.0 übernehmen und Web, Backend und Worker [gemeinsam neu bauen und starten](#gemeinsam-bauen-und-starten). Zwischenversionen müssen dafür nicht gebaut oder gestartet werden.
+3. Die Browserseite vollständig neu laden. Unter **Einstellungen → Aktualisierung** und über `GET /health` die Version 4.8.0 prüfen.
+4. Der bisherige Desktop-Modus entfällt; eine dort gespeicherte Auswahl wird beim ersten Aufruf verworfen. Die Seitenleiste erscheint automatisch ab 1280 px Fensterbreite. Mit Maus gilt die kompakte, bei Touch die großzügige Darstellung. Bei Bedarf unter **Verwaltung → Darstellung** pro Browser **Kompakt** oder **Touch** festlegen. Ältere Lesezeichen mit `?layout=desktop` oder `?layout=touch` werden auf die neue Einstellung abgebildet.
+5. Suche, Klassifizieren, Dokumentansicht und Vorgänge am Desktop und auf einem Smartphone aufrufen. In der PDF-Vorschau die Doppelseitenansicht wählen und prüfen, dass sie beim nächsten Aufruf erhalten bleibt.
+6. Eine SQL-Sicherung erstellen und in einer getrennten Testinstanz zurückspielen. Neue Sicherungen tragen die Kennung 4.8.0. Die unterstützten Sicherungen bis einschließlich 4.7.0 lassen sich weiterhin einlesen.
+
 ## Aktualisierung von 4.6.2 auf 4.7.0
 
 Eine vollständig aktualisierte 4.6.2-Installation benötigt keine SQL-Migration. Bei älteren Ausgangsständen zuerst die noch ausstehenden SQL-Schritte in den jeweiligen Versionsabschnitten ausführen.
@@ -61,7 +72,7 @@ Die [PDF-Vorschau](PDF_VORSCHAU.md) wird mit der Anwendung ausgeliefert. Bei ein
 5. Suche → Dokumentansicht → Bearbeiten → Ansicht → Suche mit Filtern und Ergebnisseite prüfen. Vorgang anlegen, ein Dokument mehreren Vorgängen zuordnen und eine Zuordnung entfernen. Klassifizierung/Bearbeitung am Desktop mit langen Inhalten und Meldungen sowie mobil prüfen. PDF-/Textvorschau und KI-Diagnose mit einem echten Dokument testen.
 6. Neue SQL-Sicherung erstellen und in einer **getrennten leeren Testinstallation** rücksichern. Dokumente, Nummern, Historie, Vorgänge und Zuordnungen vergleichen. Die neue Sicherung trägt Version 4.5.0; unterstützte Sicherungen von 4.1.0 bis 4.4.0 bleiben importierbar. PDFs und JSON-Dateien separat erhalten. [Sicherungsanleitung](SICHERUNG.md).
 
-Für ältere Installationen zunächst die noch fehlenden Migrationen der folgenden Abschnitte ausführen und anschließend `update_document_links.sql`. Wer direkt auf 4.7.0 aktualisiert, führt danach auch die beiden 4.6.1-Datenupdates aus und folgt anschließend den [Schritten für 4.7.0](#aktualisierung-von-462-auf-470). Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
+Für ältere Installationen zunächst die noch fehlenden Migrationen der folgenden Abschnitte ausführen und anschließend `update_document_links.sql`. Beim direkten Update auf 4.8.0 danach die noch ausstehenden [4.6.1-Datenupdates](#aktualisierung-von-460-auf-461) ausführen und mit dem [Build für 4.8.0](#aktualisierung-von-470-auf-480) fortfahren. Neuinstallationen erhalten das vollständige Schema und Vorgabewerte direkt aus `schema.sql` und `seed.sql`. Der manuelle Parameter `Version` wird bei Bestandsupdates nicht automatisch geändert.
 
 ## Aktualisierung von 4.3.0 auf 4.4.0
 
@@ -206,7 +217,7 @@ Ein bloßer Containerneustart übernimmt geänderten Code nicht. Der Webdienst h
 
 ## Nachkontrolle
 
-Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.7.0`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
+Browserseite neu laden, interne Backend-/Datenbankverbindung prüfen und die [Funktionsprüfung](ENTWICKLUNG.md#funktionsprüfung-in-einer-getrennten-instanz) durchführen. `GET /health` liefert für diesen Stand `status=ok`, `service=eablage-backend`, `version=4.8.0`. Der manuelle Parameter `Version` wird nicht automatisch aktualisiert.
 
 Für Wartung PHP- und Backend-Datenbankidentität, Metadaten-Mount und UID/GID kontrollieren. Ein gemischter Web-/Backend-/Workerstand soll nicht zum Schreiben verwendet werden. JSON-Reparaturen werden ausschließlich ausdrücklich gestartet.
 

@@ -1,5 +1,5 @@
 -- e_ablage database schema
--- Target: eAblage 4.7.0 (gemeinsame Web-/Backend-/Worker-Version)
+-- Target: eAblage 4.8.0 (gemeinsame Web-/Backend-/Worker-Version)
 -- MariaDB
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";

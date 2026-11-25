@@ -220,7 +220,28 @@ for (const width of [390,1300]) test(`${width}px: viewer toolbar spread toggle c
         await frame.waitForFunction(()=>PDFViewerApplication.pdfViewer.spreadMode===0);
         assert.equal(pdfRequests,2);
         assert.equal(await toggle.getAttribute('aria-pressed'),'false');
+        assert.equal(await page.evaluate(()=>localStorage.getItem('eablage.previewSpread')),'0');
     } finally {release();await page.close();}
+});
+
+test('spread choice is remembered for the next page load',async()=>{
+    const page=await browser.newPage({viewport:{width:1300,height:900}});
+    try {
+        await page.goto(base+'host-controls',{waitUntil:'domcontentloaded'});
+        let frame=page.frames().find(f=>f.parentFrame()===page.mainFrame());
+        await frame.waitForFunction(()=>window.PDFViewerApplication?.isInitialViewSet===true);
+        await page.frameLocator('iframe').locator('#eaSpreadToggle').click();
+        await frame.waitForFunction(()=>PDFViewerApplication.pdfViewer.spreadMode===1);
+        assert.equal(await page.evaluate(()=>localStorage.getItem('eablage.previewSpread')),'1');
+        await page.reload({waitUntil:'domcontentloaded'});
+        assert.equal(await page.locator('iframe').getAttribute('data-preview-spread-mode'),'1');
+        frame=page.frames().find(f=>f.parentFrame()===page.mainFrame());
+        await frame.waitForFunction(()=>window.PDFViewerApplication?.isInitialViewSet && PDFViewerApplication.pdfViewer.spreadMode===1);
+        assert.equal(await page.frameLocator('iframe').locator('#eaSpreadToggle').getAttribute('aria-pressed'),'true');
+        await page.evaluate(()=>{localStorage.setItem('eablage.previewSpread','kaputt');});
+        await page.reload({waitUntil:'domcontentloaded'});
+        assert.equal(await page.locator('iframe').getAttribute('data-preview-spread-mode'),'0','invalid stored values fall back to single pages');
+    } finally {await page.close();}
 });
 
 test('cached old viewer files cannot hide the updated spread control or replace the matching library',async()=>{
